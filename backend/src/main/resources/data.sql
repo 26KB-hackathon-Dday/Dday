@@ -36,8 +36,16 @@
 --    (전부 지웠다가 이 함정을 다시 밟는다).
 SELECT 1;
 
--- 아직 엔티티가 없다. 첫 도메인을 만들면 여기 아래에 참조 데이터를 넣는다.
---
--- 예)
--- INSERT INTO pocket (id, name) VALUES (1, '지갑'), (2, '가방')
--- ON DUPLICATE KEY UPDATE name = VALUES(name);
+-- ── 포켓 ──────────────────────────────────────────────────────────────────
+-- 기획서의 네 포켓. 금액은 시연용 예시값이다.
+-- id를 고정하고 ON DUPLICATE KEY UPDATE를 써서, 몇 번을 재기동해도 결과가 같다.
+-- 여기 값을 고쳐서 다시 띄우면 그 값으로 갱신된다.
+INSERT INTO pocket (id, type, monthly_budget, spent_this_month) VALUES
+    (1, 'HOUSING',   650000.00, 650000.00),
+    (2, 'LIVING',    600000.00, 412000.00),
+    (3, 'EMERGENCY', 200000.00,  35000.00),
+    (4, 'ASSET',     100000.00,      0.00)
+ON DUPLICATE KEY UPDATE
+    type             = VALUES(type),
+    monthly_budget   = VALUES(monthly_budget),
+    spent_this_month = VALUES(spent_this_month);

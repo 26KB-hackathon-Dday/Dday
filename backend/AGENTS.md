@@ -81,7 +81,7 @@ com.dday
 │  ├─ controller/
 │  ├─ service/
 │  ├─ repository/            # Spring Data JPA 인터페이스
-│  ├─ entity/                # @Entity — 테이블과 1:1
+│  ├─ entity/                # @Entity + 그 엔티티가 쓰는 도메인 enum
 │  └─ dto/
 │     ├─ request/
 │     ├─ response/
@@ -98,7 +98,22 @@ com.dday
 공용으로 쓸 게 생기면 `global/`에 올리되, **올리기 전에 팀에 한마디 한다** — 여기가
 유일하게 모두가 부딪히는 지점이다.
 
-> `global/`은 이미 다 짜여 있다. 첫 도메인을 만들 때 §5의 코드 블록을 복사해서 시작하면 된다.
+> `global/`은 이미 다 짜여 있다.
+
+**`domain/pocket`이 참조 구현이다.** 새 도메인은 이걸 복제해서 시작한다 —
+엔티티·enum·레포지토리·서비스·컨트롤러·SuccessCode/ErrorCode·응답 DTO·단위 테스트가
+한 벌로 들어 있고, 시드(`data.sql`)와 프론트 조회(`frontend/src/api/pocket.ts`,
+`views/PocketView.vue`)까지 이어져 있다.
+
+### 도메인 enum은 `entity/`에 둔다
+
+`PocketType`(주거·생활·비상·자산형성)처럼 엔티티가 `@Enumerated`로 쓰는 enum은
+엔티티 옆에 둔다. **이런 분류값 때문에 도메인을 쪼개지 않는다** — 포켓 네 종류는
+도메인 넷이 아니라 `pocket` 테이블의 `type` 컬럼 값 넷이다. 쪼개면 같은 코드를
+네 번 쓰게 된다. 종류별로 다른 로직이 생기면 그때 엔티티 안에서 분기한다.
+
+⚠️ **`@Enumerated(EnumType.STRING)`을 반드시 명시한다.** 기본값 ORDINAL은 정수 순서로
+저장해서, enum 상수 순서를 바꾸는 순간 기존 데이터의 의미가 통째로 어긋난다.
 
 ---
 
