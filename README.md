@@ -8,7 +8,7 @@ Dday/
 ├─ frontend/                (스택 미정)
 ├─ docs/                    설계 메모 · 배포 가이드
 ├─ docker-compose.yml       로컬 개발용 MySQL
-└─ docker-compose.prod.yml  서버 배포용 (MySQL + 백엔드)
+└─ docker-compose.prod.yml  서버 배포용 (백엔드만 — DB는 RDS)
 ```
 
 - **코드 컨벤션과 작업 플로우 → [AGENTS.md](./AGENTS.md)** (읽고 시작할 것)

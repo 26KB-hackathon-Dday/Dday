@@ -353,7 +353,8 @@ main push
 - 배포 후 항상 `GET /health/db`를 확인한다 — 앱은 떠 있는데 DB에 못 닿는 경우를
   `/health`는 못 잡는다
 - 롤백은 EC2에서 이미지 태그를 이전 커밋 sha로 바꿔 다시 올린다 (docs/deploy.md 참고)
-- **RDS를 쓰지 않는다.** DB도 같은 EC2에 컨테이너로 뜬다. 비용 때문이 아니라
-  세팅 시간과 실패 지점을 줄이려는 결정이고, 바꿔야 할 조건과 방법은 docs/deploy.md에 있다.
-  대가는 두 가지다 — ① 인스턴스를 terminate하면 데이터도 사라진다
-  ② MySQL과 JVM이 한 박스의 메모리를 나눠 쓴다(`mem_limit`으로 미리 갈라놨다)
+- **운영 DB는 RDS다.** 앱만 EC2 컨테이너로 뜨고 DB는 분리돼 있다.
+  Elastic Beanstalk은 쓰지 않는다 — 이유는 docs/deploy.md
+- **로컬 개발은 RDS에 붙지 않는다.** 로컬은 `docker-compose.yml`의 MySQL 컨테이너다.
+  5명이 같은 DB를 밟으면 서로의 데이터를 지운다
+- **운영 DB 접속정보는 서버 `.env`에만 있다.** 저장소에도, GitHub Secrets에도 없다

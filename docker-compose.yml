@@ -4,7 +4,7 @@
 #   docker compose up -d          DB 기동
 #   docker compose down -v        DB를 데이터까지 통째로 날리고 새로 시작
 #
-# 서버 배포용 구성은 docker-compose.prod.yml에 따로 있다.
+# 서버 배포용 구성은 docker-compose.prod.yml에 따로 있다 (그쪽 DB는 RDS다).
 services:
   mysql:
     image: mysql:8.4
