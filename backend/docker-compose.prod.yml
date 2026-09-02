@@ -8,6 +8,10 @@
 #
 # 로컬 개발은 이 파일이 아니라 docker-compose.yml(MySQL 컨테이너)을 쓴다.
 # 로컬에서까지 RDS에 붙으면 5명이 같은 DB를 밟는다.
+
+# 프로젝트 이름 고정 — 서버의 어느 경로에 두든 컨테이너 이름이 흔들리지 않는다.
+name: dday
+
 services:
   backend:
     # main에 머지되면 Actions가 이 태그를 새로 밀어넣는다.

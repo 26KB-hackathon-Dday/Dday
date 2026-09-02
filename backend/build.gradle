@@ -23,12 +23,12 @@ repositories {
     mavenCentral()
 }
 
-// 루트 .env를 읽어 bootRun/test 환경변수로 넘긴다.
+// .env를 읽어 bootRun/test 환경변수로 넘긴다 (docker-compose.yml과 같은 디렉터리).
 // 개발자마다 MySQL 포트가 다를 수 있는데(3306이 이미 쓰이는 경우가 흔하다),
 // .env 한 곳만 고치면 docker compose와 앱이 같은 값을 보게 하려는 배선이다.
 // 파일이 없으면 조용히 넘어가고 application-local.yml의 기본값이 쓰인다.
 def dotenv = { ->
-    def f = rootProject.file('../.env')
+    def f = rootProject.file('.env')
     def map = [:]
     if (f.exists()) {
         f.eachLine { line ->

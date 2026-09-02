@@ -25,8 +25,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # .env.sample과 동일한 로컬 개발 전용 값이다 (운영 비밀값 아님).
-    # .env.sample을 고치면 여기도 함께 맞춘다.
+    # backend/.env.sample과 동일한 로컬 개발 전용 값이다 (운영 비밀값 아님).
+    # 그 파일을 고치면 여기도 함께 맞춘다.
     services:
       mysql:
         image: mysql:8.4
@@ -126,7 +126,10 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: docker-compose.prod.yml
+          source: backend/docker-compose.prod.yml
+          # strip_components를 빼면 서버에 ~/dday/backend/docker-compose.prod.yml로
+          # 들어가서 다음 단계의 cd 경로와 어긋난다.
+          strip_components: 1
           target: /home/${{ secrets.EC2_USER }}/dday
 
       - name: Pull & restart

@@ -5,6 +5,11 @@
 #   docker compose down -v        DB를 데이터까지 통째로 날리고 새로 시작
 #
 # 서버 배포용 구성은 docker-compose.prod.yml에 따로 있다 (그쪽 DB는 RDS다).
+
+# 프로젝트 이름을 박아둔다. 기본값은 "이 파일이 있는 디렉터리 이름"이라
+# 파일을 옮기면 컨테이너·볼륨 이름이 통째로 바뀌어 기존 데이터가 고아가 된다.
+name: dday
+
 services:
   mysql:
     image: mysql:8.4

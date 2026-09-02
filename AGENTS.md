@@ -7,10 +7,19 @@
 ```
 Dday/
 ├─ backend/     Spring Boot 3.5 + JPA (Java 17)
+│  ├─ src/
+│  ├─ build.gradle
+│  ├─ .env.sample
+│  ├─ docker-compose.yml        로컬 개발용 — MySQL만 띄운다
+│  └─ docker-compose.prod.yml   서버용 — 백엔드만 띄운다 (DB는 RDS)
 ├─ frontend/    (스택 미정 — 정해지면 여기에)
-├─ docs/        설계 메모, 화면 기획, 회의록
-└─ docker-compose.yml
+└─ docs/        설계 메모, 화면 기획, 회의록
 ```
+
+**루트에는 디렉터리 3개와 문서만 둔다.** 도커 구성과 `.env`가 백엔드 안에 있는 이유는
+둘 다 백엔드 전용이기 때문이다 — 로컬 compose는 백엔드가 쓸 MySQL을 띄우고,
+prod compose는 백엔드 이미지를 띄운다. 프론트가 컨테이너를 필요로 하면 그때
+`frontend/`에 따로 만든다.
 
 > ⚠️ **3일짜리다.** 이 문서의 규칙은 "나중에 유지보수하기 좋으라고"가 아니라
 > **5명이 같은 코드베이스를 동시에 만지면서 서로 안 깨뜨리려고** 있는 것이다.
@@ -21,10 +30,10 @@ Dday/
 ## 빌드 · 실행
 
 ```bash
+cd backend                # 백엔드 작업은 전부 이 안에서 한다
+
 cp .env.sample .env       # 최초 1회
 docker compose up -d      # 로컬 MySQL (빈 DB. 테이블은 앱이 뜰 때 JPA가 만든다)
-
-cd backend
 ./gradlew bootRun         # http://localhost:8080
 ./gradlew build           # 컴파일 + 테스트 — MySQL이 떠 있어야 한다
 ```
@@ -32,7 +41,7 @@ cd backend
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - 헬스체크: `GET /health` (앱만) / `GET /health/db` (DB까지)
 
-**3306이 이미 쓰이고 있으면** `.env`의 `MYSQL_PORT`만 바꾼다.
+**3306이 이미 쓰이고 있으면** `backend/.env`의 `MYSQL_PORT`만 바꾼다.
 `build.gradle`이 `.env`를 읽어 `bootRun`/`test`에 넘겨주므로 다른 데는 안 고쳐도 된다.
 단, **IDE에서 main 메서드를 직접 실행하면 `.env`를 안 읽는다** — 그때는 IDE 실행 구성의
 환경변수에 `MYSQL_PORT`를 넣는다.
@@ -121,7 +130,7 @@ com.dday
 - **`createdAt`/`updatedAt`은 `@CreationTimestamp`/`@UpdateTimestamp`**로 붙인다. 수동으로 넣지 않는다
 - **`ddl-auto: update`**로 돌고 있다. 엔티티를 고치면 스키마가 따라오지만,
   **컬럼 삭제와 타입 변경은 반영되지 않고 옛 컬럼이 조용히 남는다.**
-  이상해지면 `docker compose down -v && docker compose up -d`로 DB를 새로 만든다
+  이상해지면 `backend/`에서 `docker compose down -v && docker compose up -d`로 DB를 새로 만든다
 
 ### N+1
 
@@ -303,6 +312,29 @@ backend/src/main/resources/
 - 운영은 `SPRING_PROFILES_ACTIVE=prod` + `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 환경변수.
   없으면 기동 단계에서 실패한다 (의도된 동작)
 - **커밋되는 파일에 운영 비밀번호를 넣지 않는다.** `.env`는 `.gitignore`에 있다
+
+### 두 compose 파일은 서로의 사본이 아니다
+
+**겹치는 서비스가 하나도 없다.** 동기화할 게 없다는 뜻이다.
+
+| | `docker-compose.yml` (로컬) | `docker-compose.prod.yml` (서버) |
+|---|---|---|
+| MySQL | 컨테이너로 띄운다 | 없다 — RDS를 쓴다 |
+| 백엔드 | 없다 — `./gradlew bootRun` | 컨테이너로 띄운다 |
+
+로컬에서 앱까지 컨테이너에 넣으면 코드 한 줄 고칠 때마다 이미지를 다시 구워야 하고,
+서버에서 MySQL을 띄우면 RDS를 두고 DB가 둘이 된다.
+
+**진짜로 맞춰야 하는 건 각 진영 안에서다.**
+
+- 로컬: `docker-compose.yml` ↔ `.env.sample` ↔ `application-local.yml` 기본값
+  ↔ `.github/workflows/ci.yml`의 service container. **로컬 DB 비밀번호를 바꾸면 CI도 고쳐야 한다**
+- 서버: `application-prod.yml`이 읽는 환경변수 *이름* ↔ `docker-compose.prod.yml`이 넘기는 이름
+
+한 파일에 `profiles:`로 합칠 수도 있지만 그러지 않았다. 서버로 복사되는 파일에 로컬 개발용
+MySQL 설정이 같이 실리고, 프로파일을 잘못 지정하면 RDS 옆에 MySQL 컨테이너가 뜰 수 있다.
+나눠두면 그 실수 자체가 불가능하고, 서버에는 prod 파일만 복사되므로 거기서 무심코
+`docker compose up -d`를 쳐도 "파일 없음"으로 그냥 실패한다.
 
 ---
 

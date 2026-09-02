@@ -65,7 +65,7 @@ AWS를 아직 안 만들었으면 통째로 건너뛰므로 main push가 빨갛�
 > 겹치면 반나절이 날아간다 (같은 팀의 이전 프로젝트에서 4번 실패한 기록이 있다).
 > 지금 구성에서 배포에 필요한 비밀값은 **SSH 키 하나**뿐이고 IAM 역할이 없다.
 
-**로컬 개발은 RDS에 붙지 않는다.** 로컬은 `docker-compose.yml`의 MySQL 컨테이너를 쓴다.
+**로컬 개발은 RDS에 붙지 않는다.** 로컬은 `backend/docker-compose.yml`의 MySQL 컨테이너를 쓴다.
 5명이 같은 DB를 밟으면 서로의 데이터를 지운다.
 
 ---
@@ -211,11 +211,12 @@ chmod 600 .env
 ```
 
 > **`DB_HOST`에는 호스트만 넣는다.** `jdbc:` 접두사도, `:3306`도 붙이지 않는다.
-> JDBC URL은 `docker-compose.prod.yml`이 조립한다 — 그래야 `serverTimezone` 같은
+> JDBC URL은 `backend/docker-compose.prod.yml`이 조립한다 — 그래야 `serverTimezone` 같은
 > 파라미터를 누가 붙여넣다 빠뜨리는 일이 없다.
 >
-> **이 `.env`는 서버에만 있고 저장소에는 없다.** Actions는 `docker-compose.prod.yml`만
-> 덮어쓰고 `.env`는 건드리지 않으므로, 한 번 만들어두면 배포할 때마다 유지된다.
+> **이 `.env`는 서버에만 있고 저장소에는 없다.** Actions는 `backend/docker-compose.prod.yml`을
+> 서버의 `~/dday/docker-compose.prod.yml`로 덮어쓸 뿐 `.env`는 건드리지 않으므로,
+> 한 번 만들어두면 배포할 때마다 유지된다.
 
 연결이 되는지 먼저 확인해두면 뒤가 편하다.
 

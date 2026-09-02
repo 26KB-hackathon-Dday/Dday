@@ -4,11 +4,9 @@
 
 ```
 Dday/
-├─ backend/                 Spring Boot 3.5 + JPA (Java 17)
-├─ frontend/                (스택 미정)
-├─ docs/                    설계 메모 · 배포 가이드
-├─ docker-compose.yml       로컬 개발용 MySQL
-└─ docker-compose.prod.yml  서버 배포용 (백엔드만 — DB는 RDS)
+├─ backend/     Spring Boot 3.5 + JPA (Java 17) — 도커 구성과 .env도 여기 있다
+├─ frontend/    (스택 미정)
+└─ docs/        설계 메모 · 배포 가이드
 ```
 
 - **코드 컨벤션과 작업 플로우 → [AGENTS.md](./AGENTS.md)** (읽고 시작할 것)
@@ -25,12 +23,10 @@ main에 push하면 자동으로 갱신된다.
 
 ```bash
 git clone https://github.com/26KB-hackathon-Dday/Dday.git
-cd Dday
+cd Dday/backend            # 백엔드 작업은 전부 이 안에서 한다
 
 cp .env.sample .env        # 최초 1회
 docker compose up -d       # MySQL 기동 (빈 DB — 테이블은 앱이 뜰 때 JPA가 만든다)
-
-cd backend
 ./gradlew bootRun
 ```
 
@@ -46,7 +42,7 @@ curl http://localhost:8080/health/db
 
 ### 3306 포트가 이미 쓰이고 있다면
 
-`.env`의 `MYSQL_PORT`만 다른 값(예: `3307`)으로 바꾸고 `docker compose up -d`를 다시 돌린다.
+`backend/.env`의 `MYSQL_PORT`만 다른 값(예: `3307`)으로 바꾸고 `docker compose up -d`를 다시 돌린다.
 `build.gradle`이 `.env`를 읽어 `bootRun`/`test`에 넘겨주므로 다른 파일은 안 고쳐도 된다.
 
 > IDE에서 `DdayApplication`의 main을 직접 실행하는 경우엔 `.env`를 읽지 않는다.
@@ -58,7 +54,7 @@ curl http://localhost:8080/health/db
 엔티티를 크게 바꾼 뒤 스키마가 꼬이면 DB를 새로 만든다:
 
 ```bash
-docker compose down -v && docker compose up -d
+cd backend && docker compose down -v && docker compose up -d
 ```
 
 ---
