@@ -203,18 +203,13 @@ mysql -h $DB_HOST -u admin -p -e "SELECT @@global.time_zone, NOW();"
 > **DB 접속정보는 GitHub에 넣지 않는다.** 서버 `.env`에만 있다.
 > Actions는 이미지를 만들고 재시작을 시킬 뿐, DB에 붙지 않는다.
 
-### ⚠️ GHCR 패키지를 public으로 바꿔야 한다 (최초 1회)
+### GHCR 이미지는 private로 둔다
 
-이미지를 처음 push하고 나면 GitHub에 `dday-backend` 패키지가 생기는데,
-**저장소가 public이어도 패키지는 기본이 private다.** 그대로 두면 EC2에서
-`docker compose pull`이 `denied`로 실패한다.
+저장소가 public이어도 **GHCR 패키지는 기본이 private다.** 여기서는 그걸 그대로 둔다.
 
-첫 push 후 한 번만:
-**저장소 → Packages → `dday-backend` → Package settings → Danger Zone →
-Change visibility → Public**
-
-(공개하기 싫으면 대신 서버에서 `echo {PAT} | docker login ghcr.io -u {계정} --password-stdin`을
-해두면 된다. `read:packages` 권한의 PAT가 필요하다.)
+`deploy` 잡이 pull 직전에 **그 잡에서만 유효한 `GITHUB_TOKEN`으로 서버에서 `docker login`**
+을 하기 때문이다. 패키지를 공개할 필요도, `read:packages` PAT를 만들어 서버에 둘 필요도 없다.
+따로 할 일은 없고, 이 문단은 "왜 public으로 안 바꾸나"에 대한 답이다.
 
 ---
 

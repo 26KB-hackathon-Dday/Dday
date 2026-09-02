@@ -110,6 +110,10 @@ jobs:
     needs: image
     if: vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # 서버가 GHCR에서 이미지를 받으려면 읽기 권한이 필요하다.
+      packages: read
 
     steps:
       - uses: actions/checkout@v7
@@ -127,17 +131,23 @@ jobs:
 
       - name: Pull & restart
         uses: appleboy/ssh-action@v1.2.5
+        env:
+          # 이 잡이 도는 동안만 유효한 토큰이다. pull 직전에 로그인하므로 만료를 걱정할 게 없고,
+          # 덕분에 GHCR 패키지를 public으로 열지 않아도 된다 (PAT를 서버에 두는 것보다 안전하다).
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GHCR_USER,GHCR_TOKEN
           script: |
             set -e
             cd /home/${{ secrets.EC2_USER }}/dday
-            # 공개 이미지라 서버에서 GHCR 로그인이 필요 없다.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker compose -f docker-compose.prod.yml pull backend
             docker compose -f docker-compose.prod.yml up -d
-            # 태그가 바뀌면서 참조를 잃은 옛 이미지를 정리한다. t3.micro는 디스크가 금방 찬다.
+            # 태그가 바뀌면서 참조를 잃은 옛 이미지를 정리한다. 20GB 디스크가 금방 찬다.
             docker image prune -f
 
       - name: Health check
