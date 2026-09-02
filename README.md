@@ -12,6 +12,7 @@ Dday/
 브라우저 ──HTTPS──▶ Cloudflare Worker ──HTTP──▶ EC2 ──▶ RDS
 
 frontend/** 수정 → Cloudflare Workers Builds
+
 backend/**  수정 → GitHub Actions → GHCR → EC2
 
 - **백엔드 컨벤션 → [backend/AGENTS.md](./backend/AGENTS.md)**
