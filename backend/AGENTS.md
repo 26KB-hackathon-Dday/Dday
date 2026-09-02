@@ -261,20 +261,69 @@ src/main/resources/
 
 ---
 
-## 11. Git
+## 11. Git 워크플로우
 
 **브랜치는 `main` 하나.** `develop`을 두지 않는다.
 
+작업 크기에 따라 두 갈래다.
+
+| | 언제 | |
+|---|---|---|
+| **직접 push** | 혼자 만지는 작은 변경 — 버그 수정, 문서, 설정 | 아래 A |
+| **이슈 → PR** | 오래 걸리거나 남과 겹칠 작업 | 아래 B |
+
+### A. 직접 push
+
 ```bash
-git pull --rebase origin main    # merge로 당기면 그래프가 엉킨다
+git pull --rebase origin main   # merge로 당기면 커밋 그래프가 엉킨다
+./gradlew build                 # 빼먹지 말 것 — 깨진 main은 5명을 동시에 멈춘다
 git push origin main
 ```
 
-- 커밋: `type: 한국어 설명` — `feat` `fix` `docs` `chore` `refactor` `test` `style` `ci`
-- 작은 변경은 `main`에 바로 push. 단 **push 전에 `./gradlew build`**
-- 여러 명이 같은 파일을 만질 큰 작업만 브랜치 + PR.
-  **리뷰 승인을 기다리지 않는다** — CI green이면 셀프 머지. 목적은 "누가 뭘 건드리는 중인지" 보이는 것
-- 이슈는 큰 덩어리만. 제목 `[FEAT]` `[BUG]` `[TASK]` `[DOCS]` + 같은 뜻의 라벨
+### B. 이슈 → PR
+
+**① 이슈 등록** — 제목은 `[TYPE] 한국어 설명`. **접두사와 라벨을 1:1로 맞춘다.**
+
+| 접두사 | 라벨 | 템플릿 |
+|---|---|---|
+| `[FEAT]` | `✨ 기능` | `feature_request` |
+| `[BUG]` | `🐛 버그` | `bug_report` |
+| `[TASK]` | `🛠️ 작업` | `task` |
+| `[DOCS]` | `📝 문서` | `docs` |
+
+영역 라벨(`🌐 API` · `🗄️ DB` · `🎨 프론트` · `🧰 인프라` · `🧹 리팩터링`)을 추가로 붙이면
+나중에 훑기 좋다. 막고 있는 이슈면 `🔥 긴급`.
+
+**② 브랜치** — `{type}/{영어-소문자-하이픈}`
+
+```bash
+git checkout main && git pull --rebase origin main
+git checkout -b feat/pocket-budget
+```
+
+**③ 구현 → `./gradlew build`**
+
+**④ 커밋** — `type: 한국어 설명`
+
+```
+feat: 포켓별 월 배분액을 계산한다
+```
+
+`feat` `fix` `docs` `chore` `refactor` `test` `style` `ci`.
+작업과 무관한 파일을 같이 add하지 않는다.
+
+**⑤ push** — `git push -u origin feat/pocket-budget`
+
+**⑥ PR** — 제목 `[#이슈번호] type: 작업 내용`, 본문에 `closes #N`.
+템플릿이 자동으로 붙는다.
+
+> **리뷰 승인을 기다리지 않는다.** CI가 green이면 셀프 머지해도 된다.
+> PR의 목적은 승인이 아니라 **"누가 뭘 건드리는 중인지" 보이게 하는 것**이다.
+> 리뷰가 필요하면 PR 링크를 팀에 직접 던진다.
+
+### 머지 후
+
+브랜치는 지운다. `main`으로 돌아와 `git pull --rebase origin main`으로 맞춘다.
 
 ---
 
