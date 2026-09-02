@@ -4,12 +4,17 @@
 
 ```
 Dday/
-├─ backend/     Spring Boot 3.5 + JPA (Java 17) — 도커 구성과 .env도 여기 있다
+├─ backend/     Spring Boot 3.5 + JPA — 도커 구성 · .env · AGENTS.md 전부 여기
 ├─ frontend/    (스택 미정)
 └─ docs/        설계 메모 · 배포 가이드
 ```
 
-- **코드 컨벤션과 작업 플로우 → [AGENTS.md](./AGENTS.md)** (읽고 시작할 것)
+**컨벤션 문서는 각 영역 안에 둔다.** 백엔드 규칙은 `backend/AGENTS.md`,
+프론트엔드 규칙은 나중에 `frontend/AGENTS.md`. 에이전트(Claude Code · Codex)는
+작업 중인 파일에서 가장 가까운 문서를 읽으므로, 백엔드를 고칠 땐 백엔드 규칙만 걸린다.
+
+- **백엔드 컨벤션 → [backend/AGENTS.md](./backend/AGENTS.md)** (백엔드 작업 전에 읽을 것)
+- **프론트엔드 컨벤션 → `frontend/AGENTS.md`** (스택 정해지면 만든다)
 - **배포 → [docs/deploy.md](./docs/deploy.md)**
 
 **배포된 API**: http://3.36.106.81 ([헬스체크](http://3.36.106.81/health/db) · [Swagger](http://3.36.106.81/swagger-ui.html))
@@ -73,7 +78,7 @@ cd backend && docker compose down -v && docker compose up -d
 | `SwaggerConfig` | springdoc 설정 |
 | `HealthController` | `/health`, `/health/db` |
 
-첫 도메인은 [AGENTS.md §5·§6](./AGENTS.md)의 코드 블록을 복사해서 시작하면 된다.
+첫 도메인은 [backend/AGENTS.md §5·§6](./backend/AGENTS.md)의 코드 블록을 복사해서 시작하면 된다.
 
 ---
 

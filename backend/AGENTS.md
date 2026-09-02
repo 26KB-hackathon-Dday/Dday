@@ -1,8 +1,12 @@
-# Dday
+# Dday — 백엔드
 
 26KB 해커톤(3일) 프로젝트. **프론트엔드와 백엔드가 한 저장소에 있는 모노레포**다.
 
-이 문서가 **코드 컨벤션과 작업 플로우의 정본**이다. `CLAUDE.md`는 이 파일을 가져다 쓴다.
+**이 문서는 `backend/`의 컨벤션 정본이다.** 같은 디렉터리의 `CLAUDE.md`가 이 파일을 가져다 쓴다.
+프론트엔드 규칙은 `frontend/`에 따로 둔다 — 스택이 정해지면 만든다.
+
+> 문서 안의 경로는 **저장소 루트 기준**이다(`backend/src/...`).
+> 링크만 이 파일 위치 기준의 상대 경로다(`../docs/...`).
 
 ```
 Dday/
@@ -371,7 +375,7 @@ git push origin main
 ## 11. 배포
 
 **main에 push하면 GitHub Actions가 자동으로 배포한다.**
-자세한 절차와 EC2 세팅은 [docs/deploy.md](./docs/deploy.md)에 있다.
+자세한 절차와 EC2 세팅은 [docs/deploy.md](../docs/deploy.md)에 있다.
 
 ```
 main push
