@@ -32,6 +32,37 @@ EC2 1대에 docker compose로 MySQL과 백엔드를 같이 올리면 **RDS도, �
 **대가로 포기하는 것**: 무중단 배포(재시작 중 몇 초 끊긴다), DB 자동 백업,
 인스턴스가 죽으면 자동 복구. 3일 데모에는 셋 다 필요 없다.
 
+### RDS를 안 쓰는 이유는 돈이 아니다
+
+`db.t4g.micro`는 서울 리전에서 시간당 약 $0.02다. **3일이면 $1.5 남짓**이라
+비용 차이는 사실상 없다. 안 쓰는 이유는 두 가지다.
+
+- **세팅 시간** — 서브넷 그룹, 보안 그룹(EC2 SG → 3306), `time_zone=Asia/Seoul`을 위한
+  파라미터 그룹, 그리고 `available`이 될 때까지의 대기. 잘 풀려도 20~30분이고,
+  처음 만들면 대개 한 번은 막힌다
+- **실패 지점이 늘어난다** — 첫날 배포가 안 될 때 "앱이 문제인지, 보안 그룹인지,
+  파라미터 그룹인지"를 가리는 데 시간이 든다. compose MySQL은 같은 도커 네트워크 안이라
+  이 층이 통째로 없다
+
+**대신 감수하는 것**: 자동 백업이 없고, 인스턴스를 terminate하면 데이터도 같이 사라진다.
+그리고 MySQL과 JVM이 한 박스의 메모리를 나눠 쓴다(§2 참고).
+
+### 그래도 RDS로 가야 하는 경우
+
+아래 중 하나라도 해당되면 RDS가 맞다.
+
+- **시연용 데이터를 손으로 오래 쌓아야 한다** — 날리면 복구가 안 되는 상황
+- **인스턴스를 껐다 켜거나 타입을 바꿀 계획이 있다** — DB가 EC2 수명에 묶이지 않는다
+- **DB가 실제로 무거워진다** — 대량 데이터 적재나 무거운 집계를 돌릴 계획
+
+바꾸는 건 어렵지 않다. RDS를 만들고 서버 `.env`에 접속정보를 넣은 뒤,
+`docker-compose.prod.yml`에서 `mysql` 서비스와 `depends_on`을 지우고
+`DB_URL`을 RDS 엔드포인트로 바꾸면 끝이다. 앱 코드는 한 줄도 안 바뀐다
+(`application-prod.yml`이 이미 `DB_URL`/`DB_USERNAME`/`DB_PASSWORD` 환경변수만 본다).
+
+> RDS를 만들 때 **파라미터 그룹에서 `time_zone`을 `Asia/Seoul`로 지정하는 걸 잊지 말 것.**
+> 기본값은 UTC라서 `NOW()`가 9시간 이르게 찍힌다.
+
 ---
 
 ## 1. EC2 만들기 (최초 1회)
@@ -48,7 +79,24 @@ EC2 1대에 docker compose로 MySQL과 백엔드를 같이 올리면 **RDS도, �
 | 퍼블릭 IP | 자동 할당 켬 |
 
 > ⚠️ **t3.micro(1 GiB)는 피한다.** MySQL과 JVM을 한 박스에 올리면 메모리가 모자라
-> 빌드나 기동 중에 OOM으로 죽는다. t3.small은 시간당 $0.026이라 3일 써도 $2 남짓이다.
+> 기동 중에 OOM으로 죽는다.
+
+**메모리 배분** — 한 박스에 MySQL과 JVM이 같이 사니까 미리 나눠놨다.
+`docker-compose.prod.yml`의 `mem_limit`이 t3.small(2 GiB) 기준으로 잡혀 있다.
+
+| | 한도 | 비고 |
+|---|---|---|
+| 백엔드 | 900 MB | JVM 힙은 이 값의 75%(=675 MB)로 잡힌다 |
+| MySQL | 640 MB | `performance_schema`를 꺼서 200~400MB를 아꼈다 |
+| OS · 도커 | 나머지 ~500 MB | |
+
+> `mem_limit`을 안 걸면 JVM이 **호스트 전체**의 75%(1.5 GiB)를 힙 최대치로 잡아서
+> MySQL이 쓸 게 안 남는다. 그러면 커널 OOM killer가 둘 중 하나를 죽이는데,
+> 시연 도중에 이게 터지면 손 쓸 방법이 없다.
+
+**여유 있게 가고 싶으면 t3.medium(4 GiB)**을 고른다. 시간당 $0.052라 3일에 $3.7이고,
+**RDS를 붙이는 것과 비용이 비슷한데 세팅할 게 하나도 안 늘어난다.**
+그때는 위 `mem_limit`을 각각 2g / 1g 정도로 올린다.
 
 **보안 그룹**
 
@@ -80,6 +128,13 @@ sudo mkdir -p /usr/local/lib/docker/cli-plugins
 sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
   -o /usr/local/lib/docker/cli-plugins/docker-compose
 sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# 스왑 2GB. 메모리가 순간적으로 튈 때 프로세스가 죽는 대신 느려지고 만다.
+# t3.small처럼 빠듯한 인스턴스에서는 이게 있고 없고가 크다.
+sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab   # 재부팅 후에도 유지
 
 # 그룹 변경을 반영하려면 다시 접속해야 한다
 exit
@@ -211,6 +266,18 @@ docker run -d --name dday-backend --network dday_default -p 80:8080 \
 
 > 퍼블릭 IPv4는 2024-02-01부터 **붙어 있기만 해도** $0.005/hr다.
 > "쓰고 있으면 무료"는 폐지된 규칙이라 비용 계산에서 빼먹기 쉽다.
+
+다른 선택지와 비교하면 (3일 기준):
+
+| 구성 | 3일 비용 | 추가 세팅 |
+|---|---|---|
+| **t3.small + compose MySQL** (현재) | ~$2.4 | 없음 |
+| t3.medium + compose MySQL | ~$4.3 | 없음 (인스턴스 타입만 다름) |
+| t3.small + `db.t4g.micro` RDS | ~$4.2 | 서브넷/보안/파라미터 그룹, 20~30분 |
+
+**여유가 필요하면 RDS보다 t3.medium이 먼저다.** 같은 돈에 세팅이 안 늘어난다.
+RDS는 "데이터가 EC2보다 오래 살아야 할 때" 고르는 것이지, 성능이나 비용 때문이 아니다.
+(정확한 단가는 리전·시점에 따라 바뀌니 확정 전에 AWS 요금 페이지로 확인할 것)
 
 **해커톤이 끝나면 인스턴스를 terminate한다.** stop만 하면 EBS 요금이 계속 나간다.
 
