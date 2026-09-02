@@ -4,17 +4,21 @@
 
 ```
 Dday/
-├─ backend/     Spring Boot 3.5 + JPA — 도커 구성 · .env · AGENTS.md 전부 여기
-├─ frontend/    (스택 미정)
+├─ backend/     Spring Boot 3.5 + JPA  →  AWS EC2 (도커) + RDS
+├─ frontend/    Vue 3 + TypeScript      →  Cloudflare Workers
 └─ docs/        설계 메모 · 배포 가이드
 ```
+
+**한쪽만 고치면 한쪽만 배포된다.** `backend/**`가 바뀌면 GitHub Actions가,
+`frontend/**`가 바뀌면 Cloudflare Workers Builds가 각각 움직인다.
+프론트 한 줄 고쳤다고 백엔드가 재배포되지 않는다.
 
 **컨벤션 문서는 각 영역 안에 둔다.** 백엔드 규칙은 `backend/AGENTS.md`,
 프론트엔드 규칙은 나중에 `frontend/AGENTS.md`. 에이전트(Claude Code · Codex)는
 작업 중인 파일에서 가장 가까운 문서를 읽으므로, 백엔드를 고칠 땐 백엔드 규칙만 걸린다.
 
-- **백엔드 컨벤션 → [backend/AGENTS.md](./backend/AGENTS.md)** (백엔드 작업 전에 읽을 것)
-- **프론트엔드 컨벤션 → `frontend/AGENTS.md`** (스택 정해지면 만든다)
+- **백엔드 컨벤션 → [backend/AGENTS.md](./backend/AGENTS.md)**
+- **프론트엔드 컨벤션 → [frontend/AGENTS.md](./frontend/AGENTS.md)** — API 호출 규칙은 꼭 읽을 것
 - **배포 → [docs/deploy.md](./docs/deploy.md)**
 
 **배포된 API**: http://3.36.106.81 ([헬스체크](http://3.36.106.81/health/db) · [Swagger](http://3.36.106.81/swagger-ui.html))
@@ -84,7 +88,12 @@ cd backend && docker compose down -v && docker compose up -d
 
 ## 프론트엔드
 
-`frontend/`는 아직 비어 있다. 스택이 정해지면 그 안에 프로젝트를 만들고
-[frontend/README.md](./frontend/README.md)를 채운다.
-CORS 허용 출처는 `backend/src/main/resources/application-local.yml`의
-`app.cors.allowed-origins`에 있다 (기본으로 5173·3000이 열려 있다).
+```bash
+cd frontend && npm install && npm run dev    # http://localhost:5173
+```
+
+백엔드도 같이 띄워야 API가 붙는다. 자세한 건 [frontend/README.md](./frontend/README.md).
+
+**프론트는 백엔드 주소를 모른다.** 항상 `/api/...` 상대경로로 부르고,
+로컬은 Vite 프록시가 · 배포는 Cloudflare Worker가 백엔드로 넘겨준다.
+덕분에 환경 분기도 CORS 설정도 없다 — 이유는 [frontend/AGENTS.md §2](./frontend/AGENTS.md).

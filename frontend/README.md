@@ -1,27 +1,35 @@
 # frontend
 
-아직 비어 있다. 스택이 정해지면 이 디렉터리 안에 프로젝트를 만든다.
+Vue 3 + TypeScript + Vite. Cloudflare Workers에 배포된다.
+
+규칙은 [AGENTS.md](./AGENTS.md)에 있다. **API 호출 규칙은 꼭 읽고 시작할 것.**
+
+## 시작하기
 
 ```bash
-# 예 — Vite + React
 cd frontend
-npm create vite@latest . -- --template react-ts
+npm install
+npm run dev          # http://localhost:5173
 ```
 
-## 정할 때 같이 챙길 것
+백엔드도 같이 띄워야 API가 붙는다 (다른 터미널):
 
-- **dev 서버 포트** — 백엔드 CORS 허용 목록에 있어야 한다.
-  `backend/src/main/resources/application-local.yml`의 `app.cors.allowed-origins`.
-  기본으로 `5173`(Vite)과 `3000`(CRA/Next)이 열려 있다. 다른 포트를 쓰면 여기에 추가한다
-- **API 베이스 URL** — 로컬 `http://localhost:8080`, 배포는 EC2 주소.
-  코드에 박지 말고 `.env`(`VITE_API_BASE_URL` 등)로 뺀다
-- **응답 봉투** — 모든 API가 아래 모양으로 온다. axios 인터셉터에서 한 번에 벗기면 편하다
+```bash
+cd backend && docker compose up -d && ./gradlew bootRun
+```
 
-  ```json
-  { "success": true, "code": "MEMBERS_FOUND", "message": "...", "data": { } }
-  ```
+`npm run dev`의 `/api`·`/health` 요청은 Vite가 `localhost:8080`으로 넘겨준다.
 
-  실패도 같은 모양이고 `data`는 `null`이다. 검증 실패일 때만 `errors` 배열이 추가된다.
-  **화면에 띄울 문구는 `message`를 그대로 쓴다** — 백엔드 `ErrorCode` enum이 그 문구의 정본이다
+## 스크립트
 
-- **API 목록** — 백엔드를 띄우고 http://localhost:8080/swagger-ui.html
+| | |
+|---|---|
+| `npm run dev` | 개발 서버 (Vite) |
+| `npm run build` | `dist/`로 빌드 |
+| `npm run cf-dev` | **Worker까지 포함해서** 로컬 실행 — 배포와 같은 경로를 확인할 때 |
+| `npm run deploy` | 빌드 + Cloudflare 배포 (보통은 push하면 자동으로 된다) |
+| `npm run lint` / `format` | ESLint / Prettier |
+
+`npm run dev`와 `npm run cf-dev`의 차이: `dev`는 Vite 프록시를 타고,
+`cf-dev`는 실제 `worker/index.ts`를 타서 **배포된 것과 같은 경로**로 동작한다.
+API 프록시가 이상하면 `cf-dev`로 확인한다.
