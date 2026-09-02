@@ -1,24 +1,5 @@
 # Dday — 백엔드 컨벤션
 
-## 빠른 시작
-
-```bash
-cd backend
-cp .env.sample .env       # 최초 1회
-docker compose up -d      # 로컬 MySQL (빈 DB — 테이블은 앱이 만든다)
-./gradlew bootRun         # http://localhost:8080
-./gradlew build           # 컴파일 + 테스트 (MySQL 필요)
-```
-
-| | |
-|---|---|
-| Swagger | http://localhost:8080/swagger-ui.html |
-| 헬스체크 | `GET /health` (앱) · `GET /health/db` (DB까지) |
-
-3306이 이미 쓰이면 `.env`의 `MYSQL_PORT`만 바꾼다.
-
----
-
 ## 1. 스택
 
 | | |
