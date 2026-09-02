@@ -270,6 +270,10 @@ src/main/resources/
 > ② 깨진 커밋 하나가 나머지 4명을 동시에 멈춘다.
 > **PR은 리뷰를 받으려는 게 아니라 그 둘을 막으려고 있다.**
 
+**규칙이 아니라 서버가 막는다.** GitHub 룰셋이 걸려 있어 `main` 직접 push는 거부된다
+(관리자도 예외 없음). 승인은 0개라 PR만 열면 바로 셀프 머지할 수 있고,
+머지는 **Squash만** 허용된다.
+
 ### 흐름
 
 **① 이슈 등록** — 제목은 `[TYPE] 한국어 설명`. **접두사와 라벨을 1:1로 맞춘다.**
@@ -368,4 +372,6 @@ main push (backend/** 변경 시)
 | 컨트롤러에서 `LazyInitializationException` | DTO 변환을 서비스 안으로 옮긴다 (§7) |
 | 응답 JSON에 필드가 통째로 빠짐 | Response DTO에 `@Getter`가 없다 |
 | `@ModelAttribute` DTO 필드가 전부 `null` | 그 DTO엔 `@Setter`가 필요하다 (§5) |
+| `main`에 push가 거부됨 (`protected branch`) | 정상이다. 브랜치를 파서 PR로 올린다 (§11) |
+| 실수로 `main`에 커밋해버렸다 | `git branch feat/작업이름` → `git reset --hard origin/main` → `git checkout feat/작업이름` |
 | 프론트에서 CORS 에러 | 프론트가 절대 URL로 불렀다. `/api/...` 상대경로를 써야 한다 (`frontend/AGENTS.md`) |
