@@ -1,7 +1,35 @@
 # 배포
 
-**main에 push하면 자동으로 배포된다.** 이 문서는 그 배선이 어떻게 생겼는지와,
-AWS를 처음 한 번 세팅하는 방법이다.
+**main에 push하면 자동으로 배포된다.** 아래는 이미 만들어져 돌고 있는 것이고,
+§1부터는 그 배선을 처음부터 다시 만드는 방법이다.
+
+## 지금 떠 있는 것
+
+| | |
+|---|---|
+| **API** | http://3.36.106.81 · [/health/db](http://3.36.106.81/health/db) · [Swagger](http://3.36.106.81/swagger-ui.html) |
+| EC2 | `dday-app` / `i-008d5a4c6e6272147` / t3.small / `ap-northeast-2a` |
+| RDS | `dday-db` / MySQL 8.4.11 / db.t4g.micro / 파라미터 그룹 `dday-mysql84` (KST) |
+| 보안 그룹 | `dday-ec2-sg` `sg-05e44a69d6daac812` · `dday-rds-sg` `sg-02c97022f7b0cc81d` |
+| 계정 · 리전 | `715975222399` · `ap-northeast-2` |
+
+- **SSH 키는 `~/.ssh/dday-key.pem`** (만든 사람 로컬에만 있다). 팀원이 서버에 붙어야 하면
+  이 파일을 따로 전달한다 — 저장소에 넣지 않는다
+- **RDS 엔드포인트와 마스터 암호는 서버 `~/dday/.env`에 있다.** 이 저장소는 public이라
+  적지 않는다. 필요하면 아래로 꺼낸다
+
+  ```bash
+  aws rds describe-db-instances --db-instance-identifier dday-db \
+    --query 'DBInstances[0].Endpoint.Address' --output text
+  ssh -i ~/.ssh/dday-key.pem ec2-user@3.36.106.81 'cat ~/dday/.env'
+  ```
+
+- 노트북에서 GUI 클라이언트로 RDS에 붙으려면 **`dday-rds-sg`의 3306에 본인 IP `/32`를
+  추가**해야 한다 (기본은 만든 사람 IP만 열려 있다)
+
+---
+
+이 문서는 그 배선이 어떻게 생겼는지와, AWS를 처음 한 번 세팅하는 방법이다.
 
 ```
 main push
@@ -124,10 +152,24 @@ DB가 이 박스에 없으니 t3.small로 충분하다. 앱 컨테이너 하나�
 
 | 포트 | 소스 | 용도 |
 |---|---|---|
-| 22 | 내 IP | SSH |
+| 22 | **0.0.0.0/0** | SSH — GitHub Actions 러너가 배포하러 들어온다 |
 | 80 | 0.0.0.0/0 | API |
 
 이 보안 그룹 ID가 §1의 RDS 인바운드 소스로 들어간다.
+
+> ⚠️ **22를 전체 개방한 이유가 있다.** GitHub Actions 러너는 IP가 매번 바뀌고,
+> GitHub이 공개하는 러너 대역은 4천 개가 넘어서 보안 그룹(규칙 60개 한도)에 못 넣는다.
+> 내 IP만 열어두면 배포가 `dial tcp :22: i/o timeout`으로 실패한다 —
+> 실제로 첫 배포가 이걸로 한 번 죽었다.
+>
+> **그래도 괜찮은 이유**: AL2023 기본값이 키 인증 전용이다(`sshd -T`로 확인:
+> `passwordauthentication no`, `kbdinteractiveauthentication no`). 봇이 두드려도
+> 대입할 암호가 없다. 3일 뒤 terminate할 인스턴스이기도 하다.
+>
+> 그래도 닫아두고 싶으면 대안은 **배포 잡이 시작할 때 러너 IP로 22를 열고 끝나면
+> 닫는 것**이다. `ec2:AuthorizeSecurityGroupIngress`/`Revoke...` 두 권한만 가진 IAM
+> 사용자와 액세스 키 2개가 필요하고, **잡이 중간에 죽으면 규칙이 열린 채 남는**
+> 실패 모드가 새로 생긴다. 3일 동안 그걸 지켜볼 사람이 없어서 채택하지 않았다.
 
 ---
 

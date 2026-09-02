@@ -14,6 +14,9 @@ Dday/
 - **코드 컨벤션과 작업 플로우 → [AGENTS.md](./AGENTS.md)** (읽고 시작할 것)
 - **배포 → [docs/deploy.md](./docs/deploy.md)**
 
+**배포된 API**: http://3.36.106.81 ([헬스체크](http://3.36.106.81/health/db) · [Swagger](http://3.36.106.81/swagger-ui.html))
+main에 push하면 자동으로 갱신된다.
+
 ---
 
 ## 시작하기
