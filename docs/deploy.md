@@ -347,7 +347,32 @@ stop만 하면 스토리지 요금이 계속 나가고, **RDS는 stop해도 7일
 
 ---
 
-## 9. 이 구성이 안 하는 것
+## 9. 프론트엔드(Cloudflare)와의 접점
+
+프론트는 `https://dday.26kb.workers.dev`에서 뜨고, `/api/*`와 `/health`를
+Cloudflare Worker가 이 EC2로 넘긴다. 브라우저는 백엔드를 직접 부르지 않는다.
+
+Worker가 바라보는 주소는 `frontend/wrangler.jsonc`의 `BACKEND_ORIGIN`에 있다.
+
+> ⚠️ **거기에 생 IP를 넣으면 안 된다.** 배포된 Worker가 IP로 fetch하면 Cloudflare가
+> `error code: 1003 Direct IP access not allowed`로 403을 준다. **EC2 퍼블릭 DNS 이름**
+> (`ec2-3-36-106-81.ap-northeast-2.compute.amazonaws.com`)을 쓴다.
+> 로컬 `wrangler dev`에서는 IP로도 잘 되기 때문에 배포하기 전엔 드러나지 않는다.
+
+**이 호스트명에는 IP가 박혀 있다.** 인스턴스를 stop/start하면 IP가 바뀌고 이름도 바뀌어
+프론트에서 API가 통째로 죽는다. 인스턴스를 껐다 켤 계획이 있으면 **Elastic IP를 붙여
+고정한다** — 실행 중인 인스턴스에 붙어 있는 동안의 요금은 지금 자동 할당 IP와 같다
+(둘 다 $0.005/hr). 붙이면 DNS 이름도 같이 고정된다.
+
+```bash
+aws ec2 allocate-address --domain vpc
+aws ec2 associate-address --instance-id i-008d5a4c6e6272147 --allocation-id {위 결과}
+# 그 뒤 wrangler.jsonc의 BACKEND_ORIGIN과 GitHub Secret EC2_HOST를 새 주소로 고친다
+```
+
+---
+
+## 10. 이 구성이 안 하는 것
 
 - **HTTPS가 없다.** 도메인이 없으면 인증서를 받을 수 없다
 

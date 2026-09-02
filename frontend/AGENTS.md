@@ -135,3 +135,6 @@ push 전에 `git pull --rebase origin main`.
   이게 `/`면 빌드가 `Could not read package.json`으로 죽는다 (실제로 첫 빌드가 이걸로 실패했다)
 - **Build watch paths는 `frontend/*`** (저장소 루트 기준). 백엔드만 고친 커밋에
   프론트가 재빌드되지 않게 한다. GitHub Actions 쪽에 건 `paths: backend/**`의 반대쪽 짝이다
+- **`BACKEND_ORIGIN`에 생 IP를 넣으면 안 된다.** 배포된 Worker가 IP로 fetch하면
+  Cloudflare가 `1003 Direct IP access not allowed`로 막는다. EC2 퍼블릭 DNS 이름을 쓴다.
+  **로컬 `wrangler dev`에서는 IP로도 동작해서 배포 전엔 안 드러난다**
