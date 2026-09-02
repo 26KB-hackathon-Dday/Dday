@@ -1,0 +1,45 @@
+# 모든 프로파일 공통 설정. 환경마다 달라지는 값(DB 접속정보, CORS 출처)은
+# application-{local,prod}.yml에만 둔다.
+spring:
+  application:
+    name: dday
+  profiles:
+    # 프로파일을 지정하지 않고 띄우면 local이다. 운영은 SPRING_PROFILES_ACTIVE=prod로 덮는다.
+    default: local
+
+  jackson:
+    time-zone: Asia/Seoul
+    serialization:
+      # LocalDateTime을 [2026,9,2,10,0] 배열이 아니라 ISO-8601 문자열로 내보낸다.
+      # 끄면 프론트가 Date로 파싱하지 못한다.
+      write-dates-as-timestamps: false
+    default-property-inclusion: always
+
+  jpa:
+    # 컨트롤러/뷰까지 영속성 컨텍스트를 열어두지 않는다. 켜두면 커넥션을 요청 끝까지
+    # 붙들고 있어서 부하가 조금만 올라가도 풀이 마른다. 대신 지연 로딩은 트랜잭션(서비스)
+    # 안에서 끝내야 하고, 밖에서 건드리면 LazyInitializationException이 난다 — 의도된 동작이다.
+    open-in-view: false
+    hibernate:
+      # 엔티티를 고치면 스키마가 따라온다. 해커톤 3일 동안은 이게 가장 빠르다.
+      # 대가: 컬럼 삭제/타입 변경은 반영되지 않고 조용히 남는다. 이상해지면
+      # `docker compose down -v && docker compose up -d`로 DB를 새로 만든다.
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        # N+1을 한 방에 없애주진 않지만, 지연 로딩이 터질 때 쿼리 수를 100개에서 10개로 줄인다.
+        default_batch_fetch_size: 100
+
+server:
+  port: 8080
+  # 에러 응답은 GlobalExceptionHandler가 만든다. 스프링 기본 흰 화면(/error)을 끈다.
+  error:
+    whitelabel:
+      enabled: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha

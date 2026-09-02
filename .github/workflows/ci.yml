@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  # main을 골라 수동 실행하면 이미지 빌드와 배포까지 그대로 이어진다.
+  # EC2를 새로 띄운 직후 배선만 확인하거나, 코드 변경 없이 재배포할 때 쓴다.
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # main에서는 취소하지 않는다. 이미지 push와 서버 배포 사이에서 죽으면
+  # 서버가 옛 이미지를 물고 있는 어중간한 상태가 된다.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  # GHCR 경로는 전부 소문자여야 한다. ${{ github.repository }}는 대문자가 섞여 있어(26KB.../Dday)
+  # 그대로 쓰면 docker push가 거부한다 — 그래서 박아둔다.
+  IMAGE: ghcr.io/26kb-hackathon-dday/dday-backend
+
+jobs:
+  # ── 1. 컴파일 + 테스트 ────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+
+    # .env.sample과 동일한 로컬 개발 전용 값이다 (운영 비밀값 아님).
+    # .env.sample을 고치면 여기도 함께 맞춘다.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root1234
+          MYSQL_DATABASE: dday
+          MYSQL_USER: dday
+          MYSQL_PASSWORD: dday1234
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot1234"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # 프로파일 기본값이 local이라 설정을 갈아끼우는 단계가 없다.
+      # application-local.yml의 기본값이 위 service 컨테이너와 짝이 맞는다.
+      - name: Build & test
+        working-directory: backend
+        run: ./gradlew build --no-daemon
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: backend/build/reports/tests/test
+
+  # ── 2. 도커 이미지 빌드 + GHCR push ───────────────────────────────────────
+  image:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # GITHUB_TOKEN으로 충분하다. PAT를 따로 만들 필요 없다.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          # latest는 서버가 늘 바라보는 태그, sha 태그는 "어느 커밋이 떠 있나"를 되짚고
+          # 롤백할 때 쓴다.
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 3. EC2 배포 ───────────────────────────────────────────────────────────
+  # 저장소 Variable DEPLOY_ENABLED=true 일 때만 돈다.
+  # EC2를 아직 안 만들었으면 이 잡은 통째로 건너뛴다 — main push가 빨갛게 뜨지 않는다.
+  deploy:
+    needs: image
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 서버에 저장소를 클론해두지 않는다. 배포에 필요한 건 compose 파일 하나뿐이라
+      # 그것만 올린다.
+      - name: Copy compose file to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: /home/${{ secrets.EC2_USER }}/dday
+
+      - name: Pull & restart
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/${{ secrets.EC2_USER }}/dday
+            # 공개 이미지라 서버에서 GHCR 로그인이 필요 없다.
+            docker compose -f docker-compose.prod.yml pull backend
+            docker compose -f docker-compose.prod.yml up -d
+            # 태그가 바뀌면서 참조를 잃은 옛 이미지를 정리한다. t3.micro는 디스크가 금방 찬다.
+            docker image prune -f
+
+      - name: Health check
+        run: |
+          # 앱이 뜨는 데 시간이 걸린다. 최대 90초까지 기다린다.
+          for i in $(seq 1 18); do
+            if curl -fsS --max-time 5 "http://${{ secrets.EC2_HOST }}/health/db"; then
+              echo ""; echo "배포 성공"; exit 0
+            fi
+            echo "대기 중... ($i/18)"; sleep 5
+          done
+          echo "::error::/health/db 가 90초 안에 응답하지 않았다. EC2에서 docker compose logs backend 를 확인할 것"
+          exit 1

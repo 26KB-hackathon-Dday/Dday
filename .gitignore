@@ -1,0 +1,33 @@
+# ── Java / Gradle ──────────────────────────────────────────────────────────
+*.class
+*.log
+build/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+out/
+bin/
+
+# ── 환경 / 비밀값 ───────────────────────────────────────────────────────────
+.env
+.env.local
+*.pem
+*.key
+
+# ── IDE ────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.DS_Store
+
+# ── 프론트엔드 (스택 정해지면 필요한 만큼 추가) ─────────────────────────────
+node_modules/
+dist/
+.next/
+.nuxt/
+coverage/
+*.tsbuildinfo

@@ -1,0 +1,27 @@
+# 로컬 개발용. docker-compose.yml의 mysql 서비스와 짝이 맞는 값이다.
+# 여기 적힌 비밀번호는 로컬 전용이며 운영 값이 아니다.
+spring:
+  datasource:
+    # ${VAR:기본값} — 환경변수가 있으면 그 값을, 없으면 기본값을 쓴다.
+    # ./gradlew bootRun / test 는 루트 .env를 읽어 이 변수들을 채운다(build.gradle 참고).
+    # IDE에서 직접 실행하면 .env를 안 읽으므로 아래 기본값이 쓰인다 — 포트를 바꿨다면
+    # IDE 실행 구성에도 MYSQL_PORT를 넣어야 한다.
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:dday}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:dday}
+    password: ${MYSQL_PASSWORD:dday1234}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.dday: debug
+    # 바인딩 파라미터까지 보고 싶을 때만 켠다. 기본은 끈다 — 로그가 너무 시끄러워진다.
+    # org.hibernate.orm.jdbc.bind: trace
+
+app:
+  cors:
+    # 프론트 dev 서버. 스택이 정해지면 실제 포트만 여기 추가한다.
+    # (Vite 5173 / CRA·Next 3000)
+    allowed-origins: http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000

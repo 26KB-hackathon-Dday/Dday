@@ -1,0 +1,81 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.16'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.dday'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+// 루트 .env를 읽어 bootRun/test 환경변수로 넘긴다.
+// 개발자마다 MySQL 포트가 다를 수 있는데(3306이 이미 쓰이는 경우가 흔하다),
+// .env 한 곳만 고치면 docker compose와 앱이 같은 값을 보게 하려는 배선이다.
+// 파일이 없으면 조용히 넘어가고 application-local.yml의 기본값이 쓰인다.
+def dotenv = { ->
+    def f = rootProject.file('../.env')
+    def map = [:]
+    if (f.exists()) {
+        f.eachLine { line ->
+            line = line.trim()
+            if (line && !line.startsWith('#') && line.contains('=')) {
+                def i = line.indexOf('=')
+                map[line.substring(0, i).trim()] = line.substring(i + 1).trim()
+            }
+        }
+    }
+    return map
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Swagger UI: http://localhost:8080/swagger-ui.html
+    // 프론트가 API 모양을 훑는 보조 수단이다. 정본은 코드다 (AGENTS.md §5).
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('bootRun') {
+    environment dotenv()
+}
+
+tasks.named('test') {
+    environment dotenv()
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+// 배포 이미지에 들어가는 건 bootJar 하나다. plain jar는 만들지 않는다.
+tasks.named('jar') {
+    enabled = false
+}

@@ -1,0 +1,48 @@
+# 로컬 개발용. MySQL만 띄우고, 백엔드는 IDE나 ./gradlew bootRun으로 직접 돌린다.
+# (앱까지 컨테이너에 넣으면 코드 한 줄 고칠 때마다 이미지를 다시 구워야 한다)
+#
+#   docker compose up -d          DB 기동
+#   docker compose down -v        DB를 데이터까지 통째로 날리고 새로 시작
+#
+# 서버 배포용 구성은 docker-compose.prod.yml에 따로 있다.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: dday-mysql
+    restart: unless-stopped
+
+    # 서버 타임존을 KST로 고정한다.
+    # 안 하면 time_zone=SYSTEM -> UTC라 NOW()/CURRENT_TIMESTAMP가 앱보다 9시간 이르다.
+    # JDBC URL의 serverTimezone은 드라이버의 값 해석만 바꿀 뿐 서버 세션을 바꾸지 않는다.
+    #
+    # 이름(Asia/Seoul) 대신 오프셋(+09:00)을 쓰는 이유: 이름을 쓰려면 mysql.time_zone_* 테이블이
+    # 적재돼 있어야 하는데 공식 이미지는 비워 두므로 mysqld가 기동에 실패한다.
+    # 한국은 서머타임이 없어 +09:00이 항상 정확하다.
+    #
+    # ⚠️ 이 값을 바꿔도 이미 떠 있는 컨테이너에는 반영되지 않는다. down -v 후 다시 올려야 한다.
+    command: --default-time-zone=+09:00
+
+    environment:
+      TZ: Asia/Seoul
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root1234}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dday}
+      MYSQL_USER: ${MYSQL_USER:-dday}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dday1234}
+
+    ports:
+      # 3306이 이미 쓰이고 있으면 .env의 MYSQL_PORT만 바꾼다.
+      # 그때는 application-local.yml의 datasource URL 포트도 같이 고쳐야 한다.
+      - "${MYSQL_PORT:-3306}:3306"
+
+    # 스키마는 넣지 않는다. 앱이 뜰 때 JPA ddl-auto=update가 엔티티를 보고 만든다.
+    volumes:
+      - dday-mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root1234}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dday-mysql-data:

@@ -1,0 +1,55 @@
+# EC2 서버용. 백엔드까지 컨테이너로 띄운다.
+#
+# 백엔드 이미지는 서버에서 빌드하지 않고 GitHub Actions가 구워 GHCR에 올린 걸 받아 쓴다
+# (t3.micro에서 gradle 빌드를 돌리면 메모리가 터지거나 몇 분씩 걸린다).
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# 서버의 .env에 DB_PASSWORD / MYSQL_ROOT_PASSWORD / CORS_ALLOWED_ORIGINS를 채워둔다.
+# 이 파일과 .env는 저장소에서 서버로 복사되며, .env는 커밋하지 않는다.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: dday-mysql
+    restart: unless-stopped
+    command: --default-time-zone=+09:00
+    environment:
+      TZ: Asia/Seoul
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD 를 .env에 넣어야 한다}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dday}
+      MYSQL_USER: ${MYSQL_USER:-dday}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD 를 .env에 넣어야 한다}
+    volumes:
+      - dday-mysql-data:/var/lib/mysql
+    # 포트를 호스트로 열지 않는다. 백엔드 컨테이너만 도커 네트워크 안에서 붙으면 되고,
+    # 3306을 인터넷에 노출하면 봇이 바로 스캔해 들어온다.
+    expose:
+      - "3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    # main에 머지되면 Actions가 이 태그를 새로 밀어넣는다.
+    image: ghcr.io/26kb-hackathon-dday/dday-backend:latest
+    container_name: dday-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Seoul
+      SPRING_PROFILES_ACTIVE: prod
+      # 호스트명 mysql은 위 서비스 이름이다. 도커 네트워크가 알아서 이름을 풀어준다.
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-dday}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: ${MYSQL_USER:-dday}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+    ports:
+      - "80:8080"
+
+volumes:
+  dday-mysql-data:
