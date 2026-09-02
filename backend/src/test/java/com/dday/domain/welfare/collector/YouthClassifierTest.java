@@ -40,25 +40,25 @@ class YouthClassifierTest {
     }
 
     @Test
-    void 청년월세_자동승인_5점() {
+    void 청년월세_자동승인() {
         Classification c = classify("WLF00004661");
         assertThat(c.disposition()).isEqualTo(Disposition.STORED);
         assertThat(c.status()).isEqualTo(YouthStatus.AUTO_APPROVED);
-        assertThat(c.score()).isEqualTo(5); // R2+2, R3+3
+        assertThat(c.score()).isEqualTo(7); // R2+2, R3+3, R6+2(servNm "청년월세")
     }
 
     @Test
-    void 청년내일저축계좌_자동승인_3점() {
+    void 청년내일저축계좌_자동승인() {
         Classification c = classify("WLF00000060");
         assertThat(c.status()).isEqualTo(YouthStatus.AUTO_APPROVED);
-        assertThat(c.score()).isEqualTo(3); // R3+3
+        assertThat(c.score()).isEqualTo(5); // R3+3, R6+2(servNm "청년내일저축계좌")
     }
 
     @Test
-    void 햇살론youth_검토큐_2점() {
+    void 햇살론youth_검토큐_2점_servNm은_youth라_R6없음() {
         Classification c = classify("WLF00001076");
         assertThat(c.status()).isEqualTo(YouthStatus.REVIEW_QUEUE);
-        assertThat(c.score()).isEqualTo(2); // R3+3, R5-1 (대학생, 청년 나열)
+        assertThat(c.score()).isEqualTo(2); // R3+3, R5-1 (대학생, 청년 나열). servNm "햇살론youth"는 "청년" 아님
     }
 
     @Test

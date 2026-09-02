@@ -63,8 +63,11 @@ API 스펙·필드 의미·룰의 근거는 [welfare-api/NOTES.md](./welfare-api
 | Rule 4 | `trgterIndvdlArray` 2개 이상 | -3 |
 | Rule 5 | `servDgst` 가 `청년`으로 시작 | +1 |
 | Rule 5 | `servDgst` 의 `청년` 이 나열의 일부 | -1 |
+| Rule 6 | `servNm` 에 `청년` 포함 | +2 |
 
 **임계값: ≥3 자동승인 · 0~2 검토큐 · <0 제외(미저장).**
+
+28건 전수: STRONG 3 / 승인 8 / 큐 4 / 제외 4 / 사전필터탈락 9 → **저장 15**. (`YouthClassifierFullSetTest`)
 
 ### Rule 5 나열 판정 (결정론적 근사)
 
@@ -160,8 +163,8 @@ com.dday.domain.welfare
 │  ├─ YouthClassifier.java       사전필터 + 룰 조합 + 판정
 │  ├─ Classification.java        결과(disposition, status, score, trace)
 │  └─ rule/
-│     ├─ YouthPreFilter.java  Rule1StrongKeyword  Rule2JurOrgName
-│     ├─ Rule3LifeStage  Rule4TargetCount  Rule5DgstPosition
+│     ├─ YouthPreFilter  Rule1StrongKeyword  Rule2JurOrgName  Rule3LifeStage
+│     ├─ Rule4TargetCount  Rule5DgstPosition  Rule6ServNameKeyword
 │     └─ RuleHit.java
 ├─ batch/
 │  ├─ WelfareCollectJobConfig.java   Job + Step 1

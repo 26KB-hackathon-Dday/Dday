@@ -6,6 +6,7 @@ import com.dday.domain.welfare.collector.rule.Rule2JurOrgName;
 import com.dday.domain.welfare.collector.rule.Rule3LifeStage;
 import com.dday.domain.welfare.collector.rule.Rule4TargetCount;
 import com.dday.domain.welfare.collector.rule.Rule5DgstPosition;
+import com.dday.domain.welfare.collector.rule.Rule6ServNameKeyword;
 import com.dday.domain.welfare.collector.rule.RuleHit;
 import com.dday.domain.welfare.collector.rule.YouthPreFilter;
 import com.dday.domain.welfare.entity.YouthStatus;
@@ -49,7 +50,8 @@ public class YouthClassifier {
                 Rule2JurOrgName.apply(jurOrgNm),
                 Rule3LifeStage.apply(item.getLifeArray()),
                 Rule4TargetCount.apply(item.getTrgterIndvdlArray()),
-                Rule5DgstPosition.apply(servDgst)
+                Rule5DgstPosition.apply(servDgst),
+                Rule6ServNameKeyword.apply(servNm)
         );
 
         int score = 0;
