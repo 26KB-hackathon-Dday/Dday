@@ -5,29 +5,6 @@
 
 ---
 
-## 빠른 시작
-
-```bash
-cd frontend
-npm install
-npm run dev          # http://localhost:5173
-```
-
-백엔드도 같이 띄워야 API가 붙는다 (다른 터미널에서 `cd backend && ./gradlew bootRun`).
-
-| 스크립트 | |
-|---|---|
-| `npm run dev` | 개발 서버 (Vite) |
-| `npm run cf-dev` | **Worker까지 포함**해서 로컬 실행 — 배포와 같은 경로 |
-| `npm run build` | `dist/`로 빌드 |
-| `npm run deploy` | 손으로 배포 (`wrangler login` 필요) |
-| `npm run lint` · `format` | ESLint · Prettier |
-
-`dev`는 Vite 프록시를 타고, `cf-dev`는 실제 `worker/index.ts`를 탄다.
-**API 프록시가 이상하면 `cf-dev`로 확인한다.**
-
----
-
 ## 1. 스택
 
 | | |
@@ -136,6 +113,9 @@ frontend/
 
 **`frontend/**`가 바뀐 채로 main에 push되면 Cloudflare Workers Builds가 자동 배포한다.**
 백엔드 GitHub Actions엔 `paths: backend/**` 필터가 걸려 있어 이때 돌지 않는다(반대도 같다).
+
+`npm run dev`는 Vite 프록시를 타므로 Worker 코드를 타지 않는다.
+**API 프록시가 의심되면 `npm run cf-dev`** — 실제 `worker/index.ts`로 배포와 같은 경로를 돈다.
 
 Cloudflare 쪽 설정 — 건드릴 일은 거의 없지만 알고는 있어야 한다.
 
