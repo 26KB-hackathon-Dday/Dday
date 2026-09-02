@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  <wantedList>
+    <totalCount>28</totalCount>
+    <pageNo>1</pageNo>
+    <numOfRows>10</numOfRows>
+    <resultCode>0</resultCode>
+    <resultMessage>SUCCESS</resultMessage>
+    <servList>
+      <inqNum>12572988</inqNum>
+      <intrsThemaArray>주거</intrsThemaArray>
+      <jurMnofNm>국토교통부</jurMnofNm>
+      <jurOrgNm>청년주거정책과</jurOrgNm>
+      <lifeArray>청년</lifeArray>
+      <onapPsbltYn>Y</onapPsbltYn>
+      <rprsCtadr>1599-0001</rprsCtadr>
+      <servDgst>고금리·고물가 등으로 경제적 어려움을 겪는 청년층의 주거비 부담 경감을 위해 월 최대20만원씩 최장 24개월간 월세를 지원합니다(생애1회).
+  ※ '26년 신규 신청기간: 3.30(월) 09:00 ~ 5.29(금) 16:00까지</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004661&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00004661</servId>
+      <servNm>청년월세 지원사업</servNm>
+      <sprtCycNm>월</sprtCycNm>
+      <srvPvsnNm>현금지급</srvPvsnNm>
+      <svcfrstRegTs>20220413</svcfrstRegTs>
+      <trgterIndvdlArray>저소득</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>12861023</inqNum>
+      <intrsThemaArray>서민금융</intrsThemaArray>
+      <jurMnofNm>보건복지부</jurMnofNm>
+      <jurOrgNm>자활정책과</jurOrgNm>
+      <lifeArray>청년</lifeArray>
+      <onapPsbltYn>Y</onapPsbltYn>
+      <rprsCtadr>129</rprsCtadr>
+      <servDgst>근로빈곤층 청년의 생계수급자 등으로의 하락을 사전에 예방하고, 일하는 중간계층 청년이 사회에 안착할 수 있도록 자산형성을 지원합니다. (2026년 모집기간: '26.5.4.(월) ~ '26.5.20.(수))</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00000060&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00000060</servId>
+      <servNm>청년내일저축계좌</servNm>
+      <sprtCycNm>월</sprtCycNm>
+      <srvPvsnNm>현금지급</srvPvsnNm>
+      <svcfrstRegTs>20210903</svcfrstRegTs>
+      <trgterIndvdlArray>저소득</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>180101</inqNum>
+      <intrsThemaArray>주거</intrsThemaArray>
+      <jurMnofNm>국토교통부</jurMnofNm>
+      <jurOrgNm>주거복지지원과</jurOrgNm>
+      <lifeArray>청년,중장년,노년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>1600-1004</rprsCtadr>
+      <servDgst>청년, (예비)신혼부부, 한부모가족, 대학생 등 젊은층의 주거 안정을 위해  대중교통이 편리하거나 직주근접이 가능한 부지에 주변 시세보다 저렴하게 공공임대주택을 공급합니다.</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004649&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00004649</servId>
+      <servNm>행복주택 공급</servNm>
+      <sprtCycNm>1회성</sprtCycNm>
+      <srvPvsnNm>현물지급</srvPvsnNm>
+      <svcfrstRegTs>20210904</svcfrstRegTs>
+      <trgterIndvdlArray>저소득,한부모·조손</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>70474</inqNum>
+      <intrsThemaArray>주거</intrsThemaArray>
+      <jurMnofNm>국토교통부</jurMnofNm>
+      <jurOrgNm>주거복지지원과</jurOrgNm>
+      <lifeArray>청년,노년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>1600-1004</rprsCtadr>
+      <servDgst>최저소득 계층, 저소득 서민, 젊은 층 및 장애인·국가유공자 등 사회 취약계층 등의 주거안정을 위해 공공임대주택을 공급합니다.</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004663&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00004663</servId>
+      <servNm>통합공공임대</servNm>
+      <sprtCycNm>수시</sprtCycNm>
+      <srvPvsnNm>현물대여</srvPvsnNm>
+      <svcfrstRegTs>20220603</svcfrstRegTs>
+      <trgterIndvdlArray>다문화·탈북민,다자녀,보훈대상자,장애인,저소득,한부모·조손</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>24700</inqNum>
+      <intrsThemaArray>생활지원,서민금융</intrsThemaArray>
+      <jurMnofNm>금융위원회</jurMnofNm>
+      <jurOrgNm>서민금융과</jurOrgNm>
+      <lifeArray>청년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>1397</rprsCtadr>
+      <servDgst>금융취약계층인 대학생, 청년의 금융애로를 해소하여 학업 및 취업에 전념, 향후 제도권 금융으로 안착할 수 있도록 지원합니다.</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001076&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00001076</servId>
+      <servNm>서민금융 활성화 지원(햇살론youth 보증사업)</servNm>
+      <sprtCycNm>1회성</sprtCycNm>
+      <srvPvsnNm>현금대여(융자)</srvPvsnNm>
+      <svcfrstRegTs>20210903</svcfrstRegTs>
+    </servList>
+    <servList>
+      <inqNum>54732</inqNum>
+      <intrsThemaArray>주거</intrsThemaArray>
+      <jurMnofNm>국토교통부</jurMnofNm>
+      <jurOrgNm>주거복지지원과</jurOrgNm>
+      <lifeArray>청년,중장년,노년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>1600-1004</rprsCtadr>
+      <servDgst>도심 내 기초생활수급자 등 저소득층이 현 생활권에서 거주할 수 있도록 공공주택사업자가 다가구 등 기존주택 등을 매입하여 개·보수 또는 리모델링하여 저렴하게 공급하여 주거안정 을 도모합니다. </servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00000062&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00000062</servId>
+      <servNm>기존주택등 매입임대주택 지원사업</servNm>
+      <sprtCycNm>수시</sprtCycNm>
+      <srvPvsnNm>현물지급</srvPvsnNm>
+      <svcfrstRegTs>20210903</svcfrstRegTs>
+      <trgterIndvdlArray>다자녀,장애인,저소득,한부모·조손</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>37480</inqNum>
+      <intrsThemaArray>교육,서민금융</intrsThemaArray>
+      <jurMnofNm>교육부</jurMnofNm>
+      <jurOrgNm>청년장학지원과</jurOrgNm>
+      <lifeArray>청년,중장년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>1599-2000</rprsCtadr>
+      <servDgst>대학 학자금 마련에 어려움을 겪는 학생들에게 저리의 학자금대출을 지원하여 취업 후 일정기준의 소득이 발생한 때부터 상환할 수 있도록 합니다.</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003277&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00003277</servId>
+      <servNm>취업 후 상환 학자금대출</servNm>
+      <sprtCycNm>반기</sprtCycNm>
+      <srvPvsnNm>현금대여(융자)</srvPvsnNm>
+      <svcfrstRegTs>20210903</svcfrstRegTs>
+      <trgterIndvdlArray>저소득</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>258893</inqNum>
+      <intrsThemaArray>생활지원,일자리</intrsThemaArray>
+      <jurMnofNm>고용노동부</jurMnofNm>
+      <jurOrgNm>국민취업지원기획팀</jurOrgNm>
+      <lifeArray>청소년,청년,중장년,노년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>1350</rprsCtadr>
+      <servDgst>저소득 구직자, 청년, 경력단절여성 등 취업 취약계층을 대상으로 취업지원서비스와 생계지원을 함께 제공합니다.</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003245&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00003245</servId>
+      <servNm>국민취업지원제도</servNm>
+      <sprtCycNm>월</sprtCycNm>
+      <srvPvsnNm>현금지급,프로그램/서비스(서비스)</srvPvsnNm>
+      <svcfrstRegTs>20210903</svcfrstRegTs>
+      <trgterIndvdlArray>저소득</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>26366</inqNum>
+      <intrsThemaArray>생활지원</intrsThemaArray>
+      <jurMnofNm>문화체육관광부</jurMnofNm>
+      <jurOrgNm>예술인권리보호과</jurOrgNm>
+      <lifeArray>청년,중장년,노년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>02-3668-0200</rprsCtadr>
+      <servDgst> 예술인들이 예술 외적인 요인으로 인해 예술활동을 중단하는 상황에 이르지 않도록 '예술활동 준비 단계'를 지원합니다.</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003199&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00003199</servId>
+      <servNm>예술활동준비금 지원</servNm>
+      <sprtCycNm>년</sprtCycNm>
+      <srvPvsnNm>현금지급</srvPvsnNm>
+      <svcfrstRegTs>20210903</svcfrstRegTs>
+      <trgterIndvdlArray>저소득</trgterIndvdlArray>
+    </servList>
+    <servList>
+      <inqNum>199576</inqNum>
+      <intrsThemaArray>주거,서민금융</intrsThemaArray>
+      <jurMnofNm>국토교통부</jurMnofNm>
+      <jurOrgNm>주택기금과</jurOrgNm>
+      <lifeArray>청년,중장년,노년</lifeArray>
+      <onapPsbltYn>N</onapPsbltYn>
+      <rprsCtadr>1566-9009</rprsCtadr>
+      <servDgst>월세부담이 큰 사회초년생 등의 주택월세자금 융자를 통해 주거안정을 지원합니다.</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001063&amp;wlfareInfoReldBztpCd=01</servDtlLink>
+      <servId>WLF00001063</servId>
+      <servNm>주거안정 월세대출</servNm>
+      <sprtCycNm>월</sprtCycNm>
+      <srvPvsnNm>현금대여(융자)</srvPvsnNm>
+      <svcfrstRegTs>20210903</svcfrstRegTs>
+    </servList>
+  </wantedList>
