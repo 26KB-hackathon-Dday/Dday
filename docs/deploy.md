@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| **API** | http://3.36.106.81 · [/health/db](http://3.36.106.81/health/db) · [Swagger](http://3.36.106.81/swagger-ui.html) |
+| **API** | http://43.203.100.35 · [/health/db](http://43.203.100.35/health/db) · [Swagger](http://43.203.100.35/swagger-ui.html) |
 | EC2 | `dday-app` / `i-008d5a4c6e6272147` / t3.small / `ap-northeast-2a` |
 | RDS | `dday-db` / MySQL 8.4.11 / db.t4g.micro / 파라미터 그룹 `dday-mysql84` (KST) |
 | 보안 그룹 | `dday-ec2-sg` `sg-05e44a69d6daac812` · `dday-rds-sg` `sg-02c97022f7b0cc81d` |
@@ -21,7 +21,7 @@
   ```bash
   aws rds describe-db-instances --db-instance-identifier dday-db \
     --query 'DBInstances[0].Endpoint.Address' --output text
-  ssh -i ~/.ssh/dday-key.pem ec2-user@3.36.106.81 'cat ~/dday/.env'
+  ssh -i ~/.ssh/dday-key.pem ec2-user@43.203.100.35 'cat ~/dday/.env'
   ```
 
 - 노트북에서 GUI 클라이언트로 RDS에 붙으려면 **`dday-rds-sg`의 3306에 본인 IP `/32`를
@@ -342,8 +342,18 @@ docker compose -f docker-compose.prod.yml up -d
 > "쓰고 있으면 무료"는 폐지된 규칙이라 계산에서 빼먹기 쉽다.
 > RDS를 퍼블릭으로 열었기 때문에 여기서 2개를 쓴다.
 
-**해커톤이 끝나면 EC2는 terminate, RDS는 최종 스냅샷을 뜨고 삭제한다.**
-stop만 하면 스토리지 요금이 계속 나가고, **RDS는 stop해도 7일 뒤 자동으로 다시 켜진다.**
+**해커톤이 끝나면 정리한다.**
+
+```bash
+aws ec2 terminate-instances --instance-ids i-008d5a4c6e6272147
+aws ec2 release-address --allocation-id eipalloc-0663f5d09ebea546a   # ← 잊기 쉽다
+aws rds delete-db-instance --db-instance-identifier dday-db \
+  --final-db-snapshot-identifier dday-db-final
+```
+
+- stop만 하면 스토리지 요금이 계속 나가고, **RDS는 stop해도 7일 뒤 자동으로 다시 켜진다**
+- ⚠️ **EIP는 인스턴스를 지워도 남고, 안 붙어 있으면 오히려 계속 과금된다**($0.005/hr).
+  `release-address`를 빼먹는 게 잊혀진 청구서의 단골이다
 
 ---
 
@@ -356,19 +366,24 @@ Worker가 바라보는 주소는 `frontend/wrangler.jsonc`의 `BACKEND_ORIGIN`�
 
 > ⚠️ **거기에 생 IP를 넣으면 안 된다.** 배포된 Worker가 IP로 fetch하면 Cloudflare가
 > `error code: 1003 Direct IP access not allowed`로 403을 준다. **EC2 퍼블릭 DNS 이름**
-> (`ec2-3-36-106-81.ap-northeast-2.compute.amazonaws.com`)을 쓴다.
+> (`ec2-43-203-100-35.ap-northeast-2.compute.amazonaws.com`)을 쓴다.
 > 로컬 `wrangler dev`에서는 IP로도 잘 되기 때문에 배포하기 전엔 드러나지 않는다.
 
-**이 호스트명에는 IP가 박혀 있다.** 인스턴스를 stop/start하면 IP가 바뀌고 이름도 바뀌어
-프론트에서 API가 통째로 죽는다. 인스턴스를 껐다 켤 계획이 있으면 **Elastic IP를 붙여
-고정한다** — 실행 중인 인스턴스에 붙어 있는 동안의 요금은 지금 자동 할당 IP와 같다
-(둘 다 $0.005/hr). 붙이면 DNS 이름도 같이 고정된다.
+**이 호스트명에는 IP가 박혀 있어서, 주소가 바뀌면 프론트의 API가 통째로 죽는다.**
+화면은 멀쩡히 뜨는데 API만 전부 실패하는 형태라 원인이 잘 안 드러난다.
+그래서 **Elastic IP `eipalloc-0663f5d09ebea546a`를 붙여 고정해뒀다** —
+실행 중인 인스턴스에 붙어 있는 동안의 요금은 자동 할당 IP와 같다(둘 다 $0.005/hr).
 
-```bash
-aws ec2 allocate-address --domain vpc
-aws ec2 associate-address --instance-id i-008d5a4c6e6272147 --allocation-id {위 결과}
-# 그 뒤 wrangler.jsonc의 BACKEND_ORIGIN과 GitHub Secret EC2_HOST를 새 주소로 고친다
-```
+주소가 바뀌는 일이 생기면(EIP를 떼거나 인스턴스를 새로 만들면) **세 곳을 같이 고쳐야 한다.**
+
+| 고칠 곳 | 값 |
+|---|---|
+| `frontend/wrangler.jsonc`의 `BACKEND_ORIGIN` | EC2 퍼블릭 **DNS 이름** |
+| GitHub Secret `EC2_HOST` | EC2 **IP** |
+| 이 문서와 `README.md` | 양쪽 |
+
+앞의 둘 중 하나만 고치면 조용히 반쪽만 동작한다 — 프론트는 되는데 배포가 실패하거나,
+그 반대가 된다.
 
 ---
 

@@ -23,7 +23,7 @@
 
 ```ts
 await api.get('/api/members')            // ✅
-await api.get('http://3.36.106.81/api/members')   // ❌
+await api.get('http://43.203.100.35/api/members')   // ❌
 ```
 
 백엔드 주소를 코드에 박으면 안 되는 이유가 두 개다.
@@ -78,7 +78,7 @@ try {
 ### API 목록은 Swagger에서 본다
 
 - 로컬: http://localhost:8080/swagger-ui.html
-- 배포: http://3.36.106.81/swagger-ui.html (백엔드 직접)
+- 배포: http://43.203.100.35/swagger-ui.html (백엔드 직접)
 
 **단, Swagger는 정본이 아니다.** 검증 규칙(정규식·길이)과 에러 코드는 스키마에 안 실린다.
 정확한 계약은 백엔드의 컨트롤러 · DTO · `ErrorCode` enum을 직접 본다.

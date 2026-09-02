@@ -12,7 +12,7 @@ Dday/
 | | 주소 |
 |---|---|
 | **서비스** | **https://dday.26kb.workers.dev** |
-| 백엔드 직접 | http://3.36.106.81 ([Swagger](http://3.36.106.81/swagger-ui.html)) |
+| 백엔드 직접 | http://43.203.100.35 ([Swagger](http://43.203.100.35/swagger-ui.html)) |
 
 **한쪽만 고치면 한쪽만 배포된다.** `backend/**`가 바뀌면 GitHub Actions가,
 `frontend/**`가 바뀌면 Cloudflare Workers Builds가 각각 움직인다.
