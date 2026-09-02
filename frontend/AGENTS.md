@@ -78,7 +78,7 @@ try {
 ### API 목록은 Swagger에서 본다
 
 - 로컬: http://localhost:8080/swagger-ui.html
-- 배포: http://3.36.106.81/swagger-ui.html
+- 배포: http://3.36.106.81/swagger-ui.html (백엔드 직접)
 
 **단, Swagger는 정본이 아니다.** 검증 규칙(정규식·길이)과 에러 코드는 스키마에 안 실린다.
 정확한 계약은 백엔드의 컨트롤러 · DTO · `ErrorCode` enum을 직접 본다.
@@ -108,6 +108,8 @@ frontend/
 
 ## 4. 배포
 
+배포 주소: **https://dday.26kb.workers.dev**
+
 **`frontend/**`가 바뀐 채로 main에 push되면 Cloudflare Workers Builds가 자동 배포한다.**
 백엔드 GitHub Actions는 경로 필터가 걸려 있어 이때 돌지 않는다 (그 반대도 같다).
 
@@ -122,3 +124,14 @@ frontend/
 push 전에 `git pull --rebase origin main`.
 
 자세한 규칙과 이슈 템플릿은 `backend/AGENTS.md` §10에 있다 — 저장소 전체에 같이 적용된다.
+
+---
+
+## 6. Cloudflare 설정에서 알아야 할 것
+
+- **`wrangler.jsonc`의 `name`은 대시보드의 Worker 이름과 같아야 한다.** 다르면 배포 단계에서
+  실패한다. 지금은 양쪽 다 `dday`다 — 바꾸려면 두 곳을 같이 바꿔야 한다
+- **Root directory는 `frontend`다.** 저장소 루트엔 `package.json`이 없어서,
+  이게 `/`면 빌드가 `Could not read package.json`으로 죽는다 (실제로 첫 빌드가 이걸로 실패했다)
+- **Build watch paths는 `frontend/*`** (저장소 루트 기준). 백엔드만 고친 커밋에
+  프론트가 재빌드되지 않게 한다. GitHub Actions 쪽에 건 `paths: backend/**`의 반대쪽 짝이다

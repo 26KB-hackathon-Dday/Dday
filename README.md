@@ -9,6 +9,11 @@ Dday/
 └─ docs/        설계 메모 · 배포 가이드
 ```
 
+| | 주소 |
+|---|---|
+| **서비스** | **https://dday.26kb.workers.dev** |
+| 백엔드 직접 | http://3.36.106.81 ([Swagger](http://3.36.106.81/swagger-ui.html)) |
+
 **한쪽만 고치면 한쪽만 배포된다.** `backend/**`가 바뀌면 GitHub Actions가,
 `frontend/**`가 바뀌면 Cloudflare Workers Builds가 각각 움직인다.
 프론트 한 줄 고쳤다고 백엔드가 재배포되지 않는다.
@@ -20,9 +25,6 @@ Dday/
 - **백엔드 컨벤션 → [backend/AGENTS.md](./backend/AGENTS.md)**
 - **프론트엔드 컨벤션 → [frontend/AGENTS.md](./frontend/AGENTS.md)** — API 호출 규칙은 꼭 읽을 것
 - **배포 → [docs/deploy.md](./docs/deploy.md)**
-
-**배포된 API**: http://3.36.106.81 ([헬스체크](http://3.36.106.81/health/db) · [Swagger](http://3.36.106.81/swagger-ui.html))
-main에 push하면 자동으로 갱신된다.
 
 ---
 

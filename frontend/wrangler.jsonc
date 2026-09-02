@@ -1,6 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "dday-frontend",
+  // ⚠️ 이 이름은 Cloudflare 대시보드의 Worker 이름과 반드시 같아야 한다.
+  // 다르면 Workers Builds가 배포 단계에서 실패한다.
+  // 현재 배포 주소: https://dday.26kb.workers.dev
+  "name": "dday",
   "main": "worker/index.ts",
   "compatibility_date": "2026-09-01",
 
