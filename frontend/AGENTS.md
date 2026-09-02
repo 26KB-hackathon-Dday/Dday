@@ -150,11 +150,18 @@ Cloudflare 쪽 설정 — 건드릴 일은 거의 없지만 알고는 있어야 
 
 ## 5. Git
 
-**브랜치는 `main` 하나.** 커밋은 `type: 한국어 설명`.
-push 전에 `git pull --rebase origin main`.
+**`main`에 직접 push하지 않는다.** 아무리 작은 수정이라도 브랜치 → PR로 들어간다.
 
-전체 워크플로(이슈 → 브랜치 → PR)와 라벨은 **`backend/AGENTS.md` §11**에 있다 —
-저장소 전체에 같이 적용된다.
+```bash
+git checkout main && git pull --rebase origin main
+git checkout -b feat/pocket-card
+# 구현 → npm run build 로 확인
+git push -u origin feat/pocket-card
+gh pr create --fill        # CI green이면 셀프 머지(Squash and merge)
+```
+
+커밋은 `type: 한국어 설명`. 전체 워크플로(이슈·라벨·충돌 해결)는
+**`backend/AGENTS.md` §11**에 있다 — 저장소 전체에 같이 적용된다.
 
 ---
 

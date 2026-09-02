@@ -263,26 +263,18 @@ src/main/resources/
 
 ## 11. Git 워크플로우
 
-**브랜치는 `main` 하나.** `develop`을 두지 않는다.
+**브랜치는 `main` 하나**이고 `develop`을 두지 않는다.
+**`main`에 직접 push하지 않는다.** 아무리 작은 수정이라도 브랜치 → PR로 들어간다.
 
-작업 크기에 따라 두 갈래다.
+> 5명이 같은 `main`을 밀면 ① 누가 뭘 건드리는 중인지 안 보이고
+> ② 깨진 커밋 하나가 나머지 4명을 동시에 멈춘다.
+> **PR은 리뷰를 받으려는 게 아니라 그 둘을 막으려고 있다.**
 
-| | 언제 | |
-|---|---|---|
-| **직접 push** | 혼자 만지는 작은 변경 — 버그 수정, 문서, 설정 | 아래 A |
-| **이슈 → PR** | 오래 걸리거나 남과 겹칠 작업 | 아래 B |
-
-### A. 직접 push
-
-```bash
-git pull --rebase origin main   # merge로 당기면 커밋 그래프가 엉킨다
-./gradlew build                 # 빼먹지 말 것 — 깨진 main은 5명을 동시에 멈춘다
-git push origin main
-```
-
-### B. 이슈 → PR
+### 흐름
 
 **① 이슈 등록** — 제목은 `[TYPE] 한국어 설명`. **접두사와 라벨을 1:1로 맞춘다.**
+
+**작은 수정은 이슈 없이 ②부터 시작해도 된다.** 이슈는 여럿이 알아야 할 덩어리에만 만든다.
 
 | 접두사 | 라벨 | 템플릿 |
 |---|---|---|
@@ -314,16 +306,33 @@ feat: 포켓별 월 배분액을 계산한다
 
 **⑤ push** — `git push -u origin feat/pocket-budget`
 
-**⑥ PR** — 제목 `[#이슈번호] type: 작업 내용`, 본문에 `closes #N`.
-템플릿이 자동으로 붙는다.
+**⑥ PR** — 제목 `[#이슈번호] type: 작업 내용`(이슈가 없으면 `type: 작업 내용`),
+본문에 `closes #N`. 템플릿이 자동으로 붙는다.
+
+```bash
+gh pr create --fill        # 또는 push 후 뜨는 링크로
+```
+
+**⑦ 머지** — **Squash and merge**. 브랜치의 잡다한 커밋이 `main`에 한 줄로 들어간다.
+머지 후 브랜치는 지우고, `main`으로 돌아와 `git pull --rebase origin main`.
 
 > **리뷰 승인을 기다리지 않는다.** CI가 green이면 셀프 머지해도 된다.
-> PR의 목적은 승인이 아니라 **"누가 뭘 건드리는 중인지" 보이게 하는 것**이다.
-> 리뷰가 필요하면 PR 링크를 팀에 직접 던진다.
+> 봐줬으면 하는 게 있으면 PR 링크를 팀에 직접 던진다.
 
-### 머지 후
+### 충돌이 났을 때
 
-브랜치는 지운다. `main`으로 돌아와 `git pull --rebase origin main`으로 맞춘다.
+`main`이 앞서 나가 PR에 충돌이 뜨면 **브랜치에서 rebase**한다.
+
+```bash
+git checkout feat/pocket-budget
+git fetch origin && git rebase origin/main
+# 충돌 해결 후
+git add . && git rebase --continue
+git push --force-with-lease        # --force 말고 이걸 쓴다
+```
+
+`--force-with-lease`는 그 사이 남이 같은 브랜치에 push했으면 거부한다.
+그냥 `--force`는 남의 커밋을 말없이 지운다.
 
 ---
 
