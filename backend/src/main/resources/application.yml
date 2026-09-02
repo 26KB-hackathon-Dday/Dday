@@ -15,7 +15,20 @@ spring:
       write-dates-as-timestamps: false
     default-property-inclusion: always
 
+  # 시드 데이터 — src/main/resources/data.sql 을 앱이 뜰 때마다 실행한다.
+  # 로컬에서 뜨면 로컬 MySQL에, 서버에서 뜨면 RDS에 들어간다.
+  # 두 DB를 직접 동기화하는 게 아니라, 같은 파일에서 각각 채워지는 구조다.
+  sql:
+    init:
+      # 기본값은 embedded(H2 등)뿐이라 MySQL에는 안 돈다. 명시해야 실행된다.
+      mode: always
+      # 실패하면 앱이 안 뜬다(기본값 false). 시드가 깨진 걸 모르고 서비스되는 것보다 낫다.
+      continue-on-error: false
+
   jpa:
+    # ⚠️ data.sql이 ddl-auto보다 "뒤에" 실행되게 한다.
+    # 이게 없으면 테이블이 만들어지기 전에 data.sql이 돌아 Table doesn't exist로 죽는다.
+    defer-datasource-initialization: true
     # 컨트롤러/뷰까지 영속성 컨텍스트를 열어두지 않는다. 켜두면 커넥션을 요청 끝까지
     # 붙들고 있어서 부하가 조금만 올라가도 풀이 마른다. 대신 지연 로딩은 트랜잭션(서비스)
     # 안에서 끝내야 하고, 밖에서 건드리면 LazyInitializationException이 난다 — 의도된 동작이다.

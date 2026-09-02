@@ -303,7 +303,63 @@ Swagger 어노테이션(`@Tag`, `@Operation`, `@Schema`)은 **여력이 될 때�
 
 ---
 
-## 9. 환경 / 프로파일
+## 9. 시드 데이터 (`data.sql`)
+
+`backend/src/main/resources/data.sql`이 **앱이 뜰 때마다 실행된다.**
+로컬에서 띄우면 로컬 MySQL에, 서버에서 띄우면 RDS에 들어간다.
+
+```
+        data.sql (Git)
+             │
+     ┌───────┴───────┐
+     ▼               ▼
+ 로컬 MySQL         RDS
+```
+
+**두 DB를 서로 동기화하는 게 아니다.** 이 파일 하나에서 양쪽이 각각 채워진다.
+그래서 이 파일이 시드의 정본이고, DB를 날려도 앱만 다시 띄우면 복구된다.
+
+관련 설정은 `application.yml`에 있다 — `spring.sql.init.mode: always`(기본값은
+embedded DB뿐이라 MySQL엔 안 돈다)와 `spring.jpa.defer-datasource-initialization: true`
+(**이게 없으면 테이블이 만들어지기 전에 data.sql이 돌아 죽는다**).
+
+### 지킬 것
+
+- **멱등하게 쓴다.** 매 기동마다 도니까 그냥 `INSERT`를 쓰면 재시작할 때마다 중복이 쌓인다.
+  id를 명시적으로 박고 `ON DUPLICATE KEY UPDATE`를 붙인다
+
+  ```sql
+  INSERT INTO pocket (id, name) VALUES (1, '지갑')
+  ON DUPLICATE KEY UPDATE name = VALUES(name);
+  ```
+
+  값을 고쳐서 재기동하면 그 값으로 갱신된다. 수정 없이 "없을 때만 넣기"면 `INSERT IGNORE`
+
+- **id를 auto-increment에 맡기지 않는다.** 안 박으면 매번 새 행이 생겨 멱등성이 깨진다
+- **`CREATE TABLE`을 쓰지 않는다.** 테이블은 엔티티가 만든다(`ddl-auto: update`).
+  여기는 INSERT/UPDATE 전용이다
+- **여기서 실패하면 앱이 안 뜬다**(`continue-on-error: false`).
+  시드가 조용히 깨진 채로 서비스되는 것보다 낫다는 판단이다
+- ⚠️ **주석만 남기고 비우면 앱이 안 뜬다.** 실행할 문장이 하나도 없으면 스프링이
+  `IllegalArgumentException: 'script' must not be null or empty`를 던진다.
+  그래서 파일 맨 위에 무해한 `SELECT 1;`을 남겨뒀다 — **지우지 말 것**
+- **대량 데이터(수만 행 이상)는 여기 넣지 않는다.** 라인 단위로 파싱해서 느리고,
+  매 기동마다 돌고, 저장소가 비대해진다. 그건 별도 적재 스크립트로 한 번만 넣는다
+
+### 스키마를 바꾸면 시드를 다시 넣어야 할 수 있다
+
+`ddl-auto: update`는 **추가만** 한다. 필드를 추가하면 기존 행은 그대로 남고 새 컬럼만
+`NULL`이지만, **필드/테이블 이름을 바꾸면 데이터가 옛 컬럼·옛 테이블에 갇힌다.**
+그럴 땐 DB를 새로 만들고 앱을 띄우면 data.sql이 다시 채운다.
+
+```bash
+cd backend && docker compose down -v && docker compose up -d   # 로컬
+# RDS는 mysql로 붙어서 DROP DATABASE dday; CREATE DATABASE dday;
+```
+
+---
+
+## 10. 환경 / 프로파일
 
 ```
 backend/src/main/resources/
@@ -342,7 +398,7 @@ MySQL 설정이 같이 실리고, 프로파일을 잘못 지정하면 RDS 옆에
 
 ---
 
-## 10. Git / GitHub 워크플로우
+## 11. Git / GitHub 워크플로우
 
 **브랜치는 `main` 하나다.** `develop`을 두지 않는다 — 3일짜리에 브랜치를 두 갈래로 관리하면
 머지 비용이 개발 시간을 잡아먹는다.
@@ -372,7 +428,7 @@ git push origin main
 
 ---
 
-## 11. 배포
+## 12. 배포
 
 **main에 push하면 GitHub Actions가 자동으로 배포한다.**
 자세한 절차와 EC2 세팅은 [docs/deploy.md](../docs/deploy.md)에 있다.
