@@ -1,168 +1,115 @@
-# Dday — 백엔드
+# Dday — 백엔드 컨벤션
 
-26KB 해커톤(3일) 프로젝트. **프론트엔드와 백엔드가 한 저장소에 있는 모노레포**다.
+`backend/`의 규칙 정본. 같은 폴더의 `CLAUDE.md`가 이 파일을 가져다 쓴다.
+프론트엔드 규칙은 `frontend/AGENTS.md`에 따로 있다.
 
-**이 문서는 `backend/`의 컨벤션 정본이다.** 같은 디렉터리의 `CLAUDE.md`가 이 파일을 가져다 쓴다.
-프론트엔드 규칙은 `frontend/`에 따로 둔다 — 스택이 정해지면 만든다.
+> **3일짜리 해커톤이다.** 이 규칙들은 유지보수를 위해서가 아니라
+> **5명이 동시에 만지면서 서로 안 깨뜨리려고** 있다. 여기 없는 건 각자 편한 대로.
 
-> 문서 안의 경로는 **저장소 루트 기준**이다(`backend/src/...`).
-> 링크만 이 파일 위치 기준의 상대 경로다(`../docs/...`).
-
-```
-Dday/
-├─ backend/     Spring Boot 3.5 + JPA (Java 17)
-│  ├─ src/
-│  ├─ build.gradle
-│  ├─ .env.sample
-│  ├─ docker-compose.yml        로컬 개발용 — MySQL만 띄운다
-│  └─ docker-compose.prod.yml   서버용 — 백엔드만 띄운다 (DB는 RDS)
-├─ frontend/    (스택 미정 — 정해지면 여기에)
-└─ docs/        설계 메모, 화면 기획, 회의록
-```
-
-**루트에는 디렉터리 3개와 문서만 둔다.** 도커 구성과 `.env`가 백엔드 안에 있는 이유는
-둘 다 백엔드 전용이기 때문이다 — 로컬 compose는 백엔드가 쓸 MySQL을 띄우고,
-prod compose는 백엔드 이미지를 띄운다. 프론트가 컨테이너를 필요로 하면 그때
-`frontend/`에 따로 만든다.
-
-> ⚠️ **3일짜리다.** 이 문서의 규칙은 "나중에 유지보수하기 좋으라고"가 아니라
-> **5명이 같은 코드베이스를 동시에 만지면서 서로 안 깨뜨리려고** 있는 것이다.
-> 여기에 없는 건 각자 편한 대로 해도 된다.
+문서 안 경로는 저장소 루트 기준(`backend/src/...`), 링크만 상대 경로다.
 
 ---
 
-## 빌드 · 실행
+## 빠른 시작
 
 ```bash
-cd backend                # 백엔드 작업은 전부 이 안에서 한다
-
+cd backend
 cp .env.sample .env       # 최초 1회
-docker compose up -d      # 로컬 MySQL (빈 DB. 테이블은 앱이 뜰 때 JPA가 만든다)
+docker compose up -d      # 로컬 MySQL (빈 DB — 테이블은 앱이 만든다)
 ./gradlew bootRun         # http://localhost:8080
-./gradlew build           # 컴파일 + 테스트 — MySQL이 떠 있어야 한다
+./gradlew build           # 컴파일 + 테스트 (MySQL 필요)
 ```
 
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- 헬스체크: `GET /health` (앱만) / `GET /health/db` (DB까지)
+| | |
+|---|---|
+| Swagger | http://localhost:8080/swagger-ui.html |
+| 헬스체크 | `GET /health` (앱) · `GET /health/db` (DB까지) |
 
-**3306이 이미 쓰이고 있으면** `backend/.env`의 `MYSQL_PORT`만 바꾼다.
-`build.gradle`이 `.env`를 읽어 `bootRun`/`test`에 넘겨주므로 다른 데는 안 고쳐도 된다.
-단, **IDE에서 main 메서드를 직접 실행하면 `.env`를 안 읽는다** — 그때는 IDE 실행 구성의
-환경변수에 `MYSQL_PORT`를 넣는다.
-
----
-
-## 1. 기술 스택
-
-| 항목 | 버전 | 비고 |
-|---|---|---|
-| Spring Boot | **3.5.16** | Boot 4가 아니다 (아래 참고) |
-| Java | 17 | Gradle toolchain으로 고정 |
-| Gradle | 8.13 | wrapper(`./gradlew`)를 쓴다. 로컬 gradle 버전은 상관없다 |
-| 영속성 | Spring Data JPA (Hibernate 6) | |
-| DB | MySQL 8.4 | docker compose |
-| 검증 | Bean Validation (`spring-boot-starter-validation`) | |
-| 문서 | springdoc-openapi 2.8.17 | |
-| 보조 | Lombok | |
-
-**왜 Boot 4.1이 아니라 3.5인가.** 3일 안에 막히면 검색으로 뚫어야 하는데,
-지금 나오는 예제·블로그·스택오버플로 답의 대부분이 Boot 3 기준이다.
-Boot 4는 Jackson 3(`tools.jackson.*`로 패키지가 통째로 이동)과 Spring Security 7(설정 DSL 변경)을
-끌고 오기 때문에 **복붙한 코드가 컴파일은 되는데 런타임에 어긋나는** 상황이 생긴다.
-해커톤에서 그걸 디버깅할 시간이 없다. 끝나고 올리고 싶으면 그때 올린다.
+3306이 이미 쓰이면 `.env`의 `MYSQL_PORT`만 바꾼다.
 
 ---
 
-## 2. 패키지 / 도메인 구조
+## 1. 스택
+
+| | |
+|---|---|
+| Spring Boot | 3.5.16 |
+| Java / Gradle | 17 / 8.13 (wrapper) |
+| 영속성 | Spring Data JPA (Hibernate 6) |
+| DB | MySQL 8.4 |
+| 검증 | Bean Validation |
+| 문서 | springdoc-openapi 2.8.17 |
+| 보조 | Lombok |
+
+**Boot 4로 올리지 않는다.** Jackson 3·Security 7이 딸려와서 검색으로 나오는 예제와 어긋난다.
+
+---
+
+## 2. 패키지 구조
 
 ```
 com.dday
 ├─ domain/{도메인}/
 │  ├─ controller/
 │  ├─ service/
-│  ├─ repository/            # Spring Data JPA 인터페이스
-│  ├─ entity/                # @Entity + 그 엔티티가 쓰는 도메인 enum
+│  ├─ repository/          Spring Data JPA 인터페이스
+│  ├─ entity/              @Entity + 그 엔티티가 쓰는 enum
 │  └─ dto/
 │     ├─ request/
 │     ├─ response/
 │     ├─ {도메인}SuccessCode.java
 │     └─ {도메인}ErrorCode.java
-└─ global/
-   ├─ common/{code,dto}/     # SuccessCode, ApiResponse
-   ├─ config/                # WebConfig(CORS), SwaggerConfig
-   ├─ exception/             # ErrorCode, BusinessException, GlobalExceptionHandler
+└─ global/                 이미 다 짜여 있다 — 손댈 일이 거의 없다
+   ├─ common/{code,dto}/   SuccessCode, ApiResponse
+   ├─ config/              WebConfig(CORS), SwaggerConfig
+   ├─ exception/           ErrorCode, BusinessException, GlobalExceptionHandler
    └─ health/
 ```
 
-**도메인 하나 = 폴더 하나**로 자른다. 5명이 붙어도 서로 다른 폴더를 만지면 충돌이 거의 없다.
-공용으로 쓸 게 생기면 `global/`에 올리되, **올리기 전에 팀에 한마디 한다** — 여기가
-유일하게 모두가 부딪히는 지점이다.
-
-> `global/`은 이미 다 짜여 있다.
-
-**`domain/pocket`이 참조 구현이다.** 새 도메인은 이걸 복제해서 시작한다 —
-엔티티·enum·레포지토리·서비스·컨트롤러·SuccessCode/ErrorCode·응답 DTO·단위 테스트가
-한 벌로 들어 있고, 시드(`data.sql`)와 프론트 조회(`frontend/src/api/pocket.ts`,
-`views/PocketView.vue`)까지 이어져 있다.
-
-### 도메인 enum은 `entity/`에 둔다
-
-`PocketType`(주거·생활·비상·자산형성)처럼 엔티티가 `@Enumerated`로 쓰는 enum은
-엔티티 옆에 둔다. **이런 분류값 때문에 도메인을 쪼개지 않는다** — 포켓 네 종류는
-도메인 넷이 아니라 `pocket` 테이블의 `type` 컬럼 값 넷이다. 쪼개면 같은 코드를
-네 번 쓰게 된다. 종류별로 다른 로직이 생기면 그때 엔티티 안에서 분기한다.
-
-⚠️ **`@Enumerated(EnumType.STRING)`을 반드시 명시한다.** 기본값 ORDINAL은 정수 순서로
-저장해서, enum 상수 순서를 바꾸는 순간 기존 데이터의 의미가 통째로 어긋난다.
+- **`domain/pocket`이 참조 구현이다.** 새 도메인은 이걸 복제해서 시작한다
+- **도메인 하나 = 폴더 하나.** 서로 다른 폴더를 만지면 충돌이 거의 없다
+- `global/`에 뭘 올리기 전에는 **팀에 한마디 한다.** 모두가 부딪히는 유일한 지점이다
+- **분류값 때문에 도메인을 쪼개지 않는다.** 포켓 네 종류(주거·생활·비상·자산형성)는
+  도메인 넷이 아니라 `pocket` 테이블 `type` 컬럼의 값 넷이다
 
 ---
 
-## 3. 네이밍 컨벤션
+## 3. 네이밍
 
 | 대상 | 규칙 | 예 |
 |---|---|---|
 | 패키지 | 소문자·단수 | `com.dday.domain.member` |
-| 컨트롤러/서비스/레포지토리 | `{도메인}Controller` / `Service` / `Repository` | `MemberController` |
-| 엔티티 | 단수 명사 | `Member`, `Post` |
+| 컨트롤러 · 서비스 · 레포지토리 | `{도메인}Controller` / `Service` / `Repository` | `MemberController` |
+| 엔티티 | 단수 명사 | `Member` |
 | 요청 DTO | `{동작}{대상}Request` | `MemberSignupRequest` |
 | 응답 DTO | `{대상}{용도}Response` | `MemberListResponse` |
 | 조회 조건 | `{대상}SearchCondition` | `PostSearchCondition` |
-| DB → 필드 | `snake_case` → `camelCase` (Hibernate 기본 전략이 알아서) | `created_at` → `createdAt` |
-| 테스트 메서드 | 한글 + 언더스코어 | `회원_가입시_이메일이_중복이면_예외를_던진다()` |
+| 테스트 메서드 | 한글 + 언더스코어 | `이메일이_중복이면_예외를_던진다()` |
+
+DB `snake_case` ↔ 자바 `camelCase`는 Hibernate가 알아서 한다.
 
 ---
 
-## 4. 엔티티 / JPA 규칙
+## 4. 엔티티 / JPA
 
-지키지 않으면 **다른 사람 코드까지 같이 터지는** 것들만 모았다.
+| 규칙 | 안 지키면 |
+|---|---|
+| 엔티티에 **`@Setter` 금지**. 생성은 `@Builder`, 변경은 이름 있는 메서드 | 어디서 상태가 바뀌었는지 못 쫓는다 |
+| `@ManyToOne`·`@OneToOne`은 **반드시 `fetch = LAZY`** | 기본값 EAGER — 조회 한 번에 테이블 대여섯 개가 딸려온다 |
+| `@Enumerated(**EnumType.STRING**)` 명시 | 기본값 ORDINAL — enum 순서를 바꾸면 기존 데이터 의미가 어긋난다 |
+| **양방향 연관관계를 기본으로 만들지 않는다.** 단방향 `@ManyToOne`으로 시작 | 정합성 맞추는 코드가 계속 늘어난다 |
+| **컨트롤러에서 `@Entity`를 반환하지 않는다.** Response DTO로 변환 | 순환 참조 무한 루프 / 지연 로딩 프록시 직렬화 500 |
+| 금액은 **`BigDecimal`** (`double`·`float` 금지) | 돈 계산이 틀어진다 |
+| `createdAt`·`updatedAt`은 `@CreationTimestamp`·`@UpdateTimestamp` | |
 
-- **엔티티에 `@Setter`를 붙이지 않는다.** 아무 데서나 상태가 바뀌면 버그를 못 쫓는다.
-  생성은 `@Builder`, 변경은 의미 있는 이름의 메서드(`changeNickname(...)`)로 한다
-- **`@ManyToOne`·`@OneToOne`은 반드시 `fetch = FetchType.LAZY`.**
-  기본값이 EAGER라서 안 적으면 조회 한 번에 테이블 대여섯 개가 딸려온다
-- **양방향 연관관계를 기본으로 만들지 않는다.** 단방향 `@ManyToOne`으로 시작하고,
-  반대 방향이 정말 필요할 때만 `@OneToMany`를 추가한다
-- **`@Entity`를 컨트롤러에서 반환하지 않는다.** 반드시 Response DTO로 바꿔서 내보낸다.
-  엔티티를 그대로 직렬화하면 ① 양방향 참조에서 무한 루프가 나고 ② 지연 로딩 프록시를
-  Jackson이 건드려서 `open-in-view: false`와 함께 500이 난다
-- **금액은 `BigDecimal`.** `double`/`float` 금지 — 0.1 + 0.2 문제가 돈에서 터진다
-- **`createdAt`/`updatedAt`은 `@CreationTimestamp`/`@UpdateTimestamp`**로 붙인다. 수동으로 넣지 않는다
-- **`ddl-auto: update`**로 돌고 있다. 엔티티를 고치면 스키마가 따라오지만,
-  **컬럼 삭제와 타입 변경은 반영되지 않고 옛 컬럼이 조용히 남는다.**
-  이상해지면 `backend/`에서 `docker compose down -v && docker compose up -d`로 DB를 새로 만든다
-
-### N+1
-
-목록을 뽑고 그 안에서 연관 엔티티를 건드리면 쿼리가 행 수만큼 더 나간다.
-`application.yml`의 `default_batch_fetch_size: 100`이 최악은 막아주지만, 목록 API를 짤 때는
-`@Query`에 `join fetch`를 쓰거나 `@EntityGraph`를 붙이는 게 정석이다.
-**`show-sql: true`가 켜져 있으니 로컬에서 쿼리 개수를 눈으로 확인하고 넘어간다.**
+**N+1**: 목록 API를 짤 때는 `join fetch`나 `@EntityGraph`를 쓴다.
+`show-sql: true`가 켜져 있으니 **로컬에서 쿼리 개수를 눈으로 확인하고 넘어간다.**
 
 ---
 
-## 5. DTO 규칙
+## 5. DTO
 
-Request·Response 모두 **class + Lombok**으로 쓴다 (`record`를 쓰지 않는다 — 팀이 익숙한 쪽으로 통일).
+Request·Response 모두 **class + Lombok**. `record`를 쓰지 않는다.
 
 ```java
 // Request
@@ -173,10 +120,6 @@ public class MemberSignupRequest {
     @NotBlank(message = "이메일을 입력해주세요.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
     private String email;
-
-    @NotBlank(message = "닉네임을 입력해주세요.")
-    @Size(min = 2, max = 10, message = "닉네임은 2~10자여야 합니다.")
-    private String nickname;
 }
 
 // Response
@@ -187,41 +130,29 @@ public class MemberListResponse {
     private Long memberId;
     private String nickname;
 
-    public static MemberListResponse from(Member member) {
-        return MemberListResponse.builder()
-                .memberId(member.getId())
-                .nickname(member.getNickname())
-                .build();
-    }
+    public static MemberListResponse from(Member member) { ... }
 }
 ```
 
 - **`@Setter` 금지** (양쪽 모두)
-- **검증 어노테이션의 `message`를 반드시 채운다.** 이 문구가 그대로 프론트 폼에 뜬다.
-  비워두면 "must not be blank" 같은 영문 기본 문구가 사용자에게 노출된다
-- **GET 쿼리 파라미터를 객체로 묶을 때(`@ModelAttribute`)만 예외적으로 `@Setter`가 필요하다.**
-  안 붙이면 예외 없이 필드가 전부 `null`로 조용히 남는다. 그 DTO에만 붙이고 주석을 남긴다
+- **검증 어노테이션의 `message`를 반드시 채운다** — 이 문구가 그대로 프론트 폼에 뜬다.
+  비우면 "must not be blank"가 사용자에게 노출된다
+- `@ModelAttribute`로 GET 쿼리를 묶는 DTO만 예외적으로 `@Setter`가 필요하다
 
 ---
 
-## 6. 응답 포맷 / 예외 처리
+## 6. 응답 / 예외
 
-모든 응답은 `ApiResponse<T>` 봉투에 담긴다. HTTP 상태코드도 의미대로 쓴다.
+모든 응답이 `ApiResponse<T>` 봉투에 담긴다. HTTP 상태코드도 의미대로 쓴다.
 
 ```json
-// 성공
-{ "success": true, "code": "MEMBERS_FOUND", "message": "회원 목록을 조회했습니다.", "data": [ ... ] }
-
-// 실패 — data는 기본적으로 null
-{ "success": false, "code": "MEMBER_NOT_FOUND", "message": "회원을 찾을 수 없습니다.", "data": null }
-
-// 검증 실패 — errors가 추가된다 (이때만 나온다)
-{ "success": false, "code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.",
-  "data": null, "errors": [ { "field": "email", "reason": "이메일 형식이 올바르지 않습니다." } ] }
+{ "success": true,  "code": "MEMBERS_FOUND",     "message": "...", "data": [ ... ] }
+{ "success": false, "code": "MEMBER_NOT_FOUND",  "message": "...", "data": null }
+{ "success": false, "code": "INVALID_INPUT_VALUE", "message": "...", "data": null,
+  "errors": [ { "field": "email", "reason": "이메일 형식이 올바르지 않습니다." } ] }
 ```
 
-성공·실패 모두 `code`와 `message`를 갖고, **양쪽 다 enum**으로 관리한다.
-문자열을 컨트롤러에 흩뿌리지 않기 위해서다.
+`errors`는 검증 실패일 때만 붙는다.
 
 |  | 인터페이스 | 도메인별 enum |
 |---|---|---|
@@ -229,19 +160,6 @@ public class MemberListResponse {
 | 실패 | `global/exception/ErrorCode` | `domain/member/dto/MemberErrorCode` |
 
 ```java
-// 도메인 성공 코드
-@Getter
-@RequiredArgsConstructor
-public enum MemberSuccessCode implements SuccessCode {
-
-    MEMBERS_FOUND(HttpStatus.OK, "회원 목록을 조회했습니다."),
-    MEMBER_CREATED(HttpStatus.CREATED, "회원 가입이 완료되었습니다.");
-
-    private final HttpStatus status;
-    private final String message;
-}
-
-// 도메인 에러 코드
 @Getter
 @RequiredArgsConstructor
 public enum MemberErrorCode implements ErrorCode {
@@ -253,123 +171,79 @@ public enum MemberErrorCode implements ErrorCode {
     private final String message;
 }
 
-// 컨트롤러 — 성공 응답
-@PostMapping("/api/members")
-public ResponseEntity<ApiResponse<MemberListResponse>> signup(
-        @Valid @RequestBody MemberSignupRequest request) {
-    return ApiResponse.of(MemberSuccessCode.MEMBER_CREATED, memberService.signup(request));
-}
+// 컨트롤러
+return ApiResponse.of(MemberSuccessCode.MEMBER_CREATED, memberService.signup(request));
 
-// 서비스 — 실패
+// 서비스
 throw new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND);
 ```
 
-- `code`는 enum 상수 이름(`name()`) 그대로 나간다
-- **전역 단일 enum을 쓰지 않는다** — 5명이 병렬로 개발하면 그 파일에서 계속 충돌한다
-- **예외는 `BusinessException` 하나만 쓴다.** 새 에러는 예외 클래스가 아니라 ErrorCode 상수를 추가한다
-- **컨트롤러에서 try-catch로 에러 응답을 만들지 않는다.** `GlobalExceptionHandler`가 전부 처리한다
-- 401은 도메인 ErrorCode를 만들지 말고 공통 `CommonErrorCode.UNAUTHORIZED`를 쓴다
+- **예외는 `BusinessException` 하나만.** 새 에러는 예외 클래스가 아니라 ErrorCode 상수를 추가
+- **컨트롤러에서 try-catch 금지.** `GlobalExceptionHandler`가 전부 처리한다
+- **도메인별 enum을 쓴다.** 전역 단일 enum은 5명이 붙으면 계속 충돌한다
+- 401은 공통 `CommonErrorCode.UNAUTHORIZED`
 
-### API 계약의 정본은 코드다
+### 계약의 정본은 코드다
 
-**프론트는 이 저장소를 직접 읽는다.** 컨트롤러·DTO·`ErrorCode` enum이 곧 API 문서다.
-Swagger는 경로 목록을 훑는 보조 수단이며 정본이 아니다.
+프론트는 이 저장소를 직접 읽는다. **아래 둘은 프론트가 화면에 그대로 쓴다.**
 
-그래서 아래 두 가지는 **프론트가 그대로 읽는다는 전제로** 쓴다. 어차피 써야 하는 것들이라
-추가 부담이 없고, 손으로 베낀 사본과 달리 어긋나지 않는다.
+- `{도메인}ErrorCode`의 `message` — 에러 문구
+- 검증 어노테이션의 `message` — 폼 검증 문구
 
-- **`{도메인}ErrorCode`의 `message`** — 화면에 띄울 에러 문구의 정본
-- **검증 어노테이션의 `message`** — 폼 검증 문구의 정본
-
-Swagger 어노테이션(`@Tag`, `@Operation`, `@Schema`)은 **여력이 될 때만** 붙인다.
-없어도 springdoc이 메서드명·파라미터명으로 채우므로 문서가 비지 않는다. 리뷰에서 막지 않는다.
+Swagger 어노테이션(`@Tag`·`@Operation`)은 여력 될 때만. 없어도 문서는 비지 않는다.
 
 ---
 
-## 7. 트랜잭션 경계
+## 7. 트랜잭션
 
-- **`@Transactional`은 Service에만** 붙인다. Controller와 Repository에는 붙이지 않는다
-- **조회 메서드는 `@Transactional(readOnly = true)`**
-- `open-in-view: false`이므로 **지연 로딩은 서비스(트랜잭션) 안에서 끝낸다.**
-  컨트롤러에서 프록시를 건드리면 `LazyInitializationException`이 난다 —
-  버그가 아니라 "DTO 변환을 서비스에서 하라"는 신호다
-- 서비스는 인터페이스 없이 클래스 하나로 만든다. 구현체가 하나뿐인데 인터페이스를 두면
-  3일 동안 파일만 두 배가 된다
+- **`@Transactional`은 Service에만.** Controller·Repository엔 붙이지 않는다
+- **조회는 `@Transactional(readOnly = true)`**
+- 서비스는 인터페이스 없이 클래스 하나로
+- `open-in-view: false`라 **지연 로딩은 서비스 안에서 끝낸다.**
+  컨트롤러에서 `LazyInitializationException`이 나면 "DTO 변환을 서비스로 옮기라"는 신호다
 
 ---
 
 ## 8. 테스트
 
-해커톤이라 **커버리지를 강제하지 않는다.** 대신 두 가지만 지킨다.
+커버리지를 강제하지 않는다. 두 가지만 지킨다.
 
-- **`DdayApplicationTests`(컨텍스트 로딩 테스트)를 절대 지우지 않는다.**
-  이게 깨졌다는 건 서버가 안 뜬다는 뜻이고, CI가 그걸 잡아준다
-- **핵심 비즈니스 로직에는 서비스 단위 테스트를 붙인다** —
-  `@ExtendWith(MockitoExtension.class)` + `@Mock` / `@InjectMocks`, DB 불필요
+- **`DdayApplicationTests`를 지우지 않는다.** 깨지면 서버가 안 뜬다는 뜻이다
+- **핵심 로직에는 서비스 단위 테스트를 붙인다**
 
 | 계층 | 도구 | DB |
 |---|---|---|
-| 서비스 단위 | Mockito | 불필요 |
-| 컨트롤러 | MockMvc `standaloneSetup` + Mock Service | 불필요 |
-| 컨텍스트 로딩 | `@SpringBootTest` | **필요** (docker compose mysql) |
+| 서비스 단위 | Mockito (`@Mock` / `@InjectMocks`) | 불필요 |
+| 컨트롤러 | MockMvc `standaloneSetup` | 불필요 |
+| 컨텍스트 로딩 | `@SpringBootTest` | **필요** |
 
-- 단언은 **AssertJ `assertThat`으로 통일**한다
-- 테스트 DB는 docker compose MySQL을 그대로 쓴다. Testcontainers를 두지 않는다
+단언은 AssertJ `assertThat`으로 통일. Testcontainers를 두지 않는다.
 
 ---
 
-## 9. 시드 데이터 (`data.sql`)
+## 9. 시드 데이터
 
 `backend/src/main/resources/data.sql`이 **앱이 뜰 때마다 실행된다.**
 로컬에서 띄우면 로컬 MySQL에, 서버에서 띄우면 RDS에 들어간다.
+**두 DB를 동기화하는 게 아니라 이 파일 하나에서 양쪽이 각각 채워진다.**
 
+```sql
+-- 매 기동마다 돌므로 반드시 멱등하게. id를 박고 ON DUPLICATE KEY UPDATE.
+INSERT INTO pocket (id, type, monthly_budget) VALUES (1, 'HOUSING', 650000.00)
+ON DUPLICATE KEY UPDATE monthly_budget = VALUES(monthly_budget);
 ```
-        data.sql (Git)
-             │
-     ┌───────┴───────┐
-     ▼               ▼
- 로컬 MySQL         RDS
-```
 
-**두 DB를 서로 동기화하는 게 아니다.** 이 파일 하나에서 양쪽이 각각 채워진다.
-그래서 이 파일이 시드의 정본이고, DB를 날려도 앱만 다시 띄우면 복구된다.
+- **id를 auto-increment에 맡기지 않는다** — 매번 새 행이 생겨 멱등성이 깨진다
+- **`CREATE TABLE` 금지.** 테이블은 엔티티가 만든다. 여기는 INSERT/UPDATE 전용
+- **여기서 실패하면 앱이 안 뜬다** (의도된 동작)
+- **대량 데이터(수만 행+)는 넣지 않는다.** 별도 적재 스크립트로 한 번만
 
-관련 설정은 `application.yml`에 있다 — `spring.sql.init.mode: always`(기본값은
-embedded DB뿐이라 MySQL엔 안 돈다)와 `spring.jpa.defer-datasource-initialization: true`
-(**이게 없으면 테이블이 만들어지기 전에 data.sql이 돌아 죽는다**).
-
-### 지킬 것
-
-- **멱등하게 쓴다.** 매 기동마다 도니까 그냥 `INSERT`를 쓰면 재시작할 때마다 중복이 쌓인다.
-  id를 명시적으로 박고 `ON DUPLICATE KEY UPDATE`를 붙인다
-
-  ```sql
-  INSERT INTO pocket (id, name) VALUES (1, '지갑')
-  ON DUPLICATE KEY UPDATE name = VALUES(name);
-  ```
-
-  값을 고쳐서 재기동하면 그 값으로 갱신된다. 수정 없이 "없을 때만 넣기"면 `INSERT IGNORE`
-
-- **id를 auto-increment에 맡기지 않는다.** 안 박으면 매번 새 행이 생겨 멱등성이 깨진다
-- **`CREATE TABLE`을 쓰지 않는다.** 테이블은 엔티티가 만든다(`ddl-auto: update`).
-  여기는 INSERT/UPDATE 전용이다
-- **여기서 실패하면 앱이 안 뜬다**(`continue-on-error: false`).
-  시드가 조용히 깨진 채로 서비스되는 것보다 낫다는 판단이다
-- ⚠️ **주석만 남기고 비우면 앱이 안 뜬다.** 실행할 문장이 하나도 없으면 스프링이
-  `IllegalArgumentException: 'script' must not be null or empty`를 던진다.
-  그래서 파일 맨 위에 무해한 `SELECT 1;`을 남겨뒀다 — **지우지 말 것**
-- **대량 데이터(수만 행 이상)는 여기 넣지 않는다.** 라인 단위로 파싱해서 느리고,
-  매 기동마다 돌고, 저장소가 비대해진다. 그건 별도 적재 스크립트로 한 번만 넣는다
-
-### 스키마를 바꾸면 시드를 다시 넣어야 할 수 있다
-
-`ddl-auto: update`는 **추가만** 한다. 필드를 추가하면 기존 행은 그대로 남고 새 컬럼만
-`NULL`이지만, **필드/테이블 이름을 바꾸면 데이터가 옛 컬럼·옛 테이블에 갇힌다.**
-그럴 땐 DB를 새로 만들고 앱을 띄우면 data.sql이 다시 채운다.
+**스키마를 바꾸면 시드를 다시 넣어야 할 수 있다.** `ddl-auto: update`는 추가만 하므로,
+필드·테이블 **이름을 바꾸면 데이터가 옛 컬럼에 갇힌다.** 그때는 DB를 새로 만든다.
 
 ```bash
 cd backend && docker compose down -v && docker compose up -d   # 로컬
-# RDS는 mysql로 붙어서 DROP DATABASE dday; CREATE DATABASE dday;
+# RDS: DROP DATABASE dday; CREATE DATABASE dday;
 ```
 
 ---
@@ -377,91 +251,80 @@ cd backend && docker compose down -v && docker compose up -d   # 로컬
 ## 10. 환경 / 프로파일
 
 ```
-backend/src/main/resources/
-├─ application.yml          # 공통. 프로파일 기본값 local
-├─ application-local.yml    # 로컬. docker compose 기준값
-└─ application-prod.yml     # 서버. 값 자리에 환경변수 참조만
+src/main/resources/
+├─ application.yml          공통 · 프로파일 기본값 local
+├─ application-local.yml    docker compose 기준값
+└─ application-prod.yml     환경변수 참조만
 ```
 
-- **프로파일 기본값은 `local`.** 지정하지 않고 띄우면 로컬로 뜬다 (CI도 이 기본값으로 돈다)
-- 운영은 `SPRING_PROFILES_ACTIVE=prod` + `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 환경변수.
-  없으면 기동 단계에서 실패한다 (의도된 동작)
-- **커밋되는 파일에 운영 비밀번호를 넣지 않는다.** `.env`는 `.gitignore`에 있다
+- **기본 프로파일은 `local`.** 그냥 띄우면 로컬로 뜬다 (CI도 이걸로 돈다)
+- 운영은 `SPRING_PROFILES_ACTIVE=prod` + `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`
+- **커밋되는 파일에 운영 비밀번호를 넣지 않는다**
 
-### 두 compose 파일은 서로의 사본이 아니다
+### compose 파일 두 개
 
-**겹치는 서비스가 하나도 없다.** 동기화할 게 없다는 뜻이다.
+**겹치는 서비스가 없다. 동기화할 게 없다는 뜻이다.**
 
 | | `docker-compose.yml` (로컬) | `docker-compose.prod.yml` (서버) |
 |---|---|---|
-| MySQL | 컨테이너로 띄운다 | 없다 — RDS를 쓴다 |
-| 백엔드 | 없다 — `./gradlew bootRun` | 컨테이너로 띄운다 |
+| MySQL | 컨테이너 | 없음 — RDS |
+| 백엔드 | 없음 — `./gradlew bootRun` | 컨테이너 |
 
-로컬에서 앱까지 컨테이너에 넣으면 코드 한 줄 고칠 때마다 이미지를 다시 구워야 하고,
-서버에서 MySQL을 띄우면 RDS를 두고 DB가 둘이 된다.
+맞춰야 하는 건 **각 진영 안에서**다.
 
-**진짜로 맞춰야 하는 건 각 진영 안에서다.**
-
-- 로컬: `docker-compose.yml` ↔ `.env.sample` ↔ `application-local.yml` 기본값
-  ↔ `.github/workflows/ci.yml`의 service container. **로컬 DB 비밀번호를 바꾸면 CI도 고쳐야 한다**
+- 로컬: `docker-compose.yml` ↔ `.env.sample` ↔ `application-local.yml` ↔ `ci.yml`의 service container
+  → **로컬 DB 비밀번호를 바꾸면 CI도 고쳐야 한다**
 - 서버: `application-prod.yml`이 읽는 환경변수 *이름* ↔ `docker-compose.prod.yml`이 넘기는 이름
-
-한 파일에 `profiles:`로 합칠 수도 있지만 그러지 않았다. 서버로 복사되는 파일에 로컬 개발용
-MySQL 설정이 같이 실리고, 프로파일을 잘못 지정하면 RDS 옆에 MySQL 컨테이너가 뜰 수 있다.
-나눠두면 그 실수 자체가 불가능하고, 서버에는 prod 파일만 복사되므로 거기서 무심코
-`docker compose up -d`를 쳐도 "파일 없음"으로 그냥 실패한다.
 
 ---
 
-## 11. Git / GitHub 워크플로우
+## 11. Git
 
-**브랜치는 `main` 하나다.** `develop`을 두지 않는다 — 3일짜리에 브랜치를 두 갈래로 관리하면
-머지 비용이 개발 시간을 잡아먹는다.
+**브랜치는 `main` 하나.** `develop`을 두지 않는다.
 
 ```bash
-# 푸시하기 전에 항상 rebase로 당겨온다. merge로 당기면 커밋 그래프가 금방 엉킨다.
-git pull --rebase origin main
+git pull --rebase origin main    # merge로 당기면 그래프가 엉킨다
 git push origin main
 ```
 
-- 커밋: `type: 한국어 설명` — `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `ci`
-- **여러 명이 같은 파일을 만질 게 뻔한 큰 작업**은 `{type}/{설명}` 브랜치를 파서 PR로 올린다.
-  리뷰 승인을 기다리지 말고 CI만 green이면 셀프 머지해도 된다 — 목적은 승인이 아니라
-  "누가 뭘 건드리는 중인지" 보이게 하는 것이다
-- 작은 변경은 `main`에 바로 push해도 된다. 대신 **push 전에 `./gradlew build`를 돌린다**
-
-### 이슈
-
-큰 덩어리만 이슈로 남긴다. 제목은 `[TYPE] 한국어 설명`.
-
-| 접두사 | 라벨 |
-|---|---|
-| `[FEAT]` | `✨ 기능` |
-| `[BUG]` | `🐛 버그` |
-| `[TASK]` | `🛠️ 작업` |
-| `[DOCS]` | `📝 문서` |
+- 커밋: `type: 한국어 설명` — `feat` `fix` `docs` `chore` `refactor` `test` `style` `ci`
+- 작은 변경은 `main`에 바로 push. 단 **push 전에 `./gradlew build`**
+- 여러 명이 같은 파일을 만질 큰 작업만 브랜치 + PR.
+  **리뷰 승인을 기다리지 않는다** — CI green이면 셀프 머지. 목적은 "누가 뭘 건드리는 중인지" 보이는 것
+- 이슈는 큰 덩어리만. 제목 `[FEAT]` `[BUG]` `[TASK]` `[DOCS]` + 같은 뜻의 라벨
 
 ---
 
 ## 12. 배포
 
-**main에 push하면 GitHub Actions가 자동으로 배포한다.**
-자세한 절차와 EC2 세팅은 [docs/deploy.md](../docs/deploy.md)에 있다.
+**main에 push하면 자동 배포된다.** 절차와 AWS 세팅은 [docs/deploy.md](../docs/deploy.md).
 
 ```
-main push
-  └─ build   컴파일 + 테스트 (MySQL service container)
-     └─ image   도커 이미지 빌드 → GHCR push
-        └─ deploy  EC2에 SSH → docker compose pull && up -d → /health/db 확인
+main push (backend/** 변경 시)
+  └─ build   컴파일 + 테스트
+     └─ image   도커 이미지 → GHCR
+        └─ deploy  EC2 SSH → compose pull && up -d → /health/db 확인
 ```
 
-- **`deploy` 잡은 저장소 Variable `DEPLOY_ENABLED=true`일 때만 돈다.**
-  EC2를 아직 안 만들었으면 통째로 건너뛰므로 main push가 빨갛게 뜨지 않는다
-- 배포 후 항상 `GET /health/db`를 확인한다 — 앱은 떠 있는데 DB에 못 닿는 경우를
-  `/health`는 못 잡는다
-- 롤백은 EC2에서 이미지 태그를 이전 커밋 sha로 바꿔 다시 올린다 (docs/deploy.md 참고)
-- **운영 DB는 RDS다.** 앱만 EC2 컨테이너로 뜨고 DB는 분리돼 있다.
-  Elastic Beanstalk은 쓰지 않는다 — 이유는 docs/deploy.md
-- **로컬 개발은 RDS에 붙지 않는다.** 로컬은 `docker-compose.yml`의 MySQL 컨테이너다.
-  5명이 같은 DB를 밟으면 서로의 데이터를 지운다
-- **운영 DB 접속정보는 서버 `.env`에만 있다.** 저장소에도, GitHub Secrets에도 없다
+- 운영 DB는 **RDS**. 앱만 EC2 컨테이너로 뜬다
+- **로컬 개발은 RDS에 붙지 않는다.** 5명이 같은 DB를 밟으면 서로 데이터를 지운다
+- 운영 DB 접속정보는 **서버 `.env`에만** 있다 (저장소·GitHub Secrets에 없음)
+- 배포 후 **`GET /health/db`를 확인한다.** `/health`는 DB 단절을 못 잡는다
+
+---
+
+## 부록 — 자주 밟는 함정
+
+막혔을 때 여기부터 본다. 전부 실제로 한 번씩 겪은 것들이다.
+
+| 증상 | 원인 · 해결 |
+|---|---|
+| `Table doesn't exist` (기동 시) | `data.sql`이 테이블보다 먼저 돌았다. `spring.jpa.defer-datasource-initialization: true` 확인 |
+| `'script' must not be null or empty` | `data.sql`에 실행할 문장이 하나도 없다. 맨 위 `SELECT 1;`을 **지우지 말 것** |
+| 재시작할 때마다 시드가 중복 | `data.sql`에 id를 안 박았다. `ON DUPLICATE KEY UPDATE` |
+| 엔티티를 고쳤는데 컬럼이 안 바뀜 | `ddl-auto: update`는 **추가만** 한다. DB를 새로 만든다 (§9) |
+| IDE로 실행하면 DB 접속 실패 | IDE는 `.env`를 안 읽는다. 실행 구성 환경변수에 `MYSQL_PORT` 추가 |
+| 컨트롤러에서 `LazyInitializationException` | DTO 변환을 서비스 안으로 옮긴다 (§7) |
+| 응답 JSON에 필드가 통째로 빠짐 | Response DTO에 `@Getter`가 없다 |
+| `@ModelAttribute` DTO 필드가 전부 `null` | 그 DTO엔 `@Setter`가 필요하다 (§5) |
+| 프론트에서 CORS 에러 | 프론트가 절대 URL로 불렀다. `/api/...` 상대경로를 써야 한다 (`frontend/AGENTS.md`) |
