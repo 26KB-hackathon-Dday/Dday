@@ -28,7 +28,7 @@ public class WelfareCollectDevController {
     private final WelfareCollectLauncher launcher;
 
     @Operation(summary = "복지서비스 수집 잡 수동 실행", description = """
-            중앙부처복지서비스 목록을 긁어와 청년 대상 여부를 룰로 판정하고 welfare_program에 upsert한다.
+            중앙부처·지자체 복지서비스 목록을 긁어와 청년 대상 여부를 룰로 판정하고 welfare_program에 upsert한다.
             local 프로파일 전용. WELFARE_API_KEY가 설정돼 있어야 한다.
             """)
     @PostMapping("/collect")

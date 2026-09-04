@@ -73,13 +73,17 @@ springdoc:
 # 동작은 docs/welfare-collector.md.
 welfare:
   api:
-    # 목록 GET /NationalWelfarelistV001, 상세 GET /NationalWelfaredetailedV001
+    # CENTRAL — 목록 GET /NationalWelfarelistV001, 상세 GET /NationalWelfaredetailedV001
     base-url: http://apis.data.go.kr/B554287/NationalWelfareInformationsV001
+    # LOCAL(지자체) — 목록 GET /LcgvWelfarelist, 상세 GET /LcgvWelfaredetailed (NOTES.md §11)
+    local-base-url: http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations
     # data.go.kr 발급 "일반 인증키(Decoding)" 값. 인코딩 키(%2B 포함)를 넣으면 이중 인코딩된다.
-    # 비어 있으면 앱은 뜨지만 수집 잡은 실패한다 (CI·로컬 기본 상태).
+    # 비어 있으면 앱은 뜨지만 수집 잡은 실패한다 (CI·로컬 기본 상태). CENTRAL·LOCAL 공용.
     service-key: ${WELFARE_API_KEY:}
     # 생애주기 코드 — 004 = 청년. 코드표가 바뀌면 이 값만 교체한다.
     life-code: "004"
+    # LOCAL은 키워드로 좁게 긁는다 — 자립준비청년 전용 지자체 제도만 (NOTES.md §11-2).
+    local-search-word: 자립준비청년
     page-size: 10
     connect-timeout: 3s
     read-timeout: 10s

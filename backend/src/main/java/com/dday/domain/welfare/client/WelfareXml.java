@@ -1,5 +1,7 @@
 package com.dday.domain.welfare.client;
 
+import com.dday.domain.welfare.client.dto.LcgvWelfareListItem;
+import com.dday.domain.welfare.client.dto.LcgvWelfareListResponse;
 import com.dday.domain.welfare.client.dto.WelfareListItem;
 import com.dday.domain.welfare.client.dto.WelfareListResponse;
 import jakarta.xml.bind.JAXBContext;
@@ -15,35 +17,56 @@ import java.io.StringWriter;
  *
  * <p>JAXB를 쓰는 이유는 build.gradle 주석 참고 — jackson-dataformat-xml은 우리 JSON 응답까지
  * 오염시킨다.
+ *
+ * <p>CENTRAL({@link WelfareListResponse})과 LOCAL({@link LcgvWelfareListResponse})은 루트
+ * 엘리먼트({@code <wantedList>})·항목 엘리먼트({@code <servList>}) 이름이 같아서 한 컨텍스트에
+ * 넣으면 충돌한다. 컨텍스트를 둘로 나눈다.
  */
 public final class WelfareXml {
 
-    private static final JAXBContext CONTEXT = createContext();
+    private static final JAXBContext CENTRAL_CONTEXT = createContext(WelfareListResponse.class, WelfareListItem.class);
+    private static final JAXBContext LOCAL_CONTEXT = createContext(LcgvWelfareListResponse.class, LcgvWelfareListItem.class);
 
     private WelfareXml() {
     }
 
-    private static JAXBContext createContext() {
+    private static JAXBContext createContext(Class<?>... classes) {
         try {
-            return JAXBContext.newInstance(WelfareListResponse.class, WelfareListItem.class);
+            return JAXBContext.newInstance(classes);
         } catch (JAXBException e) {
             throw new IllegalStateException("복지 API JAXB 컨텍스트 생성 실패", e);
         }
     }
 
     public static WelfareListResponse readListResponse(String xml) {
+        return read(CENTRAL_CONTEXT, xml, WelfareListResponse.class);
+    }
+
+    public static LcgvWelfareListResponse readLcgvListResponse(String xml) {
+        return read(LOCAL_CONTEXT, xml, LcgvWelfareListResponse.class);
+    }
+
+    /** 항목 하나를 {@code <servList>} XML로 되돌린다. 원본 보존용. 실패해도 수집은 막지 않는다. */
+    public static String writeItem(WelfareListItem item) {
+        return write(CENTRAL_CONTEXT, item);
+    }
+
+    public static String writeLcgvItem(LcgvWelfareListItem item) {
+        return write(LOCAL_CONTEXT, item);
+    }
+
+    private static <T> T read(JAXBContext context, String xml, Class<T> type) {
         try {
-            Unmarshaller unmarshaller = CONTEXT.createUnmarshaller();
-            return (WelfareListResponse) unmarshaller.unmarshal(new StringReader(xml));
+            Unmarshaller unmarshaller = context.createUnmarshaller();
+            return type.cast(unmarshaller.unmarshal(new StringReader(xml)));
         } catch (JAXBException e) {
             throw new WelfareApiException("복지 목록 응답 파싱 실패", e);
         }
     }
 
-    /** 항목 하나를 {@code <servList>} XML로 되돌린다. 원본 보존용. 실패해도 수집은 막지 않는다. */
-    public static String writeItem(WelfareListItem item) {
+    private static String write(JAXBContext context, Object item) {
         try {
-            Marshaller marshaller = CONTEXT.createMarshaller();
+            Marshaller marshaller = context.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
             StringWriter writer = new StringWriter();
             marshaller.marshal(item, writer);

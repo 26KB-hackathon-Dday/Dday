@@ -2,8 +2,9 @@
 
 > 수집 배치가 호출할 외부 API 정리. 태그: **【확인】** 실제 응답 XML로 확정 / **【추정】** / **【❓】** 미해결.
 >
-> **이번 범위: 중앙부처복지서비스(CENTRAL)만.** 지자체(LOCAL)는 다음 단계.
-> 샘플: [`list-central.xml`](./list-central.xml) (목록, 28건 중 1페이지), [`detail-central.xml`](./detail-central.xml) (상세 1건).
+> **범위: 중앙부처복지서비스(CENTRAL) — §1~10.** 지자체(LOCAL)는 §11 (진행 중).
+> 샘플: [`list-central.xml`](./list-central.xml) (목록, 28건 중 1페이지), [`detail-central.xml`](./detail-central.xml) (상세 1건),
+> [`list-local.xml`](./list-local.xml) · [`detail-local.xml`](./detail-local.xml) (LOCAL).
 
 ---
 
@@ -265,8 +266,9 @@ else                               → DISCARD (저장 안 함)
 | `rule_trace` | varchar(255) | `"R2+2,R3+3"` 디버그 |
 | `raw_list_xml` | text | `<servList>` 원본 |
 | `raw_detail_xml` | text (nullable) | `<wantedDtl>` 원본 |
-| `collected_at` | datetime | 이번 실행 시각 |
+| `collected_at` | datetime | 잡 파라미터 `runAt`(모든 스텝 공유) |
 | `created_at` `updated_at` | `@CreationTimestamp`/`@UpdateTimestamp` | |
+| `ctpv_nm` `sgg_nm` `biz_chr_dept_nm` `aply_mtd_nm` `last_mod_ymd` | — | **지자체(LOCAL) 전용 — §11-6.** CENTRAL은 전부 null |
 
 - **upsert 키 = `serv_id`.** 재실행 시 갱신(멱등).
 - **저장하는 것: `STRONG_YOUTH` / `AUTO_APPROVED` / `REVIEW_QUEUE` 만.**
@@ -301,3 +303,100 @@ else                               → DISCARD (저장 안 함)
 > 전부 확정. 사전필터(§7-0), Rule 1 키워드=`자립준비청년`·`보호종료`, Rule3 단독 +3, T_hi=3/T_lo=0,
 > `AUTO_REJECTED` 미저장, 매월 1일 00:00, Spring Batch 정식.
 > base URL `http://apis.data.go.kr/B554287/NationalWelfareInformationsV001`, 목록 `/NationalWelfarelistV001`, 상세 `/NationalWelfaredetailedV001`.
+
+---
+
+## 11. 지자체(LOCAL) 복지서비스 — 【확인 진행 중】
+
+> 샘플: [`list-local.xml`](./list-local.xml) (목록, `totalCount=3`), [`detail-local.xml`](./detail-local.xml) (상세 1건 — `WLF00004197`).
+
+### 11-1. 대상 API
+
+| | |
+|---|---|
+| 이름 | 한국사회보장정보원_지자체복지서비스 |
+| base URL | `http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations` |
+| 목록 | `GET /LcgvWelfarelist` 【확인 — 사용자】 |
+| 상세 | `GET /LcgvWelfaredetailed` 【확인 — 사용자】 |
+| serviceKey | CENTRAL과 같은 키 (§1) |
+| `agency_type` | `LOCAL` |
+| 응답 포맷 | XML. 성공 판정 `<resultCode>0</resultCode>` — CENTRAL과 동일 |
+
+### 11-2. 조회 전략 — **좁게** 【확인】
+
+목록 요청 파라미터: `serviceKey` · `pageNo` · `numOfRows` · `lifeArray=004` · `searchWrd=자립준비청년`.
+**`srchKeyCode`는 안 보낸다.** (CENTRAL과 달리 `searchWrd`가 그냥 먹는다 — `totalCount=3`이 그 증거,
+안 먹었으면 청년 전체 수백 건.)
+
+- `searchWrd=자립준비청년` → `totalCount=3`. 결과가 전부 자립준비청년 전용 지자체 제도다.
+- CENTRAL은 `lifeArray=004`(청년 전체)로 넓게 긁고 룰로 걸렀지만, LOCAL은 **키워드로 좁혀서** 긁는다.
+  D-1825가 필요한 건 자립준비청년 대상 제도뿐이고, LOCAL "범용 청년"(청년월세 지자체판 등)까지
+  넓히면 수백 건 + 검토부담이라 이번 범위 아님.
+- 지역 파라미터(`ctpvCd`/`sggCd`)를 안 보내면 전국이 한 번에 온다 (샘플이 서울 용산·서대문 + 전남광주 혼재).
+  → **17개 시도 순회 불필요.**
+- 놓칠 수 있는 것: "보호종료아동"으로만 표기된 제도. 필요하면 `searchWrd=보호종료`로 2차 수집 (후속).
+
+### 11-3. 목록 필드 — CENTRAL 대조
+
+| 의미 | CENTRAL (`NationalWelfarelistV001`) | LOCAL (`LcgvWelfarelist`) | 비고 |
+|---|---|---|---|
+| 서비스 ID | `servId` | `servId` | 둘 다 `WLF########`. bokjiro 전역 유니크 — CENTRAL/LOCAL 안 겹침 |
+| 서비스명 / 요약 | `servNm` / `servDgst` | 동일 | |
+| 상세링크 | `servDtlLink` (`…ReldBztpCd=01`) | `servDtlLink` (`…ReldBztpCd=02`) | `02` = 지자체 |
+| 생애주기 | `lifeArray` (`청소년,청년` — 공백 X) | `lifeNmArray` (`청소년, 청년` — **공백 O**) | **엘리먼트명·구분자 다름** |
+| 관심주제 | `intrsThemaArray` (공백 X) | `intrsThemaNmArray` (`보호·돌봄, 서민금융` — **공백 O**) | **엘리먼트명·구분자 다름** |
+| 대상특성 | `trgterIndvdlArray` | **없음** | Rule 4 입력 소스 없음 → 항상 중립 |
+| 소관 | `jurMnofNm` + `jurOrgNm` (분리) | `bizChrDeptNm` (`서울특별시 용산구 생활지원국 아동청소년과` — **한 필드**) | 부처/부서 분리 안 됨 |
+| 시도 | 없음 | `ctpvNm` (`서울특별시`) | ★ 지역 |
+| 시군구 | 없음 | `sggNm` (`용산구`) | ★ 지역. **시도 단위 사업이면 엘리먼트 없음** (자립정착금 `WLF00001803`) |
+| 신청방법 | `onapPsbltYn` (Y/N) | `aplyMtdNm` (`방문, 전화, 우편`) | 성격 다름 |
+| 최초등록일 | `svcfrstRegTs` | **없음** | |
+| 최종수정일 | **없음** | `lastModYmd` (`20260723`) | ★ 신선도 단서 |
+| 조회수 / 주기 / 제공유형 | `inqNum` / `sprtCycNm` / `srvPvsnNm` | 동일 | |
+| 대표연락처 | `rprsCtadr` | 없음 | |
+
+### 11-4. 상세 필드 — CENTRAL 대조
+
+| 의미 | CENTRAL (`…detailedV001`) | LOCAL (`LcgvWelfaredetailed`) |
+|---|---|---|
+| 기준연도 | `crtrYr` | 없음 |
+| 시행 시작/종료 | 없음 | `enfcBgngYmd` / `enfcEndYmd` (`99991231` = 무기한) ★ 종료 판정 |
+| 지원대상 | `tgtrDtlCn` | `sprtTrgtCn` |
+| 선정기준 / 지원내용 | `slctCritCn` / `alwServCn` | 동일 |
+| 개요 | `wlfareInfoOutlCn` | 없음 |
+| 신청방법 | `applmetList` (반복) | `aplyMtdCn` (텍스트) + `aplyMtdNm` |
+| 문의처 | `inqplCtadrList` (`servSeCode`/`servSeDetailLink`/`servSeDetailNm`) | `inqplCtadrList` (`wlfareInfoDtlCd`/`wlfareInfoReldCn`/`wlfareInfoReldNm`) — **자식 필드명 다름** |
+| 근거법령 | `baslawList` | `baslawList` (조례) + `basfrmList` (신청서식 파일) |
+| 관련 홈페이지 | `inqplHmpgReldList` | 없음 |
+
+### 11-5. 판정 룰 영향
+
+1. 좁게 조회하므로 3건 전부 Rule 1(`자립준비청년`·`보호종료`) 매칭 → **STRONG_YOUTH**. 스코어링 룰(2~6)은
+   LOCAL에서 사실상 무의미하지만, CENTRAL `YouthClassifier`를 그대로 재사용해도 안전한 쪽으로 수렴한다.
+2. `trgterIndvdlArray` 없음 → Rule 4 항상 0.
+3. `bizChrDeptNm`을 `jurOrgNm` 자리에 매핑하면 Rule 2 동작 (대개 "아동청소년과"라 0).
+4. `lifeNmArray`·`intrsThemaNmArray`는 `, ` (공백 포함) → 파싱 시 정규화 (CENTRAL 상세와 동일 처리).
+5. `sggNm` 없는 행 = 광역(시도) 단위 사업 → `sgg_nm = null`.
+
+### 11-6. 저장 스키마 추가분 (§8에 더함)
+
+| 컬럼 | 타입 | 비고 |
+|---|---|---|
+| `ctpv_nm` | varchar(30) nullable | 시도명. CENTRAL은 null |
+| `sgg_nm` | varchar(30) nullable | 시군구명. 광역 사업·CENTRAL은 null |
+| `biz_chr_dept_nm` | varchar(255) nullable | LOCAL 사업담당부서 (CENTRAL은 `jur_mnof_nm`+`jur_org_nm` 사용) |
+| `last_mod_ymd` | varchar(8) nullable | LOCAL 최종수정일. 종료 감지(후속)용 |
+| `aply_mtd_nm` | varchar(100) nullable | 신청방법 요약 |
+
+> `region_code`(행정표준코드) 정규화는 후속 — 지금은 `ctpv_nm`/`sgg_nm` 문자열만.
+> `enfc_bgng_ymd`/`enfc_end_ymd`는 상세에만 있으므로 Step 2(상세보강) 붙을 때.
+
+### 11-7. 확정 요약
+
+| 항목 | 값 |
+|---|---|
+| base URL | `http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations` |
+| 목록 / 상세 | `/LcgvWelfarelist` · `/LcgvWelfaredetailed` |
+| 목록 파라미터 | `serviceKey` `pageNo` `numOfRows` `lifeArray=004` `searchWrd=자립준비청년` (srchKeyCode 없음) |
+| 지역 순회 | 불필요 (전국 일괄 반환) |
+| 판정 | `YouthClassifier` 재사용 — 좁게 조회라 전부 STRONG_YOUTH 수렴 |

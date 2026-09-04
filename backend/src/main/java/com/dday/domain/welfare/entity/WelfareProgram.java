@@ -52,6 +52,28 @@ public class WelfareProgram {
     @Column(nullable = false, length = 10)
     private AgencyType agencyType;
 
+    // ── 지역 (LOCAL 전용, CENTRAL은 null) — docs/welfare-api/NOTES.md §11-6 ──
+
+    /** 시도명 (예: {@code 서울특별시}). CENTRAL은 {@code null}(전국 시행). */
+    @Column(length = 30)
+    private String ctpvNm;
+
+    /** 시군구명 (예: {@code 용산구}). 광역 사업·CENTRAL은 {@code null}. */
+    @Column(length = 30)
+    private String sggNm;
+
+    /** LOCAL 사업담당부서 전체 문자열. CENTRAL은 {@code jurMnofNm}+{@code jurOrgNm}을 쓴다. */
+    @Column(length = 255)
+    private String bizChrDeptNm;
+
+    /** LOCAL 신청방법 요약 (예: {@code 방문, 전화, 우편}). */
+    @Column(length = 100)
+    private String aplyMtdNm;
+
+    /** LOCAL 최종수정일 {@code YYYYMMDD}. 종료 감지(후속)용. CENTRAL은 {@code null}. */
+    @Column(length = 8)
+    private String lastModYmd;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ProgramSource source;
@@ -132,15 +154,15 @@ public class WelfareProgram {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    private WelfareProgram(String servId) {
+    private WelfareProgram(String servId, AgencyType agencyType) {
         this.servId = servId;
-        this.agencyType = AgencyType.CENTRAL;
+        this.agencyType = agencyType;
         this.source = ProgramSource.API_CANDIDATE;
     }
 
     /** 새로 잡힌 후보. */
     public static WelfareProgram fromCollection(WelfareListItem item, Classification classification, LocalDateTime collectedAt) {
-        WelfareProgram program = new WelfareProgram(item.getServId());
+        WelfareProgram program = new WelfareProgram(item.getServId(), item.getAgencyType());
         program.applyCollection(item, classification, collectedAt);
         return program;
     }
@@ -162,6 +184,12 @@ public class WelfareProgram {
         this.onapPsbltYn = item.getOnapPsbltYn();
         this.detailLink = clip(item.getServDtlLink(), 500);
         this.svcfrstRegTs = item.getSvcfrstRegTs();
+        this.agencyType = item.getAgencyType();
+        this.ctpvNm = item.getCtpvNm();
+        this.sggNm = item.getSggNm();
+        this.bizChrDeptNm = clip(item.getBizChrDeptNm(), 255);
+        this.aplyMtdNm = clip(item.getAplyMtdNm(), 100);
+        this.lastModYmd = item.getLastModYmd();
         this.ruleScore = classification.score();
         this.youthStatus = classification.status();
         this.ruleTrace = classification.trace();

@@ -11,7 +11,9 @@ import java.time.Duration;
 
 /**
  * 복지 API 전용 {@link RestClient}. 타임아웃은 {@code welfare.api.*}에서 온다.
- * XML 파싱은 {@link WelfareXml}(정적)이 담당하므로 여기서 만들 빈은 클라이언트 하나뿐이다.
+ * XML 파싱은 {@link WelfareXml}(정적)이 담당한다.
+ *
+ * <p>CENTRAL과 LOCAL은 host가 달라 클라이언트를 둘로 만든다. 타임아웃 설정은 공유한다.
  */
 @Configuration
 public class WelfareClientConfig {
@@ -21,7 +23,18 @@ public class WelfareClientConfig {
             @Value("${welfare.api.base-url}") String baseUrl,
             @Value("${welfare.api.connect-timeout}") Duration connectTimeout,
             @Value("${welfare.api.read-timeout}") Duration readTimeout) {
+        return build(baseUrl, connectTimeout, readTimeout);
+    }
 
+    @Bean
+    public RestClient lcgvWelfareRestClient(
+            @Value("${welfare.api.local-base-url}") String baseUrl,
+            @Value("${welfare.api.connect-timeout}") Duration connectTimeout,
+            @Value("${welfare.api.read-timeout}") Duration readTimeout) {
+        return build(baseUrl, connectTimeout, readTimeout);
+    }
+
+    private static RestClient build(String baseUrl, Duration connectTimeout, Duration readTimeout) {
         ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.defaults()
                 .withConnectTimeout(connectTimeout)
                 .withReadTimeout(readTimeout);

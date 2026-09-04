@@ -1,5 +1,6 @@
 package com.dday.domain.welfare.client.dto;
 
+import com.dday.domain.welfare.entity.AgencyType;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlRootElement;
@@ -45,4 +46,32 @@ public class WelfareListItem {
     /** 이 항목을 재직렬화한 XML. 파싱 직후 클라이언트가 채운다. 직렬화 대상에서는 제외한다. */
     @XmlTransient
     private String rawXml;
+
+    // ── LOCAL(지자체) 전용 ──────────────────────────────────────────────────
+    // CENTRAL XML엔 대응 엘리먼트가 없다. 지자체 수집기가 LcgvWelfareListItem#toCommon()에서
+    // 직접 채운다. @XmlTransient라 CENTRAL 파싱/재직렬화에는 영향이 없다.
+
+    /** 운영 주체. 기본값 {@link AgencyType#CENTRAL}, 지자체 항목만 {@link AgencyType#LOCAL}. */
+    @XmlTransient
+    private AgencyType agencyType = AgencyType.CENTRAL;
+
+    /** LOCAL 사업담당부서 전체 문자열. CENTRAL은 {@code null}. */
+    @XmlTransient
+    private String bizChrDeptNm;
+
+    /** LOCAL 시도명. CENTRAL은 {@code null}. */
+    @XmlTransient
+    private String ctpvNm;
+
+    /** LOCAL 시군구명. 광역 사업·CENTRAL은 {@code null}. */
+    @XmlTransient
+    private String sggNm;
+
+    /** LOCAL 신청방법 요약 (예: {@code 방문, 전화, 우편}). CENTRAL은 {@code null}. */
+    @XmlTransient
+    private String aplyMtdNm;
+
+    /** LOCAL 최종수정일 {@code YYYYMMDD}. CENTRAL은 {@code null}. */
+    @XmlTransient
+    private String lastModYmd;
 }

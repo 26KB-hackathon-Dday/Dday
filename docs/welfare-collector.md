@@ -1,6 +1,6 @@
 # 복지서비스 수집기 (welfare-collector)
 
-중앙부처 복지서비스 API를 매월 긁어와, **청년 대상 여부를 룰로 판정**해서 후보를
+중앙부처·지자체 복지서비스 API를 매월 긁어와, **청년 대상 여부를 룰로 판정**해서 후보를
 `welfare_program` 테이블에 쌓는 Spring Batch 잡.
 
 지금까지 사람이 채팅으로 하던 일 — "이 servId XML 받아서 청년 맞는지 봐줘" — 을 코드로 옮긴 것이다.
@@ -12,32 +12,39 @@ API 스펙·필드 의미·룰의 근거는 [welfare-api/NOTES.md](./welfare-api
 
 ```
 매월 1일 00:00  (cron 0 0 0 1 * *)   —  WelfareCollectScheduler
-        │
+        │  (잡 파라미터 runAt = 실행 시각 epoch millis — 모든 스텝이 공유)
         ▼
-┌─ Step 1  collectYouthListStep  (이번 PR은 이 스텝 하나뿐) ──────┐
-│  목록 API 페이징 (numOfRows=10)                                │
+┌─ Step 1  collectYouthListStep  (중앙부처) ─────────────────────┐
+│  NationalWelfarelistV001 페이징 (numOfRows=10)                 │
 │    srchKeyCode=003 & searchWrd=청년 & lifeArray=004            │
-│  각 servList 항목마다:                                          │
-│    ├─ 사전필터 (§NOTES 7-0)                                     │
-│    │    통과 못 하면 → DISCARD (저장 안 함)                     │
-│    └─ YouthClassifier 판정                                      │
-│         ├─ Rule 1 매칭        → STRONG_YOUTH                    │
-│         ├─ score ≥ 3          → AUTO_APPROVED                   │
-│         ├─ 0 ≤ score < 3      → REVIEW_QUEUE                    │
-│         └─ score < 0          → 저장 안 함                       │
-│  저장 대상만 upsert (키: serv_id)                               │
-└───────────────────────────────────────────────────────────────┘
-        │
-        ▼
+│  → 넓게 긁고 룰로 걸러낸다 (28건 → 저장 15)                     │
+├─ Step 2  collectLocalListStep  (지자체) ──────────────────────┤
+│  LcgvWelfarelist 페이징                                        │
+│    searchWrd=자립준비청년 & lifeArray=004  (srchKeyCode 없음)  │
+│  → 키워드로 좁게 긁는다 (현재 3건, 전부 STRONG_YOUTH)          │
+│  LcgvWelfareListItem → 공통 WelfareListItem 변환 후 아래 공유  │
+└──────────────┬────────────────────────────────────────────────┘
+               │  각 항목마다:
+               │   ├─ 사전필터 (§NOTES 7-0) — 탈락 시 DISCARD
+               │   └─ YouthClassifier 판정
+               │        Rule 1 매칭 → STRONG_YOUTH
+               │        score ≥ 3   → AUTO_APPROVED
+               │        0 ≤ score<3 → REVIEW_QUEUE
+               │        score < 0   → 저장 안 함
+               │  저장 대상만 upsert (키: serv_id — 중앙/지자체 전역 유니크)
+               ▼
    관리자는 youth_status = REVIEW_QUEUE 인 행만 확인하면 된다
 ```
 
-**이번 PR에서 빠진 Step 2 (후속):** REVIEW_QUEUE 건을 상세 API로 보강 —
-`crtrYr`·`raw_detail_xml` 저장, 상세 텍스트(`tgtrDtlCn` 등)에 Rule 1 키워드가 있으면
-`STRONG_YOUTH`로 승격. "취업 후 상환 학자금대출" 같은 함정 케이스를 여기서 건진다.
-그전까지 `crtr_yr`·`raw_detail_xml` 컬럼은 항상 `null`.
+두 스텝은 **소스 API만 다르다.** 지자체 응답(`lifeNmArray`·`bizChrDeptNm`·`ctpvNm`…)은
+`LcgvWelfareListItem#toCommon()`에서 중앙 포맷(`WelfareListItem`)으로 변환되어, 이후
+Processor·Writer·판정 룰을 그대로 공유한다. 필드 대조는 NOTES.md §11-3.
 
-- **신선도 / 종료 판정은 이번 범위 아님.** `svcfrstRegTs`는 저장만.
+**빠진 Step 3 (후속):** REVIEW_QUEUE 건을 상세 API로 보강 —
+`crtrYr`(중앙)·`enfcEndYmd`(지자체)·`raw_detail_xml` 저장, 상세 텍스트에 Rule 1 키워드가 있으면
+`STRONG_YOUTH`로 승격.
+
+- **신선도 / 종료 판정은 이번 범위 아님.** 지자체 `last_mod_ymd`는 저장만 (후속에서 활용).
 - **LLM 파싱은 이번 범위 아님.**
 
 ---
@@ -79,9 +86,14 @@ API 스펙·필드 의미·룰의 근거는 [welfare-api/NOTES.md](./welfare-api
 
 ## 3. 저장
 
-`welfare_program` 테이블. 스키마 컬럼은 NOTES §8.
+`welfare_program` 테이블. 스키마 컬럼은 NOTES §8, 지자체 추가분은 §11-6.
 
-- **upsert 키 = `serv_id`.** 재실행 시 갱신 (멱등).
+- **upsert 키 = `serv_id`.** 재실행 시 갱신 (멱등). 중앙/지자체 `serv_id`는 전역 유니크라 안 겹친다.
+- **`agency_type`** — `CENTRAL` / `LOCAL`. 지자체 행만 `ctpv_nm`·`sgg_nm`·`biz_chr_dept_nm`·
+  `aply_mtd_nm`·`last_mod_ymd`가 채워지고, 중앙 전용(`jur_mnof_nm`·`svcfrst_reg_ts`·`onap_psblt_yn`)은
+  `null`, `trgter_indvdl_array`는 `""`(지자체 응답에 없음). 지자체는 부서 전체 문자열이
+  `biz_chr_dept_nm`과 `jur_org_nm` 양쪽에 들어간다(`jur_org_nm`은 Rule 2 입력이라 그대로 둔다).
+  `sgg_nm`은 광역 단위 사업이면 `null`.
 - **저장하는 status**: `STRONG_YOUTH` / `AUTO_APPROVED` / `REVIEW_QUEUE`.
 - 저장 안 함: 사전필터 DISCARD, score < 0 (`AUTO_REJECTED` 개념) — enum에도 없다.
 - `raw_list_xml` 원본 보존 (항목을 JAXB로 재직렬화한 `<servList>`) — 나중 LLM 파싱 입력 + diff.
@@ -94,22 +106,26 @@ API 스펙·필드 의미·룰의 근거는 [welfare-api/NOTES.md](./welfare-api
 
 ## 4. 외부 호출
 
+| | 중앙부처 (CENTRAL) | 지자체 (LOCAL) |
+|---|---|---|
+| base URL | `…/B554287/NationalWelfareInformationsV001` (`welfare.api.base-url`) | `…/B554287/LocalGovernmentWelfareInformations` (`welfare.api.local-base-url`) |
+| 목록 / 상세 | `/NationalWelfarelistV001` · `/NationalWelfaredetailedV001` | `/LcgvWelfarelist` · `/LcgvWelfaredetailed` |
+| 쿼리 | `srchKeyCode=003 & searchWrd=청년 & lifeArray=004` | `searchWrd=자립준비청년 & lifeArray=004` (srchKeyCode 없음) |
+| 클라이언트 | `NationalWelfareApiClient` | `LocalWelfareApiClient` |
+
 | | |
 |---|---|
-| base URL | `http://apis.data.go.kr/B554287/NationalWelfareInformationsV001` (`welfare.api.base-url`) |
-| 목록 | `GET /NationalWelfarelistV001` |
-| 상세 | `GET /NationalWelfaredetailedV001` |
-| 인증 | 쿼리 `serviceKey` = `welfare.api.service-key` (환경변수 `WELFARE_API_KEY`, Decoding 키) |
-| 클라이언트 | `RestClient`로 문자열 수신 → `WelfareXml`(JAXB)로 파싱 |
+| 인증 | 쿼리 `serviceKey` = `welfare.api.service-key` (환경변수 `WELFARE_API_KEY`, Decoding 키). 두 소스 공용 |
+| 파싱 | `RestClient`로 문자열 수신 → `WelfareXml`(JAXB). 중앙·지자체가 루트 엘리먼트명이 같아 JAXB 컨텍스트를 둘로 나눔 |
 | 성공 판정 | 응답 `<resultCode>0</resultCode>` (표준 `00` 아님). 그 외엔 `WelfareApiException` → Step 재시도/실패 |
-| 타임아웃 | connect 3s / read 10s |
+| 타임아웃 | connect 3s / read 10s (공용) |
 | 재시도 | Step 청크 단위 Spring Batch 재시도 3회 (`WelfareApiException`) |
 
 > **왜 JAXB인가:** `jackson-dataformat-xml`을 넣으면 `MappingJackson2XmlHttpMessageConverter`가
 > 등록돼 우리 JSON API 응답까지 XML로 바뀐다(HealthControllerTest가 깨진다). JAXB의
 > `Jaxb2RootElementHttpMessageConverter`는 `@XmlRootElement` 타입만 다뤄 부작용이 없다.
 
-- **콜 예산**: 목록 ~3콜 + 상세 = 검토큐 건수(월 한 자릿수). 개발키 1,000/일과 무관.
+- **콜 예산**: 중앙 목록 ~3콜 + 지자체 목록 ~1콜 + 상세 = 검토큐 건수(월 한 자릿수). 개발키 1,000/일과 무관.
 
 ---
 
@@ -123,7 +139,8 @@ API 스펙·필드 의미·룰의 근거는 [welfare-api/NOTES.md](./welfare-api
   `JobLauncher.run()` 호출. cron 기본값 `0 0 0 1 * *`.
 - `@Scheduled` 활성화를 위해 `@EnableScheduling` (welfare 도메인 config 또는 global).
 - `JobParameters` 에 `runAt=<epochMillis>` 를 넣어 매 실행을 새 인스턴스로 (Batch는 파라미터가
-  같으면 재실행을 거부한다).
+  같으면 재실행을 거부한다). **Writer의 `collected_at`도 이 `runAt`을 쓴다** — 중앙·지자체 스텝이
+  같은 시각을 공유해야 "이번에 안 잡힌 후보"(`collected_at < runAt`)를 정확히 가른다.
 
 ### 로컬에서 수동 실행
 
@@ -154,11 +171,13 @@ com.dday.domain.welfare
 ├─ repository/
 │  └─ WelfareProgramRepository.java
 ├─ client/
-│  ├─ NationalWelfareApiClient.java   목록 페이지 조회
-│  ├─ WelfareClientConfig.java        RestClient 빈 (타임아웃)
-│  ├─ WelfareXml.java                 JAXB 파싱/재직렬화 (정적)
+│  ├─ NationalWelfareApiClient.java   중앙부처 목록 페이지 조회
+│  ├─ LocalWelfareApiClient.java      지자체 목록 페이지 조회
+│  ├─ WelfareClientConfig.java        RestClient 빈 2개 (중앙/지자체, 타임아웃 공용)
+│  ├─ WelfareXml.java                 JAXB 파싱/재직렬화 (정적, 컨텍스트 2개)
 │  ├─ WelfareApiException.java
-│  └─ dto/  (WelfareListResponse, WelfareListItem)
+│  └─ dto/  WelfareListResponse·WelfareListItem (중앙)
+│           LcgvWelfareListResponse·LcgvWelfareListItem (지자체, #toCommon()으로 변환)
 ├─ collector/
 │  ├─ YouthClassifier.java       사전필터 + 룰 조합 + 판정
 │  ├─ Classification.java        결과(disposition, status, score, trace)
@@ -167,9 +186,10 @@ com.dday.domain.welfare
 │     ├─ Rule4TargetCount  Rule5DgstPosition  Rule6ServNameKeyword
 │     └─ RuleHit.java
 ├─ batch/
-│  ├─ WelfareCollectJobConfig.java   Job + Step 1
-│  ├─ WelfareListReader.java         @StepScope, API 페이징 ItemReader
-│  ├─ WelfareClassifyProcessor.java  ItemProcessor (null = 미저장)
+│  ├─ WelfareCollectJobConfig.java   Job + Step 1(중앙) + Step 2(지자체)
+│  ├─ WelfareListReader.java         @StepScope, 중앙 목록 페이징 ItemReader
+│  ├─ LocalWelfareListReader.java    @StepScope, 지자체 목록 페이징 + 공통 DTO 변환
+│  ├─ WelfareClassifyProcessor.java  ItemProcessor (null = 미저장, 중앙·지자체 공용)
 │  ├─ WelfareProgramWriter.java      @StepScope, upsert
 │  ├─ ClassifiedProgram.java         Processor→Writer 묶음
 │  ├─ WelfareCollectLauncher.java    JobLauncher 호출 (스케줄러·컨트롤러 공용)
@@ -193,15 +213,18 @@ com.dday.domain.welfare
   바꾸면 여기부터 깨진다.
 - `Rule3LifeStageTest`, `Rule5DgstPositionTest` — 경계값 (단독/2개/3개, 시작/나열/무관).
 - `WelfareListResponseParseTest` — `<wantedList>` 고유 구조·대상특성 없음·값 안의 `·` 파싱.
+- `LcgvWelfareListResponseParseTest` — 지자체 응답 파싱·지역 필드·광역 사업은 `sggNm` 없음·`toCommon()` 변환.
+- `LocalYouthClassifierTest` — 지자체 3건이 변환 후 전부 STRONG_YOUTH.
 - `DdayApplicationTests`(`@SpringBootTest`)가 Batch 빈·스케줄러·JAXB까지 뜨는지 — CI MySQL 필요.
 
 ---
 
-## 8. 이번 PR에서 빠지는 것 (후속)
+## 8. 빠지는 것 (후속)
 
-- **Step 2 상세보강** — REVIEW_QUEUE 건 상세 API 호출, `crtrYr`·`raw_detail_xml` 저장,
-  상세 텍스트로 Rule 1 재검사 → STRONG_YOUTH 승격.
-- 지자체(LOCAL) API — 응답 스키마·`lastModYmd` 기반 신선도가 달라서 분리.
-- 신선도 / 종료 감지 (CENTRAL diff, `crtrYr` 활용).
+- **상세보강 스텝** — REVIEW_QUEUE 건 상세 API 호출, `crtrYr`(중앙)·`enfcBgngYmd`/`enfcEndYmd`(지자체)·
+  `raw_detail_xml` 저장, 상세 텍스트로 Rule 1 재검사 → STRONG_YOUTH 승격.
+- 신선도 / 종료 감지 — 중앙 diff, 지자체 `last_mod_ymd`·`enfc_end_ymd` 활용.
+- 지자체 2차 수집 — `searchWrd=보호종료`로 "보호종료아동" 표기 제도까지 (NOTES §11-2).
+- `region_code` 행정표준코드 정규화 (지금은 `ctpv_nm`/`sgg_nm` 문자열만).
 - LLM 파싱 (`raw_list_xml`/`raw_detail_xml` → 구조화 필드).
 - 관리자 검토 UI / API (`REVIEW_QUEUE` 조회·승인·반려).
