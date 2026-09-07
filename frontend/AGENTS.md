@@ -141,7 +141,7 @@ gh pr create --fill        # CI green이면 셀프 머지
 ```
 
 커밋은 `type: 한국어 설명`. 전체 워크플로(이슈·라벨·충돌 해결)는
-`backend/AGENTS.md` §11에 있다 — 저장소 전체에 적용된다.
+[CONTRIBUTING.md](../CONTRIBUTING.md)에 있다 — 저장소 전체에 적용된다.
 
 ---
 
