@@ -314,8 +314,6 @@ git push --force-with-lease        # --force 말고 이걸 쓴다
 
 ## 12. 배포
 
-**main에 push하면 자동 배포된다.** 절차와 AWS 세팅은 [docs/deploy.md](../docs/deploy.md).
-
 ```
 main push (backend/** 변경 시)
   └─ build   컴파일 + 테스트
