@@ -31,3 +31,6 @@ dist/
 .nuxt/
 coverage/
 *.tsbuildinfo
+
+# 배포 문서는 로컬에만 둔다 (AWS 계정·인스턴스 ID 등 인프라 식별자가 들어 있다)
+docs/deploy.md
