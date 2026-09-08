@@ -63,11 +63,41 @@ com.dday
 | `@Enumerated(**EnumType.STRING**)` 명시 | 기본값 ORDINAL — enum 순서를 바꾸면 기존 데이터 의미가 어긋난다 |
 | **양방향 연관관계를 기본으로 만들지 않는다.** 단방향 `@ManyToOne`으로 시작 | 정합성 맞추는 코드가 계속 늘어난다 |
 | **컨트롤러에서 `@Entity`를 반환하지 않는다.** Response DTO로 변환 | 순환 참조 무한 루프 / 지연 로딩 프록시 직렬화 500 |
-| 금액은 **`BigDecimal`** (`double`·`float` 금지) | 돈 계산이 틀어진다 |
+| 금액(원)은 **`Long`**, 소수가 필요한 값만 **`BigDecimal`**. `double`·`float`는 어디서도 금지 | 돈 계산이 틀어진다 |
 | `createdAt`·`updatedAt`은 `@CreationTimestamp`·`@UpdateTimestamp` | |
+
+### 금액 타입
+
+**원 단위 정수는 `Long`을 쓴다.** 우리가 다루는 돈은 전부 원 단위라 소수점이 없다.
+`BigDecimal`은 연산마다 `scale`을 맞춰야 하고 `equals`가 `compareTo`와 다르게 동작해서
+(`1.0`과 `1.00`이 다른 값이 된다) 정수만 담을 거면 손해가 더 크다.
+
+```java
+private Long amount;            // ✅ 850000원
+private BigDecimal quantity;    // ✅ 주식 0.5주 — 소수가 실제로 필요하다
+private double amount;          // ❌ 부동소수점은 금액에 절대 쓰지 않는다
+```
+
+`BigDecimal`이 맞는 건 **소수가 실제로 의미 있는 값**뿐이다.
+
+| 예 | 이유 |
+|---|---|
+| `InvestmentTransaction.quantity`·`unitPrice` | 소수점 주식·펀드 좌수 |
+| `CreditBand.loanInterestRate`·`loanApprovalRate` | 이율·확률 (0.0~1.0) |
+
+**예외는 없다.** 규칙이 `BigDecimal`이던 시절의 원 단위 컬럼
+(`User.initialAsset`·`housingDeposit`, `WelfareProgram.supportAmount`, `CreditBand.cardMaxLimit`)은
+전부 `Long`으로 옮겼다. 금액 컬럼에 `BigDecimal`이 보이면 그건 실수다.
+
+> ⚠️ `ddl-auto: update`는 **컬럼 타입 변경을 반영하지 않는다.** `decimal` → `bigint`처럼
+> 타입을 바꾸면 옛 컬럼이 그대로 남아 조용히 어긋난다. 로컬 DB를 새로 만들어야 한다 (§9).
 
 **N+1**: 목록 API를 짤 때는 `join fetch`나 `@EntityGraph`를 쓴다.
 `show-sql: true`가 켜져 있으니 **로컬에서 쿼리 개수를 눈으로 확인하고 넘어간다.**
+
+특히 **`FinancialTransaction`은 `@ManyToOne`이 6개**(`account`·`card`·`counterpartyAccount`·
+`originalTransaction`·`category`·`pocket`)라, 목록을 그냥 뽑으면 쿼리가 배수로 늘어난다.
+`default_batch_fetch_size: 100`이 완화해줄 뿐 없애주지는 않는다.
 
 ---
 

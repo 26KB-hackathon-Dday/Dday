@@ -2,7 +2,6 @@ package com.dday.domain.welfare.collector.curation;
 
 import com.dday.domain.welfare.entity.SupportAmountType;
 
-import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +36,7 @@ public final class SupportAmountParser {
     private SupportAmountParser() {
     }
 
-    public record Parsed(BigDecimal amount, Integer months) {
+    public record Parsed(Long amount, Integer months) {
     }
 
     public static Parsed parse(String alwServCn, SupportAmountType type) {
@@ -47,7 +46,7 @@ public final class SupportAmountParser {
         return new Parsed(amount(alwServCn, type), months(alwServCn));
     }
 
-    private static BigDecimal amount(String text, SupportAmountType type) {
+    private static Long amount(String text, SupportAmountType type) {
         // 시간당 표기만 있으면(근로장학금 등) 지원액을 못 뽑는다
         if (HOURLY.matcher(text).find() && !MONTHLY_AMOUNT.matcher(text).find()) {
             return null;
@@ -82,8 +81,17 @@ public final class SupportAmountParser {
         return null;
     }
 
-    private static BigDecimal scale(String digitsWithCommas, boolean isManUnit) {
-        BigDecimal n = new BigDecimal(digitsWithCommas.replace(",", ""));
-        return isManUnit ? n.multiply(BigDecimal.valueOf(10_000)) : n;
+    /**
+     * 원 단위 정수로 만든다. 자릿수가 비정상적으로 큰 텍스트(오타·잡탕 문장)는
+     * {@code long}을 넘겨 음수로 뒤집힐 수 있어 파싱 단계에서 버린다 —
+     * 이상값은 {@code WelfareProgramValidator}가 다시 걸러 리뷰 큐로 보낸다.
+     */
+    private static Long scale(String digitsWithCommas, boolean isManUnit) {
+        try {
+            long n = Long.parseLong(digitsWithCommas.replace(",", ""));
+            return isManUnit ? Math.multiplyExact(n, 10_000L) : n;
+        } catch (NumberFormatException | ArithmeticException e) {
+            return null;
+        }
     }
 }

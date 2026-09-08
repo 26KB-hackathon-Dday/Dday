@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +36,7 @@ public class WelfareProgramDetailResponse {
 
     private String targetDescription;
 
-    private BigDecimal supportAmount;
+    private Long supportAmount;
     private SupportAmountType supportAmountType;
     private Integer supportDurationMonths;
     private LocalDate applicationDeadline;
@@ -80,7 +79,7 @@ public class WelfareProgramDetailResponse {
         /** 카드 헤딩 (예: {@code 12개월 간 예상 수입 변화}). */
         private String title;
         /** 월 지원 금액 (원). */
-        private BigDecimal monthlyAmount;
+        private Long monthlyAmount;
         /** 지원 개월 수. {@code null}이면 기간 미정/상시. */
         private Integer durationMonths;
     }

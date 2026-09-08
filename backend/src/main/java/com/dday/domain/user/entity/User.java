@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -100,13 +99,13 @@ public class User {
     @Column(name = "mydata_consent_expires_at")
     private LocalDateTime mydataConsentExpiresAt;
 
-    /** 온보딩 시점의 보유 자산. 예산 초안의 출발점이다. */
-    @Column(name = "initial_asset", precision = 12, scale = 0)
-    private BigDecimal initialAsset;
+    /** 온보딩 시점의 보유 자산(원). 예산 초안의 출발점이다. */
+    @Column(name = "initial_asset")
+    private Long initialAsset;
 
-    /** 주거 보증금. 자산이지만 당장 쓸 수 없는 돈이라 초기자산과 따로 받는다. */
-    @Column(name = "housing_deposit", precision = 12, scale = 0)
-    private BigDecimal housingDeposit;
+    /** 주거 보증금(원). 자산이지만 당장 쓸 수 없는 돈이라 초기자산과 따로 받는다. */
+    @Column(name = "housing_deposit")
+    private Long housingDeposit;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "settlement_received", length = 20)
@@ -180,8 +179,8 @@ public class User {
      * 흐름이라, "안 보냈다"가 "안 바꾼다"가 아니라 "모르겠다"는 뜻이기 때문이다.
      */
     public void completeOnboarding(LocalDate protectionEndDate, String regionCode,
-                                   HousingType housingType, BigDecimal initialAsset,
-                                   BigDecimal housingDeposit,
+                                   HousingType housingType, Long initialAsset,
+                                   Long housingDeposit,
                                    SettlementReceived settlementReceived) {
         this.protectionEndDate = protectionEndDate;
         this.regionCode = regionCode;

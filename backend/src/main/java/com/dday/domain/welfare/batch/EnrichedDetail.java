@@ -1,6 +1,5 @@
 package com.dday.domain.welfare.batch;
 
-import java.math.BigDecimal;
 
 /**
  * 상세보강 Processor → Writer로 넘기는 묶음. 상세 파싱이 일부 실패해도(금액 못 찾음) rawXml은
@@ -8,7 +7,7 @@ import java.math.BigDecimal;
  */
 public record EnrichedDetail(
         String servId,
-        BigDecimal supportAmount,
+        Long supportAmount,
         Integer supportDurationMonths,
         String crtrYr,
         String targetDescription,

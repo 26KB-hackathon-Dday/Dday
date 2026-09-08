@@ -15,14 +15,14 @@ class SupportAmountParserTest {
     @Test
     void 매월_만원() {
         var p = SupportAmountParser.parse("자립수당 결정 대상자 명의 계좌로 매월 50만원을 지급합니다.", MONTHLY);
-        assertThat(p.amount()).isEqualByComparingTo("500000");
+        assertThat(p.amount()).isEqualTo(500_000L);
         assertThat(p.months()).isNull();
     }
 
     @Test
     void 월_원_콤마_그리고_개월() {
         var p = SupportAmountParser.parse("· 월 300,000원, 최대 60개월 지급", MONTHLY);
-        assertThat(p.amount()).isEqualByComparingTo("300000");
+        assertThat(p.amount()).isEqualTo(300_000L);
         assertThat(p.months()).isEqualTo(60);
     }
 
@@ -31,7 +31,7 @@ class SupportAmountParserTest {
         // 청년월세 실제 문장 — "최대 480만원(월 최대 20만원)"
         var p = SupportAmountParser.parse(
                 "실제 납부하는 임대료를 최대 480만원(월 최대 20만원)까지 최대 24개월(회) 동안 매월 지원합니다.", MONTHLY);
-        assertThat(p.amount()).isEqualByComparingTo("200000"); // 480만원 아님
+        assertThat(p.amount()).isEqualTo(200_000L); // 480만원 아님
         assertThat(p.months()).isEqualTo(24);
     }
 
@@ -45,13 +45,13 @@ class SupportAmountParserTest {
     @Test
     void 일회성은_그대로_첫_금액() {
         var p = SupportAmountParser.parse("보호종료 시 자립정착금 1,000만원을 1회 지급합니다.", FIXED);
-        assertThat(p.amount()).isEqualByComparingTo("10000000");
+        assertThat(p.amount()).isEqualTo(10_000_000L);
     }
 
     @Test
     void 년만_있으면_12배() {
         var p = SupportAmountParser.parse("매월 20만원씩 3년 동안", MONTHLY);
-        assertThat(p.amount()).isEqualByComparingTo("200000");
+        assertThat(p.amount()).isEqualTo(200_000L);
         assertThat(p.months()).isEqualTo(36);
     }
 

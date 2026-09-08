@@ -49,8 +49,8 @@ public class CreditBand {
     private BigDecimal loanApprovalRate;
 
     /** 예상 카드 최대 한도. */
-    @Column(name = "card_max_limit", nullable = false, precision = 15, scale = 2)
-    private BigDecimal cardMaxLimit;
+    @Column(name = "card_max_limit", nullable = false)
+    private Long cardMaxLimit;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "card_issue_possibility", nullable = false, length = 20)
@@ -59,7 +59,7 @@ public class CreditBand {
     @Builder
     private CreditBand(Integer scoreFrom, Integer scoreTo, Integer percentile,
                        BigDecimal loanInterestRate, BigDecimal loanApprovalRate,
-                       BigDecimal cardMaxLimit, CardIssuePossibility cardIssuePossibility) {
+                       Long cardMaxLimit, CardIssuePossibility cardIssuePossibility) {
         this.scoreFrom = scoreFrom;
         this.scoreTo = scoreTo;
         this.percentile = percentile;

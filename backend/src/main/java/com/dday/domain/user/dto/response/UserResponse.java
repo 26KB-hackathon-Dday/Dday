@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -41,10 +40,10 @@ public class UserResponse {
     private final HousingType housingType;
 
     /** 온보딩 시점 보유 자산. */
-    private final BigDecimal initialAsset;
+    private final Long initialAsset;
 
     /** 주거 보증금. */
-    private final BigDecimal housingDeposit;
+    private final Long housingDeposit;
 
     private final SettlementReceived settlementReceived;
 
