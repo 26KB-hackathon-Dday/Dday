@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { grantApi, type GrantCard, type GrantHome, type GrantReviewItem } from '@/api/grant'
 import checkIcon from '@/assets/icons/check.svg'
@@ -52,11 +52,21 @@ function openReasons(id: string) {
   }
 }
 
-async function onReviewAnswer(item: GrantReviewItem, receiving: boolean) {
-  await grantApi.updateReceivingStatus(item.id, receiving)
-  // 되묻기가 끝나면 버킷이 바뀌었으니 홈을 다시 받는다.
-  home.value = await grantApi.fetchHome()
+// 답변마다 상태만 보내고 쌓아둔다. 홈 재조회는 시트가 닫힐 때 한 번만 —
+// 답변마다 다시 받으면 reviewQueue가 줄면서 시트가 인덱싱 중인 목록이 흔들려 항목이 건너뛰어진다.
+let pendingAnswers: Promise<void>[] = []
+
+function onReviewAnswer(item: GrantReviewItem, receiving: boolean) {
+  pendingAnswers.push(grantApi.updateReceivingStatus(item.id, receiving))
 }
+
+watch(reviewOpen, async (isOpen, wasOpen) => {
+  if (!wasOpen || isOpen) return
+  // 마지막 답변까지 반영된 뒤 재조회 (닫힘 트리거와 마지막 PATCH가 경쟁하지 않도록)
+  await Promise.allSettled(pendingAnswers)
+  pendingAnswers = []
+  home.value = await grantApi.fetchHome()
+})
 </script>
 
 <template>
