@@ -1,7 +1,12 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/client'
-import type { TokenResponse } from '@/api/auth'
+
+/** 로그인/가입 응답 중 토큰 저장에 필요한 부분만. */
+interface Tokens {
+  accessToken: string
+  refreshToken: string
+}
 
 /**
  * 로그인 토큰 보관소.
@@ -17,7 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => !!accessToken.value)
 
   /** 로그인·회원가입 성공 응답을 그대로 넘기면 된다. */
-  function setTokens(tokens: TokenResponse) {
+  function setTokens(tokens: Tokens) {
     accessToken.value = tokens.accessToken
     refreshToken.value = tokens.refreshToken
     localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken)

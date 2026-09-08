@@ -30,13 +30,19 @@ async function submit() {
   submitting.value = true
   errorMessage.value = ''
   try {
-    const result = await authApi.login({ email: email.value.trim(), password: password.value })
+    const result = await authApi.login({
+      email: email.value.trim(),
+      password: password.value,
+      rememberMe: keepLoggedIn.value,
+    })
     auth.setTokens(result)
 
-    // 가드가 붙여준 원래 목적지가 있으면 그리로, 없으면 홈으로.
+    // 가드가 붙여준 원래 목적지가 있으면 그리로, 온보딩이 안 끝났으면 마이데이터로, 아니면 홈으로.
     // replace라서 뒤로가기로 로그인 화면에 다시 오지 않는다.
     const redirect = route.query.redirect
-    router.replace(typeof redirect === 'string' ? redirect : '/pockets')
+    if (typeof redirect === 'string') router.replace(redirect)
+    else if (!result.user.onboardingCompleted) router.replace('/mydata')
+    else router.replace('/pockets')
   } catch (e) {
     // 백엔드 ErrorCode의 message가 문구의 정본이라 그대로 띄운다 (AGENTS.md §2).
     errorMessage.value = e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다.'
