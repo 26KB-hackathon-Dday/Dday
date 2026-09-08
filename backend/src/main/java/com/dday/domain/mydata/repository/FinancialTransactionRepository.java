@@ -246,4 +246,22 @@ public interface FinancialTransactionRepository extends JpaRepository<FinancialT
     List<Object[]> sumSpendingByPocket(@Param("userId") Long userId,
                                        @Param("from") LocalDateTime from,
                                        @Param("to") LocalDateTime to);
+
+    /** 특정 포켓의 정상 소비를 카테고리별로 합산한다. null 카테고리도 한 집계 행으로 유지한다. */
+    @Query("""
+            select category.categoryId, coalesce(sum(t.amount), 0)
+            from FinancialTransaction t
+            left join t.category category
+            where t.pocket.pocketId = :pocketId
+              and t.pocket.user.userId = :userId
+              and t.transactionAt >= :from
+              and t.transactionAt < :to
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.EXPENSE
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+            group by category.categoryId
+            """)
+    List<Object[]> sumSpendingByCategory(@Param("userId") Long userId,
+                                         @Param("pocketId") Long pocketId,
+                                         @Param("from") LocalDateTime from,
+                                         @Param("to") LocalDateTime to);
 }
