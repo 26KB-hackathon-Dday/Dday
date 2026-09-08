@@ -68,7 +68,12 @@ public class Pocket {
         this.description = description;
     }
 
-    /** 포켓 이름·설명 변경. {@code null}은 "안 바꾼다"는 뜻이라 건너뛴다. */
+    /**
+     * 포켓 이름·설명 변경. {@code null}은 "안 바꾼다"는 뜻이라 기존 값을 유지한다.
+     *
+     * <p>엔티티는 어떤 포켓 유형을 수정할 수 있는지 알지 않는다. 그 정책은 로그인 사용자와
+     * 요청 맥락을 아는 서비스가 검증하고, 엔티티는 전달받은 상태 변경만 수행한다.
+     */
     public void rename(String pocketName, String description) {
         if (pocketName != null) {
             this.pocketName = pocketName;

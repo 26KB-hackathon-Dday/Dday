@@ -6,6 +6,8 @@ import com.dday.domain.budget.entity.MonthlyPocketBudget;
 import com.dday.domain.budget.repository.MonthlyBudgetRepository;
 import com.dday.domain.budget.repository.MonthlyPocketBudgetRepository;
 import com.dday.domain.pocket.dto.PocketErrorCode;
+import com.dday.domain.pocket.dto.request.PocketUpdateRequest;
+import com.dday.domain.pocket.dto.response.PocketInitializeResponse;
 import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
 import com.dday.domain.pocket.dto.response.PocketResponse;
 import com.dday.domain.pocket.dto.response.PocketSummaryResponse;
@@ -58,8 +60,15 @@ public class PocketService {
     private final MonthlyPocketBudgetRepository monthlyPocketBudgetRepository;
     private final FinancialTransactionRepository transactionRepository;
 
+    /**
+     * 사용자에게 누락된 기본 포켓만 생성하고 실제 생성 건수를 반환한다.
+     *
+     * <p>사전 조회는 정상적인 재호출에서 INSERT를 줄이고, 최종 중복 방지는 DB 유일 제약과
+     * {@code insert ignore}가 담당한다. 따라서 동시에 두 요청이 들어와도 합계에는 실제로
+     * 삽입된 행만 반영된다.
+     */
     @Transactional
-    public void initialize(Long userId) {
+    public PocketInitializeResponse initialize(Long userId) {
         // 탈퇴 회원이나 존재하지 않는 회원에게 포켓 행이 생기지 않도록 먼저 활성 상태를 검증한다.
         User user = userRepository.findByUserIdAndStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
@@ -74,8 +83,14 @@ public class PocketService {
                 .forEach(pocket -> names.remove(pocket.getPocketType()));
 
         // 사전 조회와 삽입 사이에 동시 요청이 들어와도 DB의 유일 제약 + INSERT IGNORE가 중복을 막는다.
-        names.forEach((type, name) ->
-                pocketRepository.insertIfAbsent(user.getUserId(), type.name(), name));
+        int createdCount = names.entrySet().stream()
+                .mapToInt(entry -> pocketRepository.insertIfAbsent(
+                        user.getUserId(), entry.getKey().name(), entry.getValue()))
+                .sum();
+        return PocketInitializeResponse.builder()
+                .createdCount(createdCount)
+                .totalCount(PocketType.values().length)
+                .build();
     }
 
     /**
@@ -138,6 +153,37 @@ public class PocketService {
     public PocketResponse findById(Long userId, Long pocketId) {
         Pocket pocket = pocketRepository.findByPocketIdAndUserUserId(pocketId, userId)
                 .orElseThrow(() -> new BusinessException(PocketErrorCode.POCKET_NOT_FOUND));
+        return PocketResponse.from(pocket);
+    }
+
+    /**
+     * 필수·자유·비상금 포켓의 화면 표시 정보만 부분 수정한다.
+     *
+     * <p>조회 조건에 사용자 ID를 함께 넣어 남의 포켓과 존재하지 않는 포켓을 모두 같은 404로
+     * 처리한다. 포켓 유형과 금액은 이 API의 입력에 없으므로 고정 구조와 월별 예산에 영향을 주지 않는다.
+     */
+    @Transactional
+    public PocketResponse update(Long userId, Long pocketId, PocketUpdateRequest request) {
+        Pocket pocket = pocketRepository.findByPocketIdAndUserUserId(pocketId, userId)
+                .orElseThrow(() -> new BusinessException(PocketErrorCode.POCKET_NOT_FOUND));
+        if (pocket.getPocketType() == PocketType.FUTURE_ASSET) {
+            throw new BusinessException(PocketErrorCode.POCKET_UPDATE_NOT_ALLOWED);
+        }
+        if (request.getPocketName() == null && request.getDescription() == null) {
+            throw new BusinessException(PocketErrorCode.EMPTY_POCKET_UPDATE);
+        }
+
+        String pocketName = request.getPocketName();
+        if (pocketName != null) {
+            pocketName = pocketName.trim();
+            if (pocketName.isEmpty()) {
+                throw new BusinessException(PocketErrorCode.INVALID_POCKET_NAME);
+            }
+        }
+        // 설명도 화면에 그대로 표시되므로 앞뒤 공백만 제거하고 내부 줄바꿈과 문장은 유지한다.
+        String description = request.getDescription() == null
+                ? null : request.getDescription().trim();
+        pocket.rename(pocketName, description);
         return PocketResponse.from(pocket);
     }
 

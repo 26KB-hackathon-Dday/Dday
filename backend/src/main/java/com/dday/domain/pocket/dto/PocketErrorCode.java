@@ -19,7 +19,10 @@ public enum PocketErrorCode implements ErrorCode {
     INVALID_POCKET_TYPE(HttpStatus.BAD_REQUEST, "소비 거래는 필수 또는 자유 포켓만 조회할 수 있습니다."),
     INVALID_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "page는 0 이상, size는 1 이상 100 이하여야 합니다."),
     INVALID_CLASSIFICATION_TARGET(HttpStatus.BAD_REQUEST, "정상 상태의 소비 거래만 분류할 수 있습니다."),
-    CATEGORY_POCKET_MISMATCH(HttpStatus.BAD_REQUEST, "선택한 카테고리는 해당 포켓에 사용할 수 없습니다.");
+    CATEGORY_POCKET_MISMATCH(HttpStatus.BAD_REQUEST, "선택한 카테고리는 해당 포켓에 사용할 수 없습니다."),
+    INVALID_POCKET_NAME(HttpStatus.BAD_REQUEST, "포켓 이름은 공백일 수 없습니다."),
+    POCKET_UPDATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "미래자산 포켓 정보는 수정할 수 없습니다."),
+    EMPTY_POCKET_UPDATE(HttpStatus.BAD_REQUEST, "수정할 포켓 정보를 입력해주세요.");
 
     private final HttpStatus status;
     private final String message;
