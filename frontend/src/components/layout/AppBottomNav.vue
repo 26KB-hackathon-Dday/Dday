@@ -14,8 +14,7 @@ import pocketIcon from '@/assets/icons/pocket.svg'
 import pocketIconActive from '@/assets/icons/dark-pocket.svg'
 import welfareIcon from '@/assets/icons/welfare.svg'
 import welfareIconActive from '@/assets/icons/dark-welfare.svg'
-// 비활성은 사람(마이페이지) 아이콘을 임시로 쓴다. 활성은 신용 전용 dark 아이콘.
-import creditIcon from '@/assets/icons/mypage.svg'
+import creditIcon from '@/assets/icons/credit.svg'
 import creditIconActive from '@/assets/icons/dark-credit.svg'
 
 const route = useRoute()
