@@ -377,6 +377,16 @@ const router = createRouter({
       name: 'pocket-detail',
       component: () => import('@/views/pocket/PocketDetailView.vue'),
       meta: { title: '필수 포켓', requiresAuth: true },
+      beforeEnter: (to) => {
+        const titles: Record<string, string> = {
+          ESSENTIAL: '필수 포켓',
+          FREE: '자유 포켓',
+        }
+        const pocketType = typeof to.params.pocketType === 'string' ? to.params.pocketType : ''
+        if (!titles[pocketType]) return { name: 'pockets', query: { month: to.query.month } }
+        // 공용 AppTopBar가 화면 렌더링 전부터 올바른 포켓 제목을 표시하도록 한다.
+        to.meta.title = titles[pocketType]
+      },
     },
     // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
     { path: '/:pathMatch(.*)*', redirect: '/' },
