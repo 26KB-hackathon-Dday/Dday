@@ -38,20 +38,27 @@
       <section class="button-area">
         <button class="adjust-button" type="button" @click="goToAdjust">배분 조정하기</button>
 
-        <button class="confirm-button" type="button" @click="handleConfirm">이대로 확정하기</button>
+        <button class="confirm-button" type="button" :disabled="submitting" @click="handleConfirm">
+          {{ submitting ? '확정 중…' : '이대로 확정하기' }}
+        </button>
+        <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
       </section>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { usePocketBudgetStore } from '@/stores/pocketBudget'
+import { budgetApi } from '@/api/budget'
+import { ApiError } from '@/api/types'
 
 const router = useRouter()
 const budgetStore = usePocketBudgetStore()
+const submitting = ref(false)
+const errorMessage = ref('')
 
 const pockets = computed(() => [
   {
@@ -86,10 +93,26 @@ const goToAdjust = () => {
   })
 }
 
-const handleConfirm = () => {
-  router.push({
-    name: 'pockets',
-  })
+const handleConfirm = async () => {
+  if (submitting.value) return
+  submitting.value = true
+  errorMessage.value = ''
+  try {
+    await budgetApi.confirmCurrent({
+      totalBudgetAmount: budgetStore.totalBudget,
+      pockets: [
+        { pocketType: 'ESSENTIAL', amount: budgetStore.essentialBudget },
+        { pocketType: 'FREE', amount: budgetStore.freeBudget },
+        { pocketType: 'FUTURE_ASSET', amount: budgetStore.futureBudget },
+        { pocketType: 'EMERGENCY', amount: budgetStore.emergencyBudget },
+      ],
+    })
+    router.replace({ name: 'pockets' })
+  } catch (e) {
+    errorMessage.value = e instanceof ApiError ? e.message : '예산 확정에 실패했습니다.'
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -273,6 +296,17 @@ const handleConfirm = () => {
 .confirm-button {
   color: #ffffff;
   background: #111111;
+}
+
+.confirm-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 13px;
+  text-align: center;
 }
 
 .adjust-button:active,
