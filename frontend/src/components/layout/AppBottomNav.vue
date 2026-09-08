@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 하단 탭 내비. 탭 목록은 여기서 소유하고, 활성 표시는 라우트로 판단한다.
- * 탭 경로가 모두 최상위라 exact 활성만 보면 된다.
+ * 탭 경로와 그 하위 경로(예: /grants → /grants/all)에서 해당 탭을 켠다.
  *
  * 아이콘은 임베디드 래스터가 든 손그림 SVG라 CSS 마스크가 안 먹는다 — `<img>`로 렌더하고,
  * 활성 탭은 진한 `dark-*` 아이콘으로 교체한다 (불투명도로 흐리지 않는다).
@@ -26,7 +26,9 @@ const tabs = [
   { to: '/credit-manage', label: '신용 관리', icon: creditIcon, iconActive: creditIconActive },
 ]
 
-const isActive = (to: string) => route.path === to
+// '/' 은 정확히 일치할 때만. 나머지는 하위 경로(예: /grants/all)도 그 탭을 켠다.
+const isActive = (to: string) =>
+  to === '/' ? route.path === '/' : route.path === to || route.path.startsWith(to + '/')
 </script>
 
 <template>
