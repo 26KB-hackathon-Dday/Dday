@@ -2,6 +2,7 @@ package com.dday.domain.mydata.repository;
 
 import com.dday.domain.mydata.entity.AccountType;
 import com.dday.domain.mydata.entity.CardType;
+import com.dday.domain.mydata.entity.ClassificationStatus;
 import com.dday.domain.mydata.entity.FinancialTransaction;
 import com.dday.domain.mydata.entity.TransactionSourceType;
 import com.dday.domain.mydata.entity.TransactionType;
@@ -287,5 +288,37 @@ class FinancialTransactionRepositoryTest {
         tx.getPocket().getPocketName();
 
         assertThat(stats.getPrepareStatementCount()).isEqualTo(1);
+    }
+
+    @Test
+    void 포켓_거래_조회는_소유자와_카테고리와_분류상태를_함께_검증한다() {
+        givenTransactions(3);
+
+        Page<FinancialTransaction> page = repository.findPocketPage(
+                user.getUserId(),
+                pocket.getPocketId(),
+                FROM,
+                TO,
+                category.getCategoryId(),
+                ClassificationStatus.MANUAL_CLASSIFIED,
+                PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "transactionAt")));
+
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        assertThat(page.getContent()).allSatisfy(transaction -> {
+            assertThat(transaction.getPocket().getPocketId()).isEqualTo(pocket.getPocketId());
+            assertThat(transaction.getCategory().getCategoryId()).isEqualTo(category.getCategoryId());
+            assertThat(transaction.getClassificationStatus())
+                    .isEqualTo(ClassificationStatus.MANUAL_CLASSIFIED);
+        });
+    }
+
+    @Test
+    void 포켓별_사용액은_정상_소비_거래만_합산한다() {
+        givenTransactions(3);
+
+        Object[] result = repository.sumSpendingByPocket(user.getUserId(), FROM, TO).get(0);
+
+        assertThat(result[0]).isEqualTo(pocket.getPocketId());
+        assertThat(((Number) result[1]).longValue()).isEqualTo(30_003L);
     }
 }

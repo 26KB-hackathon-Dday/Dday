@@ -2,6 +2,9 @@ package com.dday.domain.pocket.repository;
 
 import com.dday.domain.pocket.entity.Pocket;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,4 +26,24 @@ public interface PocketRepository extends JpaRepository<Pocket, Long> {
      * "권한 없음"으로 답하면 그 id의 포켓이 존재한다는 사실이 새어나간다.
      */
     Optional<Pocket> findByPocketIdAndUserUserId(Long pocketId, Long userId);
+
+    /** 사용자와 유형을 동시에 제한해 URL의 포켓 유형이 실제 사용자 포켓인지 확인한다. */
+    Optional<Pocket> findByUserUserIdAndPocketType(
+            Long userId, com.dday.domain.pocket.entity.PocketType pocketType);
+
+    /**
+     * 해당 유형의 포켓이 없을 때만 생성한다.
+     *
+     * <p>서비스의 사전 조회는 불필요한 삽입을 줄이는 용도이고, 실제 동시성 안전성은
+     * {@code (user_id, pocket_type)} 유일 제약과 MySQL {@code insert ignore}가 보장한다.
+     * 이미 존재하면 0, 새로 생성하면 1을 반환한다.
+     */
+    @Modifying
+    @Query(value = """
+            insert ignore into pocket (user_id, pocket_type, pocket_name, created_at)
+            values (:userId, :pocketType, :pocketName, now())
+            """, nativeQuery = true)
+    int insertIfAbsent(@Param("userId") Long userId,
+                       @Param("pocketType") String pocketType,
+                       @Param("pocketName") String pocketName);
 }

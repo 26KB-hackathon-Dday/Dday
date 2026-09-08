@@ -1,9 +1,13 @@
 package com.dday.domain.pocket.service;
 
+import com.dday.domain.budget.repository.MonthlyBudgetRepository;
+import com.dday.domain.budget.repository.MonthlyPocketBudgetRepository;
+import com.dday.domain.mydata.repository.FinancialTransactionRepository;
 import com.dday.domain.pocket.dto.response.PocketResponse;
 import com.dday.domain.pocket.entity.Pocket;
 import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.pocket.repository.PocketRepository;
+import com.dday.domain.user.repository.UserRepository;
 import com.dday.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +29,18 @@ class PocketServiceTest {
 
     @Mock
     private PocketRepository pocketRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private MonthlyBudgetRepository monthlyBudgetRepository;
+
+    @Mock
+    private MonthlyPocketBudgetRepository monthlyPocketBudgetRepository;
+
+    @Mock
+    private FinancialTransactionRepository transactionRepository;
 
     @InjectMocks
     private PocketService pocketService;
