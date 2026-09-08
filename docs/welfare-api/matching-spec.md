@@ -169,8 +169,13 @@ Error
   바꾸면 재수집이 큐레이션 필드를 안 덮고(`collected_at`·원문만 갱신) 큐에서도 빠진다.
 - 🔜 수집 배치 raw 필드(`serv_dgst`·`life_array`·`rule_score`·`raw_*_xml` 등 22개) → 별도
   `welfare_program_raw` staging 분리 + 수집 배치 수정.
+- 부분 ✅ `protection_phase` enum(`PRE_TERMINATION` 보호 중 아동 / `POST_TERMINATION` 자립준비청년 /
+  `BOTH`) 컬럼 추가. **채우는 로직은 아직 없음** (`null` = 미분류). 명세서 §6.1 `CHILD_POSITIVE`
+  등급 → `PRE_TERMINATION` 태깅은 아래 `classificationTier` 정리와 같이 한다.
+  <br>※ 이 필드는 "지원금 매칭 API 명세서"에만 있고 "WelfareProgram DB 스키마" 문서엔 없다 — 두 문서 정합 필요.
 - **`classificationTier`(STRONG / CHILD_POSITIVE / ADJACENT)** ↔ 기존 `YouthStatus`(STRONG_YOUTH /
-  AUTO_APPROVED / REVIEW_QUEUE). enum을 하나로 합쳐야 한다.
+  AUTO_APPROVED / REVIEW_QUEUE). enum을 하나로 합쳐야 한다. `applicantType`(YOUTH_SELF/GUARDIAN/
+  INSTITUTION) 도 이때 같이.
 
 ## 유저 × 제도 테이블 (`user_program_eligibility` / `user_program_status`)
 
@@ -210,6 +215,7 @@ Error
 | `applicationChannel` `{name, phone, url}` | 상세 `inqplCtadrList`(문의처) 첫 항목 + `inqplHmpgReldList`(홈페이지) 첫 항목. 중앙/지자체 서브필드명 다름(`servSeDetailNm` / `wlfareInfoReldNm`). URL 스킴 없으면 `DetailText.normalizeUrl`이 `https://` 부착 | ✅ (전 제도) |
 | `requiredDocuments` | 상세에 구조화 필드 없음 (`applmetList`=신청절차 텍스트만) | LLM 필요 | 🔜 |
 | `applicationDeadline` | 목록·중앙상세에 없음. 텍스트에만 | 🔜 |
+| `protectionPhase` | servNm/servDgst 키워드 (가정위탁·아동복지시설 → `PRE_TERMINATION` / 자립준비청년·보호종료 → `POST_TERMINATION`). 명세서 §6.1 등급 판정과 같이 | 🔜 (컬럼만 있음, `null`=미분류) |
 
 정규화 카테고리 값: `주거` · `생활` · `자산형성` · `기타` (프론트 칩 = 전체 + 이 4개).
 자립준비청년 대상 제도는 대부분 "생활 유지"(수당·학자금·취업)라 `생활`이 큰 통이 된다.
