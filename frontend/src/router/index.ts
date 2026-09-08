@@ -306,7 +306,7 @@ const router = createRouter({
     {
       path: '/credit-manage',
       name: 'credit-manage',
-      component: () => import('@/views/PlaceholderView.vue'),
+      component: () => import('@/views/credit/CreditHomeView.vue'),
       meta: { title: '신용 관리', requiresAuth: true },
     },
 
