@@ -85,7 +85,7 @@ const isActive = (to: string) => route.path === to
   max-width: 26px;
   width: auto;
   object-fit: contain;
-  transition: transform 0.15s ease;
+  transition: transform 0.3s ease;
 }
 .bottomnav__tab.is-active {
   color: #000;
