@@ -60,6 +60,12 @@ public class WelfareProgramValidator {
                 && isBlank(p.getApplyChannelPhone())) {
             issues.add(WelfareIssue.CHANNEL_MISSING);
         }
+
+        // 시도명(ctpvNm)은 있는데 코드로 못 풀었으면 = LOCAL 제도인데 지역 매칭이 안 된다.
+        // CENTRAL은 ctpvNm이 null이라 걸리지 않는다.
+        if (!isBlank(p.getCtpvNm()) && isBlank(p.getRegionCode())) {
+            issues.add(WelfareIssue.REGION_UNRESOLVED);
+        }
         // URL 스킴 누락은 검증 대상이 아니다 — DetailText.normalizeUrl이 수집·응답 양쪽에서
         // 자동 교정하므로 "사람이 봐야 하는 것"이 아니라 노이즈다.
 
