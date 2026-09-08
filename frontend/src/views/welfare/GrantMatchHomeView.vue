@@ -51,9 +51,10 @@ function openReasons(id: string) {
   }
 }
 
-function onReviewAnswer(item: GrantReviewItem, receiving: boolean) {
-  // TODO: 백엔드 API 생기면 수급 상태 반영 — api.post(`/api/grants/review/${item.id}`, { receiving })
-  console.debug('review answer', item.id, receiving)
+async function onReviewAnswer(item: GrantReviewItem, receiving: boolean) {
+  await grantApi.updateReceivingStatus(item.id, receiving)
+  // 되묻기가 끝나면 버킷이 바뀌었으니 홈을 다시 받는다.
+  home.value = await grantApi.fetchHome()
 }
 </script>
 

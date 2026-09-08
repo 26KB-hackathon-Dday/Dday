@@ -13,4 +13,7 @@ public interface UserProgramEligibilityRepository
     List<UserProgramEligibility> findByIdUserIdAndEligibleTrue(Long userId);
 
     List<UserProgramEligibility> findByIdUserId(Long userId);
+
+    /** 홈 조회 시 "판별 이력이 있나" — 없으면 lazy 재평가 트리거. */
+    boolean existsByIdUserId(Long userId);
 }

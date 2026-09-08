@@ -12,7 +12,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum WelfareErrorCode implements ErrorCode {
 
-    PROGRAM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 지원제도입니다.");
+    PROGRAM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 지원제도입니다."),
+    INELIGIBLE_PROGRAM(HttpStatus.UNPROCESSABLE_ENTITY, "자격이 확인되지 않은 제도입니다."),
+    SUBSIDY_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

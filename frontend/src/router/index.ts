@@ -164,7 +164,8 @@ const router = createRouter({
       path: '/grants',
       name: 'grants',
       component: GrantMatchHomeView,
-      meta: { title: '지원금 매칭' },
+      // 개인화된 매칭 결과라 로그인이 필요하다. 전체 목록(/grants/all)·상세는 공개.
+      meta: { title: '지원금 매칭', requiresAuth: true },
     },
     {
       // '/grants/:id'보다 먼저 둔다 ('all'이 id로 잡히지 않도록).
