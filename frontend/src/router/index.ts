@@ -257,7 +257,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/PlaceholderView.vue'),
+      component: () => import('@/views/HomeView.vue'),
       // 로그인 전에 여기로 들어오면 가드가 랜딩으로 보낸다. 하단바의 '홈' 탭이 이 경로다.
       meta: { title: '홈', requiresAuth: true },
     },
