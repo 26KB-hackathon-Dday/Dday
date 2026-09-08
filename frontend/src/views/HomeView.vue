@@ -60,7 +60,7 @@ const plan = computed(() => {
 const ddayText = computed(() => {
   const d = plan.value?.daysLeft
   if (d == null) return 'D-day'
-  return d >= 0 ? `D-${d.toLocaleString('ko-KR')}` : `D+${Math.abs(d).toLocaleString('ko-KR')}`
+  return d >= 0 ? `D-${d}` : `D+${Math.abs(d)}`
 })
 
 // TODO: "지원 종료 시 예상 자산"은 자산·저축·투자 흐름을 반영한 추정 API가 필요하다.
