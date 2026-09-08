@@ -85,6 +85,22 @@ const router = createRouter({
       meta: { title: '내 포켓', requiresAuth: true },
     },
     {
+      path: '/pockets/budget-initial',
+      name: 'pocket-budget-initial',
+      component: () => import('@/views/pocket/PocketBudgetInitialView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/budget-adjust',
+      name: 'pocket-budget-adjust',
+      component: () => import('@/views/pocket/PocketBudgetAdjustView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
       path: '/grants',
       name: 'grants',
       component: GrantMatchHomeView,
@@ -109,9 +125,60 @@ const router = createRouter({
       component: () => import('@/views/PlaceholderView.vue'),
       meta: { title: '신용 관리', requiresAuth: true },
     },
+<<<<<<< Updated upstream
 
     // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
     { path: '/:pathMatch(.*)*', redirect: '/' },
+=======
+    {
+      path: '/pockets/unexpected-income/amount',
+      name: 'pocket-unexpected-income-amount',
+      component: () => import('@/views/pocket/UnexpectedIncomeAmountView.vue'),
+      meta: {
+        title: '추가할 금액 지정',
+      },
+    },
+    {
+      path: '/pockets/unexpected-income/allocate',
+      name: 'pocket-unexpected-income-allocate',
+      component: () => import('@/views/pocket/UnexpectedIncomeAllocateView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/income-match-test',
+      name: 'pocket-income-match-test',
+      component: () => import('@/views/pocket/IncomeMatchTestView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/budget-readjust',
+      name: 'pocket-budget-readjust',
+      component: () => import('@/views/pocket/PocketBudgetReAdjustView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/unexpected-income-test',
+      name: 'pocket-unexpected-income-test',
+      component: () => import('@/views/pocket/UnexpectedIncomeModalTestView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/budget-readjust/confirm',
+      name: 'pocket-budget-readjust-confirm',
+      component: () => import('@/views/pocket/PocketBudgetReAdjustConfirmView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+>>>>>>> Stashed changes
   ],
 })
 
