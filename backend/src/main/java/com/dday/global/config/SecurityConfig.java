@@ -37,12 +37,17 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    /** 로그인 없이 열어두는 경로. 인증 API와 문서·헬스체크뿐이다. */
+    /** 로그인 없이 열어두는 경로. 인증 API·문서·헬스체크, 그리고 공개 데이터인 지원제도 마스터. */
     private static final String[] PUBLIC_PATHS = {
             "/api/auth/**",
             "/health", "/health/**",
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
-            "/error"
+            "/error",
+            // 지원제도 마스터는 공개 데이터(공공데이터포털)라 인증이 필요 없다 — 명세서상 /me가 아닌 이유.
+            // 컨트롤러에 조회(GET) 엔드포인트만 있다.
+            "/api/v1/welfare-programs", "/api/v1/welfare-programs/**",
+            // 수집 트리거·리뷰 큐. 컨트롤러가 @Profile("local")이라 운영에는 아예 등록되지 않는다.
+            "/internal/welfare/**",
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
