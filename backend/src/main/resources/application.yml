@@ -44,6 +44,17 @@ spring:
         # N+1을 한 방에 없애주진 않지만, 지연 로딩이 터질 때 쿼리 수를 100개에서 10개로 줄인다.
         default_batch_fetch_size: 100
 
+  # 복지서비스 수집 배치 (domain/welfare).
+  batch:
+    job:
+      # ⚠️ 앱이 뜰 때 잡을 자동 실행하지 않는다. 안 그러면 배포·CI 기동마다 외부 API를 때린다
+      #    (CI엔 WELFARE_API_KEY도 없다). 실행은 오직 WelfareCollectScheduler의 cron으로만.
+      enabled: false
+    jdbc:
+      # BATCH_JOB_INSTANCE 등 메타테이블을 만든다. Batch 5의 schema-mysql.sql은
+      # CREATE TABLE IF NOT EXISTS라 매 기동 돌아도 안전하다.
+      initialize-schema: always
+
 # JWT. JwtTokenProvider가 생성자에서 @Value로 읽는다 — 값이 비면 기동 단계에서 죽는다.
 jwt:
   # HS256 서명키. Base64든 평문이든 받지만 어느 쪽이든 디코딩 결과가 32바이트 이상이어야 한다.
@@ -66,3 +77,27 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+
+# ── 복지서비스 수집기 ─────────────────────────────────────────────────────────
+# 한국사회보장정보원_중앙부처복지서비스 API. 스펙·필드 의미는 docs/welfare-api/NOTES.md,
+# 동작은 docs/welfare-collector.md.
+welfare:
+  api:
+    # CENTRAL — 목록 GET /NationalWelfarelistV001, 상세 GET /NationalWelfaredetailedV001
+    base-url: http://apis.data.go.kr/B554287/NationalWelfareInformationsV001
+    # LOCAL(지자체) — 목록 GET /LcgvWelfarelist, 상세 GET /LcgvWelfaredetailed (NOTES.md §11)
+    local-base-url: http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations
+    # data.go.kr 발급 "일반 인증키(Decoding)" 값. 인코딩 키(%2B 포함)를 넣으면 이중 인코딩된다.
+    # 비어 있으면 앱은 뜨지만 수집 잡은 실패한다 (CI·로컬 기본 상태). CENTRAL·LOCAL 공용.
+    service-key: ${WELFARE_API_KEY:}
+    # 생애주기 코드 — 004 = 청년. 코드표가 바뀌면 이 값만 교체한다.
+    life-code: "004"
+    # LOCAL은 키워드로 좁게 긁는다 — 자립준비청년 전용 지자체 제도만 (NOTES.md §11-2).
+    local-search-word: 자립준비청년
+    page-size: 10
+    connect-timeout: 3s
+    read-timeout: 10s
+  collect:
+    # 매월 1일 00:00 (KST). 로컬에서 즉시 돌리려면 POST /internal/welfare/collect (local 프로파일).
+    cron: "0 0 0 1 * *"
+    zone: Asia/Seoul

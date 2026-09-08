@@ -49,3 +49,11 @@ ON DUPLICATE KEY UPDATE
     type             = VALUES(type),
     monthly_budget   = VALUES(monthly_budget),
     spent_this_month = VALUES(spent_this_month);
+
+-- ── 지원제도 (welfare_program) ────────────────────────────────────────────
+-- 시드를 두지 않는다. welfare_program은 수집 배치(POST /internal/welfare/collect)가
+-- 공공데이터포털에서 긁어와 채운다. 시드 serv_id가 실제 제도 ID와 겹쳐 upsert되면
+-- "수집 필드는 진짜 + 매칭 필드는 추측값"인 하이브리드 행이 생겨서 뺐다.
+--
+-- 매칭 API용 필드(category·support_amount·support_duration_months 등)는 수집기가 아직
+-- 안 채우므로 당분간 NULL이다. 채우는 로직은 후속 (docs/welfare-api/matching-spec.md).

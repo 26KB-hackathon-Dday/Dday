@@ -55,6 +55,16 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
+    // 복지서비스 수집 배치 (domain/welfare). 매월 1일 외부 API를 긁어와 청년 대상 여부를 룰로 판정한다.
+    // BATCH_* 메타테이블은 application.yml의 spring.batch.jdbc.initialize-schema로 만든다.
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    // 복지 API 응답이 XML이라 필요하다 (<wantedList>/<wantedDtl>).
+    // ⚠️ jackson-dataformat-xml을 쓰면 MVC가 우리 JSON 응답까지 XML로 바꿔버린다
+    //    (MappingJackson2XmlHttpMessageConverter의 canWrite가 너무 넓다). JAXB의
+    //    Jaxb2RootElementHttpMessageConverter는 @XmlRootElement 타입만 다뤄서 안전하다.
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
+    runtimeOnly 'org.glassfish.jaxb:jaxb-runtime'
+
     // Swagger UI: http://localhost:8080/swagger-ui.html
     // 프론트가 API 모양을 훑는 보조 수단이다. 정본은 코드다 (AGENTS.md §5).
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'

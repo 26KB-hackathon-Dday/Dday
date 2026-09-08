@@ -28,3 +28,8 @@ app:
     # 배포된 프론트 주소. 서버 .env의 CORS_ALLOWED_ORIGINS로 넣는다.
     # 미지정이면 전부 허용 — 해커톤 기간 한정이고, 공개 서비스라면 반드시 좁혀야 한다.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
+welfare:
+  api:
+    # 운영에선 기본값을 주지 않는다 — 키가 없으면 수집 잡이 조용히 도는 대신 확실히 실패해야 한다.
+    service-key: ${WELFARE_API_KEY}
