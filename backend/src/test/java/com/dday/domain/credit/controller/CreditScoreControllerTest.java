@@ -17,6 +17,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -47,10 +48,12 @@ class CreditScoreControllerTest {
         given(creditScoreService.findRecent(1L)).willReturn(CreditScoreHistoryResponse.of(List.of(
                 CreditScoreItemResponse.builder()
                         .creditScoreId(2L).score(812).agency("KCB").diff(7)
+                        .percentile(new BigDecimal("57.0"))
                         .updatedAt(LocalDateTime.of(2026, 9, 1, 10, 0))
                         .build(),
                 CreditScoreItemResponse.builder()
                         .creditScoreId(1L).score(805).agency("KCB").diff(null)
+                        .percentile(new BigDecimal("57.9"))
                         .updatedAt(LocalDateTime.of(2026, 8, 1, 10, 0))
                         .build())));
 
@@ -59,6 +62,8 @@ class CreditScoreControllerTest {
                 .andExpect(jsonPath("$.code").value("CREDIT_SCORES_FOUND"))
                 .andExpect(jsonPath("$.data.latestScore").value(812))
                 .andExpect(jsonPath("$.data.diffFromPrevious").value(7))
+                .andExpect(jsonPath("$.data.latestPercentile").value(57.0))
+                .andExpect(jsonPath("$.data.items[0].percentile").value(57.0))
                 .andExpect(jsonPath("$.data.items[0].creditScoreId").value(2))
                 .andExpect(jsonPath("$.data.items[0].diff").value(7))
                 .andExpect(jsonPath("$.data.items[1].diff").value(nullValue()));
