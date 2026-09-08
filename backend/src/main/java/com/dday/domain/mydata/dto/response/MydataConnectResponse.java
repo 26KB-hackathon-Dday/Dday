@@ -1,5 +1,6 @@
 package com.dday.domain.mydata.dto.response;
 
+import com.dday.domain.mydata.entity.Institution;
 import com.dday.domain.mydata.entity.UserAccount;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,8 +45,16 @@ public class MydataConnectResponse {
     @AllArgsConstructor
     public static class ConnectedAccount {
 
-        /** 금융기관 코드. 화면이 기관 이름을 고르는 기준이다. */
+        /** 금융기관 코드(예: 004). 화면 표시가 아니라 식별용이다. */
         private final String institutionId;
+
+        /**
+         * 화면에 그대로 띄우는 기관 이름(예: 국민은행).
+         *
+         * <p>프론트가 코드를 이름으로 바꾸지 않도록 서버가 내려준다 — 각 화면이 매핑표를
+         * 따로 들면 어디서는 "국민은행", 어디서는 "004"가 뜬다.
+         */
+        private final String institutionName;
 
         /** 마스킹된 계좌번호. 전체 번호를 응답에 담을 이유가 없다. */
         private final String accountNumber;
@@ -55,6 +64,7 @@ public class MydataConnectResponse {
         public static ConnectedAccount from(UserAccount account) {
             return ConnectedAccount.builder()
                     .institutionId(account.getOrgCode())
+                    .institutionName(Institution.nameOf(account.getOrgCode()))
                     .accountNumber(mask(account.getAccountNum()))
                     .balance(account.getBalance())
                     .build();

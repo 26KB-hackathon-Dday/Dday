@@ -27,7 +27,10 @@ export interface ConnectRequest {
 }
 
 export interface ConnectedAccount {
+  /** 기관 코드(예: 004). 식별용이고 화면에 띄우지 않는다 */
   institutionId: string
+  /** 화면에 그대로 띄우는 기관 이름(예: 국민은행). 서버가 만들어 준다 */
+  institutionName: string
   /** 마스킹된 계좌번호 (예: 110-***-4567) */
   accountNumber: string
   balance: number
