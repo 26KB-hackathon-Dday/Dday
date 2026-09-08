@@ -17,7 +17,8 @@ public enum PocketSuccessCode implements SuccessCode {
     TRANSACTION_FOUND(HttpStatus.OK, "거래 정보를 조회했습니다."),
     CATEGORIES_FOUND(HttpStatus.OK, "카테고리 목록을 조회했습니다."),
     TRANSACTIONS_CLASSIFIED(HttpStatus.OK, "미분류 거래를 자동 분류했습니다."),
-    TRANSACTION_CLASSIFICATION_CHANGED(HttpStatus.OK, "거래 분류를 변경했습니다.");
+    TRANSACTION_CLASSIFICATION_CHANGED(HttpStatus.OK, "거래 분류를 변경했습니다."),
+    POCKET_UPDATED(HttpStatus.OK, "포켓 정보를 수정했습니다.");
 
     private final HttpStatus status;
     private final String message;

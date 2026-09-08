@@ -2,6 +2,8 @@ package com.dday.domain.pocket.controller;
 
 import com.dday.domain.pocket.dto.PocketSuccessCode;
 import com.dday.domain.pocket.dto.response.PocketResponse;
+import com.dday.domain.pocket.dto.request.PocketUpdateRequest;
+import com.dday.domain.pocket.dto.response.PocketInitializeResponse;
 import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
 import com.dday.domain.pocket.dto.response.TransactionListItemResponse;
 import com.dday.domain.mydata.entity.ClassificationStatus;
@@ -20,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @Tag(name = "포켓")
 @RestController
@@ -36,10 +39,10 @@ public class PocketController {
             이미 생성된 포켓은 유지되므로 여러 번 호출해도 중복 행이 생기지 않는다.
             """)
     @PostMapping("/initialize")
-    public ResponseEntity<ApiResponse<Void>> initialize(
+    public ResponseEntity<ApiResponse<PocketInitializeResponse>> initialize(
             @AuthenticationPrincipal Long userId) {
-        pocketService.initialize(userId);
-        return ApiResponse.of(PocketSuccessCode.POCKETS_INITIALIZED);
+        return ApiResponse.of(PocketSuccessCode.POCKETS_INITIALIZED,
+                pocketService.initialize(userId));
     }
 
     @Operation(summary = "월별 포켓 현황 조회", description = """
@@ -99,5 +102,19 @@ public class PocketController {
             @Parameter(description = "포켓 ID") @PathVariable Long pocketId) {
         return ApiResponse.of(PocketSuccessCode.POCKET_FOUND,
                 pocketService.findById(userId, pocketId));
+    }
+
+    @Operation(summary = "포켓 정보 수정", description = """
+            필수·자유·비상금 포켓의 이름과 설명을 부분 수정한다.
+            보내지 않은 필드는 기존 값을 유지하며 포켓 유형과 월별 예산은 변경하지 않는다.
+            미래자산 포켓은 이 API의 수정 대상이 아니다.
+            """)
+    @PatchMapping("/{pocketId}")
+    public ResponseEntity<ApiResponse<PocketResponse>> update(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "포켓 ID") @PathVariable Long pocketId,
+            @Valid @RequestBody PocketUpdateRequest request) {
+        return ApiResponse.of(PocketSuccessCode.POCKET_UPDATED,
+                pocketService.update(userId, pocketId, request));
     }
 }

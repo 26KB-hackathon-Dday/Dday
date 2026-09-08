@@ -4,10 +4,15 @@ import com.dday.domain.budget.repository.MonthlyBudgetRepository;
 import com.dday.domain.budget.repository.MonthlyPocketBudgetRepository;
 import com.dday.domain.mydata.repository.FinancialTransactionRepository;
 import com.dday.domain.pocket.dto.response.PocketResponse;
+import com.dday.domain.pocket.dto.response.PocketInitializeResponse;
+import com.dday.domain.pocket.dto.request.PocketUpdateRequest;
+import com.dday.domain.pocket.dto.PocketErrorCode;
 import com.dday.domain.pocket.entity.Pocket;
 import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.pocket.repository.PocketRepository;
 import com.dday.domain.user.repository.UserRepository;
+import com.dday.domain.user.entity.User;
+import com.dday.domain.user.entity.UserStatus;
 import com.dday.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,5 +108,71 @@ class PocketServiceTest {
         assertThatThrownBy(() -> pocketService.findById(USER_ID, 10L))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("포켓을 찾을 수 없습니다.");
+    }
+
+    @Test
+    void 초기화는_누락된_포켓만_만들고_실제_삽입_건수를_반환한다() {
+        User user = org.mockito.Mockito.mock(User.class);
+        given(user.getUserId()).willReturn(USER_ID);
+        given(userRepository.findByUserIdAndStatus(USER_ID, UserStatus.ACTIVE))
+                .willReturn(Optional.of(user));
+        given(pocketRepository.findAllByUserUserId(USER_ID)).willReturn(List.of(
+                pocket(PocketType.ESSENTIAL, "필수"),
+                pocket(PocketType.FREE, "자유")
+        ));
+        given(pocketRepository.insertIfAbsent(USER_ID, "EMERGENCY", "비상금 포켓"))
+                .willReturn(1);
+        // 동시 요청이 먼저 미래자산 포켓을 만들었다고 가정하면 INSERT IGNORE 결과는 0이다.
+        given(pocketRepository.insertIfAbsent(USER_ID, "FUTURE_ASSET", "미래자산 포켓"))
+                .willReturn(0);
+
+        PocketInitializeResponse response = pocketService.initialize(USER_ID);
+
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getTotalCount()).isEqualTo(4);
+    }
+
+    @Test
+    void 포켓_수정은_입력한_값의_공백을_정리하고_보내지_않은_필드는_유지한다() {
+        Pocket pocket = Pocket.builder()
+                .pocketType(PocketType.ESSENTIAL)
+                .pocketName("필수 포켓")
+                .description("기존 설명")
+                .build();
+        given(pocketRepository.findByPocketIdAndUserUserId(10L, USER_ID))
+                .willReturn(Optional.of(pocket));
+
+        PocketResponse response = pocketService.update(USER_ID, 10L,
+                PocketUpdateRequest.builder().pocketName("  생활비  ").build());
+
+        assertThat(response.getPocketName()).isEqualTo("생활비");
+        assertThat(response.getDescription()).isEqualTo("기존 설명");
+        assertThat(response.getPocketType()).isEqualTo(PocketType.ESSENTIAL);
+    }
+
+    @Test
+    void 미래자산_포켓은_정보를_수정할_수_없다() {
+        Pocket future = pocket(PocketType.FUTURE_ASSET, "미래자산");
+        given(pocketRepository.findByPocketIdAndUserUserId(10L, USER_ID))
+                .willReturn(Optional.of(future));
+
+        assertThatThrownBy(() -> pocketService.update(USER_ID, 10L,
+                PocketUpdateRequest.builder().pocketName("변경").build()))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(PocketErrorCode.POCKET_UPDATE_NOT_ALLOWED));
+    }
+
+    @Test
+    void 공백만_있는_포켓_이름은_수정할_수_없다() {
+        Pocket pocket = pocket(PocketType.FREE, "자유");
+        given(pocketRepository.findByPocketIdAndUserUserId(10L, USER_ID))
+                .willReturn(Optional.of(pocket));
+
+        assertThatThrownBy(() -> pocketService.update(USER_ID, 10L,
+                PocketUpdateRequest.builder().pocketName("   ").build()))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(PocketErrorCode.INVALID_POCKET_NAME));
     }
 }

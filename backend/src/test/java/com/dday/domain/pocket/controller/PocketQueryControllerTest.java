@@ -2,8 +2,11 @@ package com.dday.domain.pocket.controller;
 
 import com.dday.domain.pocket.dto.response.CategoryListResponse;
 import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
+import com.dday.domain.pocket.dto.response.PocketResponse;
 import com.dday.domain.pocket.dto.response.TransactionDetailResponse;
 import com.dday.domain.pocket.dto.response.AutoClassificationResponse;
+import com.dday.domain.pocket.dto.response.PocketInitializeResponse;
+import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.pocket.service.CategoryService;
 import com.dday.domain.pocket.service.PocketService;
 import com.dday.domain.pocket.service.TransactionQueryService;
@@ -27,6 +30,7 @@ import java.util.List;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -104,6 +108,36 @@ class PocketQueryControllerTest {
                 .andExpect(jsonPath("$.code").value("TRANSACTIONS_CLASSIFIED"))
                 .andExpect(jsonPath("$.data.targetCount").value(3))
                 .andExpect(jsonPath("$.data.userRuleCount").value(2));
+    }
+
+    @Test
+    void 기본_포켓_초기화는_생성_건수를_반환한다() throws Exception {
+        given(pocketService.initialize(1L)).willReturn(PocketInitializeResponse.builder()
+                .createdCount(2).totalCount(4).build());
+
+        mockMvc.perform(post("/api/pockets/initialize"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("POCKETS_INITIALIZED"))
+                .andExpect(jsonPath("$.data.createdCount").value(2))
+                .andExpect(jsonPath("$.data.totalCount").value(4));
+    }
+
+    @Test
+    void 포켓_이름과_설명을_부분_수정한다() throws Exception {
+        given(pocketService.update(org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq(10L), org.mockito.ArgumentMatchers.any()))
+                .willReturn(PocketResponse.builder()
+                        .pocketId(10L).pocketType(PocketType.FREE)
+                        .pocketName("생활비").description("자유롭게 사용").build());
+
+        mockMvc.perform(patch("/api/pockets/10")
+                        .contentType("application/json")
+                        .content("""
+                                {"pocketName":"생활비","description":"자유롭게 사용"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("POCKET_UPDATED"))
+                .andExpect(jsonPath("$.data.pocketName").value("생활비"));
     }
 
     private HandlerMethodArgumentResolver authenticatedUser(Long userId) {
