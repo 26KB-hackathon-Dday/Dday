@@ -6,7 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -39,6 +42,42 @@ public interface FinancialTransactionRepository extends JpaRepository<FinancialT
     /** 한 카드에서 이미 수집한 외부 거래 ID를 한 번에 읽어 중복 저장을 막는다. */
     List<FinancialTransaction> findAllByCardCardIdAndSourceTransactionIdIn(
             Long cardId, List<String> sourceTransactionIds);
+
+    /**
+     * 로그인 사용자의 자동 분류 가능한 거래만 조회한다.
+     * 수동 분류, 취소·환불, 수입과 본인 계좌 이체는 쿼리 단계에서 제외한다.
+     */
+    @Query("""
+            select t
+            from FinancialTransaction t
+            left join fetch t.account a
+            left join fetch t.card c
+            where (a.user.userId = :userId or c.user.userId = :userId)
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.EXPENSE
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+              and t.classificationStatus = com.dday.domain.mydata.entity.ClassificationStatus.UNCLASSIFIED
+            order by t.transactionAt, t.financialTransactionId
+            """)
+    List<FinancialTransaction> findUnclassifiedExpenses(@Param("userId") Long userId);
+
+    /**
+     * 수동 변경 동안 같은 거래를 다른 요청이 동시에 수정하지 못하도록 비관적 쓰기 잠금을 건다.
+     * 계좌·카드 소유권을 조건에 포함해 다른 사용자의 거래 존재 여부도 노출하지 않는다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select t
+            from FinancialTransaction t
+            left join fetch t.account a
+            left join fetch t.card c
+            left join fetch t.category
+            left join fetch t.pocket
+            where t.financialTransactionId = :transactionId
+              and (a.user.userId = :userId or c.user.userId = :userId)
+            """)
+    Optional<FinancialTransaction> findForClassification(
+            @Param("userId") Long userId,
+            @Param("transactionId") Long transactionId);
 
     /**
      * 기간별 거래내역 한 페이지. 목록 화면이 쓰는 기본 조회다.

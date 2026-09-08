@@ -7,6 +7,7 @@ import com.dday.domain.mydata.dto.response.MydataSyncResponse;
 import com.dday.domain.mydata.entity.UserAccount;
 import com.dday.domain.mydata.entity.UserCard;
 import com.dday.global.exception.BusinessException;
+import com.dday.domain.pocket.service.TransactionClassificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +30,7 @@ class MydataServiceTest {
 
     @Mock private MydataClient mydataClient;
     @Mock private MydataSyncWriter syncWriter;
+    @Mock private TransactionClassificationService classificationService;
     @InjectMocks private MydataService mydataService;
 
     @Test
@@ -65,6 +67,8 @@ class MydataServiceTest {
         assertThat(java.time.temporal.ChronoUnit.MONTHS.between(
                 java.time.YearMonth.from(from.getValue()), java.time.YearMonth.from(to.getValue())))
                 .isEqualTo(3);
+        // 신규 거래 저장 직후 분류가 이어져 동기화 결과가 미분류 상태로 방치되지 않는다.
+        verify(classificationService).classifyUnclassified(1L);
     }
 
     @Test
