@@ -3,7 +3,7 @@
     <main class="confirm-content">
       <section class="intro-section">
         <h2 class="intro-title">
-          9월 계획을<br />
+          {{ monthLabel }} 계획을<br />
           이대로 바꿀까요?
         </h2>
 
@@ -89,11 +89,15 @@
         </strong>
       </section>
 
+      <p v-if="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </p>
+
       <section class="bottom-area">
         <div class="bottom-divider" />
 
-        <button class="confirm-button" type="button" @click="handleConfirm">
-          9월 계획 변경하기
+        <button class="confirm-button" type="button" :disabled="saving" @click="handleConfirm">
+          {{ saving ? '변경 내용을 저장하고 있어요' : `${monthLabel} 계획 변경하기` }}
         </button>
       </section>
     </main>
@@ -101,11 +105,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
 import { useRoute, useRouter } from 'vue-router'
+
+import { budgetAdjustmentApi } from '@/api/budgetAdjustment'
+
+import { ApiError } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
+
+const saving = ref(false)
+const errorMessage = ref('')
 
 const getQueryNumber = (value: unknown, fallback: number): number => {
   let rawValue: unknown = value
@@ -123,17 +135,23 @@ const getQueryNumber = (value: unknown, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-const totalBudget = computed(() => getQueryNumber(route.query.total, 3_000_000))
+const totalBudget = computed(() => getQueryNumber(route.query.total, 0))
 
-const essentialBudget = computed(() => getQueryNumber(route.query.essential, 1_000_000))
+const essentialBudget = computed(() => getQueryNumber(route.query.essential, 0))
 
-const freeBudget = computed(() => getQueryNumber(route.query.free, 700_000))
+const freeBudget = computed(() => getQueryNumber(route.query.free, 0))
 
-const futureBudget = computed(() => getQueryNumber(route.query.future, 500_000))
+const futureBudget = computed(() => getQueryNumber(route.query.future, 0))
 
-const emergencyBudget = computed(() => getQueryNumber(route.query.emergency, 800_000))
+const emergencyBudget = computed(() => getQueryNumber(route.query.emergency, 0))
 
-const expectedAsset = computed(() => getQueryNumber(route.query.expectedAsset, 31_200_000))
+const expectedAsset = computed(() => getQueryNumber(route.query.expectedAsset, 0))
+
+const monthLabel = computed(() => {
+  const month = new Date().getMonth() + 1
+
+  return `${month}월`
+})
 
 const getPercentage = (amount: number): number => {
   if (totalBudget.value <= 0) {
@@ -157,30 +175,53 @@ const formatShortCurrency = (value: number): string => {
   return formatCurrency(value)
 }
 
-const handleConfirm = () => {
-  console.log('진행 중 포켓 예산 변경 최종 확정', {
-    totalBudget: totalBudget.value,
+const handleConfirm = async () => {
+  if (saving.value) {
+    return
+  }
 
-    essentialBudget: essentialBudget.value,
+  saving.value = true
+  errorMessage.value = ''
 
-    freeBudget: freeBudget.value,
+  try {
+    await budgetAdjustmentApi.updateCurrent({
+      totalBudgetAmount: totalBudget.value,
 
-    futureBudget: futureBudget.value,
+      pockets: [
+        {
+          pocketType: 'ESSENTIAL',
+          amount: essentialBudget.value,
+        },
+        {
+          pocketType: 'FREE',
+          amount: freeBudget.value,
+        },
+        {
+          pocketType: 'EMERGENCY',
+          amount: emergencyBudget.value,
+        },
+        {
+          pocketType: 'FUTURE_ASSET',
+          amount: futureBudget.value,
+        },
+      ],
 
-    emergencyBudget: emergencyBudget.value,
+      changeReason: '사용자 포켓 예산 재조정',
+    })
 
-    expectedAsset: expectedAsset.value,
-  })
-
-  /*
-   * TODO:
-   * 백엔드 API 호출
-   *
-   * 저장 성공 후
-   * 실제 포켓 진행중 화면으로 이동
-   */
-
-  router.back()
+    /*
+     * PATCH 성공 후 실제 내 포켓 화면으로 이동.
+     *
+     * replace를 사용해서 뒤로가기를 눌렀을 때
+     * 방금 확정한 확인 화면으로 다시 돌아오지 않게 한다.
+     */
+    router.replace('/pockets')
+  } catch (error) {
+    errorMessage.value =
+      error instanceof ApiError ? error.message : '예산 변경 내용을 저장하지 못했어요.'
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -188,7 +229,6 @@ const handleConfirm = () => {
 .confirm-page {
   width: 100%;
   min-height: 100vh;
-
   background: #ffffff;
   color: #171717;
 }
@@ -196,14 +236,10 @@ const handleConfirm = () => {
 .confirm-content {
   display: flex;
   flex-direction: column;
-
   width: 100%;
   max-width: 430px;
-
   min-height: calc(100vh - 56px);
-
   margin: 0 auto;
-
   padding: 28px 28px 36px;
 }
 
@@ -213,19 +249,15 @@ const handleConfirm = () => {
 
 .intro-title {
   margin: 0;
-
   font-size: 27px;
   font-weight: 700;
   line-height: 1.32;
-
   letter-spacing: -0.8px;
 }
 
 .intro-description {
   margin: 12px 0 0;
-
   color: #777777;
-
   font-size: 12px;
   line-height: 1.6;
 }
@@ -234,40 +266,31 @@ const handleConfirm = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   width: 100%;
   min-height: 68px;
-
   padding: 0 16px;
-
   border: 1px solid #e4e4e4;
   border-radius: 12px;
-
   background: #ffffff;
 }
 
 .total-label {
   color: #555555;
-
   font-size: 14px;
   font-weight: 500;
 }
 
 .total-amount {
   color: #111111;
-
   font-size: 20px;
   font-weight: 800;
-
   letter-spacing: -0.5px;
 }
 
 .pocket-list {
   display: flex;
   flex-direction: column;
-
   gap: 12px;
-
   margin-top: 54px;
 }
 
@@ -275,11 +298,8 @@ const handleConfirm = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   min-height: 66px;
-
   padding: 0 16px;
-
   border-radius: 12px;
 }
 
@@ -302,11 +322,8 @@ const handleConfirm = () => {
 .pocket-badge {
   display: inline-flex;
   align-items: center;
-
   padding: 6px 10px;
-
   border-radius: 999px;
-
   font-size: 12px;
   font-weight: 700;
 }
@@ -334,13 +351,11 @@ const handleConfirm = () => {
 .pocket-value {
   display: flex;
   align-items: center;
-
   gap: 8px;
 }
 
 .pocket-value strong {
   color: #171717;
-
   font-size: 16px;
   font-weight: 800;
 }
@@ -349,13 +364,9 @@ const handleConfirm = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   min-width: 34px;
-
   padding: 3px 6px;
-
   border-radius: 999px;
-
   font-size: 10px;
   font-weight: 600;
 }
@@ -384,40 +395,38 @@ const handleConfirm = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-
   margin-top: 34px;
-
   padding: 26px 16px;
-
   border-radius: 12px;
-
   background: #f5f6ff;
 }
 
 .forecast-icon {
   margin-bottom: 8px;
-
   color: #111111;
-
   font-size: 22px;
   font-weight: 700;
 }
 
 .forecast-label {
   color: #777777;
-
   font-size: 12px;
 }
 
 .forecast-amount {
   margin-top: 6px;
-
   color: #111111;
-
   font-size: 25px;
   font-weight: 800;
-
   letter-spacing: -0.8px;
+}
+
+.error-message {
+  margin: 20px 0 0;
+  color: #d64545;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .bottom-area {
@@ -428,29 +437,28 @@ const handleConfirm = () => {
 .bottom-divider {
   width: 100%;
   height: 1px;
-
   margin-bottom: 20px;
-
   background: #eeeeee;
 }
 
 .confirm-button {
   width: 100%;
   height: 60px;
-
   border: 0;
   border-radius: 10px;
-
   color: #ffffff;
   background: #111111;
-
   font-size: 15px;
   font-weight: 700;
-
   cursor: pointer;
 }
 
-.confirm-button:active {
+.confirm-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.confirm-button:active:not(:disabled) {
   opacity: 0.85;
 }
 </style>
