@@ -38,7 +38,7 @@ public class TransactionQueryService {
     private final FinancialTransactionRepository transactionRepository;
 
     /**
-     * 필수·자유 포켓의 월별 거래를 선택 필터와 함께 페이지로 조회한다.
+     * 필수·자유·비상금 포켓의 월별 거래를 선택 필터와 함께 페이지로 조회한다.
      *
      * <p>포켓은 반드시 로그인 사용자의 것이어야 하며, {@code categoryId}와
      * {@code classificationStatus}는 값이 있을 때만 조회 조건에 적용된다. 같은 시각의 거래가
@@ -83,9 +83,11 @@ public class TransactionQueryService {
     }
 
     private void validatePocketType(PocketType pocketType) {
-        // 비상금과 미래자산은 소비 거래 목록의 대상이 아니다.
-        if (pocketType != PocketType.ESSENTIAL && pocketType != PocketType.FREE) {
-            throw new BusinessException(PocketErrorCode.INVALID_POCKET_TYPE);
+        // 미래자산은 소비 거래가 연결되는 포켓이 아니므로 거래 목록에서 제외한다.
+        if (pocketType != PocketType.ESSENTIAL
+                && pocketType != PocketType.FREE
+                && pocketType != PocketType.EMERGENCY) {
+            throw new BusinessException(PocketErrorCode.INVALID_TRANSACTION_POCKET_TYPE);
         }
     }
 

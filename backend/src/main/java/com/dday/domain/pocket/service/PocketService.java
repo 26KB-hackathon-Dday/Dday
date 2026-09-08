@@ -196,15 +196,14 @@ public class PocketService {
                 .pocketName(pocket.getPocketName())
                 .targetAmount(targetAmount);
         if (pocket.getPocketType() == PocketType.ESSENTIAL
-                || pocket.getPocketType() == PocketType.FREE) {
-            // 소비 포켓은 실제 지출을 기준으로 잔액과 초과액을 서로 겹치지 않게 노출한다.
+                || pocket.getPocketType() == PocketType.FREE
+                || pocket.getPocketType() == PocketType.EMERGENCY) {
+            // 소비가 연결될 수 있는 포켓은 실제 정상 지출을 기준으로 사용액을 계산한다.
+            // 잔액과 초과액은 동시에 양수가 되지 않도록 각각 0을 하한으로 둔다.
             response.usedAmount(usedAmount)
                     .remainingAmount(Math.max(targetAmount - usedAmount, 0L))
                     .overAmount(Math.max(usedAmount - targetAmount, 0L))
                     .usageRate(usageRate(targetAmount, usedAmount));
-        } else if (pocket.getPocketType() == PocketType.EMERGENCY) {
-            // 비상금은 소비 집계 대상이 아니므로 배정 목표액 전체를 남은 금액으로 표현한다.
-            response.remainingAmount(targetAmount);
         }
         // 미래자산 포켓은 이번 조회에서 목표액만 제공하며 소비성 파생 값은 비워 둔다.
         return response.build();

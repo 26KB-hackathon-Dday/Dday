@@ -58,7 +58,7 @@ public class PocketController {
     }
 
     @Operation(summary = "포켓별 거래 목록 조회", description = """
-            필수 또는 자유 포켓의 거래를 월 단위로 조회한다.
+            필수, 자유 또는 비상금 포켓의 거래를 월 단위로 조회한다.
             categoryId와 classificationStatus는 선택 필터이며, page는 0부터 시작하고 size는 최대 100이다.
             결과는 거래 시각과 거래 ID의 내림차순으로 정렬된다.
             """)

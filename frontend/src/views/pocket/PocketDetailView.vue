@@ -76,11 +76,10 @@ async function load() {
   error.value = null
   try {
     const selectedType = pocketType.value
-    // 백엔드 거래 조회는 ESSENTIAL/FREE만 허용한다. EMERGENCY는 월 요약만 요청해
-    // 존재하지 않는 지원을 가장한 호출이나 화면용 가짜 거래를 만들지 않는다.
+    // 필수·자유·비상금은 같은 포켓 거래 API를 사용한다.
     const [monthly, allTransactions] = await Promise.all([
       pocketApi.findMonthly(currentMonth.value),
-      selectedType === 'EMERGENCY' ? Promise.resolve([]) : findAllTransactions(selectedType),
+      findAllTransactions(selectedType),
     ])
     summary.value = monthly.pockets.find((pocket) => pocket.pocketType === selectedType) ?? null
     if (!summary.value) throw new Error('POCKET_NOT_FOUND')
@@ -139,13 +138,7 @@ function openBudgetReadjust() {
             :transaction="transaction"
           />
         </ul>
-        <p v-else class="empty">
-          {{
-            isEmergency
-              ? '비상금 사용 내역은 백엔드 연동이 필요합니다.'
-              : '이번 달 지출 내역이 없습니다.'
-          }}
-        </p>
+        <p v-else class="empty">이번 달 지출 내역이 없습니다.</p>
       </section>
       <section v-if="isEmergency" class="adjustment">
         <h2>이번 달 예산을 바꾸고 싶나요?</h2>

@@ -63,7 +63,10 @@ class PocketMonthlyServiceTest {
         given(monthlyPocketBudgetRepository.findAllByMonthlyBudgetAndUser(1L, 1L))
                 .willReturn(budgets);
         given(transactionRepository.sumSpendingByPocket(1L, from, to))
-                .willReturn(List.of(new Object[]{1L, 300_000L}, new Object[]{2L, 350_000L}));
+                .willReturn(List.of(
+                        new Object[]{1L, 300_000L},
+                        new Object[]{2L, 350_000L},
+                        new Object[]{3L, 40_000L}));
 
         var result = pocketService.findMonthly(1L, "2026-09");
 
@@ -74,7 +77,10 @@ class PocketMonthlyServiceTest {
         assertThat(result.getPockets().get(0).getRemainingAmount()).isEqualTo(200_000L);
         assertThat(result.getPockets().get(0).getUsageRate()).isEqualByComparingTo("60.00");
         assertThat(result.getPockets().get(1).getOverAmount()).isEqualTo(50_000L);
-        assertThat(result.getPockets().get(2).getRemainingAmount()).isEqualTo(100_000L);
+        assertThat(result.getPockets().get(2).getUsedAmount()).isEqualTo(40_000L);
+        assertThat(result.getPockets().get(2).getRemainingAmount()).isEqualTo(60_000L);
+        assertThat(result.getPockets().get(2).getOverAmount()).isZero();
+        assertThat(result.getPockets().get(2).getUsageRate()).isEqualByComparingTo("40.00");
         assertThat(result.getPockets().get(3).getUsedAmount()).isNull();
     }
 
