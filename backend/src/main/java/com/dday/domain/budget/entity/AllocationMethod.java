@@ -9,5 +9,6 @@ package com.dday.domain.budget.entity;
 public enum AllocationMethod {
 
     USER_INPUT,
-    AUTO_REMAINDER
+    AUTO_REMAINDER,
+    SYSTEM_DRAFT
 }
