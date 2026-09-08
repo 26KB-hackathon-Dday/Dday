@@ -1,22 +1,30 @@
+import { api } from './client'
+
 /**
  * 인증 API + 그 요청/응답 타입.
  *
  * 도메인 타입은 `api/{도메인}.ts`에 둔다(AGENTS.md §3). `types.ts`는 봉투 전용이다.
  *
- * ⚠️ 해커톤용 Mock 구현이다. 백엔드가 붙으면 각 함수의 `// TODO(real)` 줄을
- * 살리고 그 위의 mock 블록을 지우면 된다 — 시그니처는 그대로 둔다.
+ * 백엔드 계약 정본: `backend/src/main/java/com/dday/domain/auth/`의
+ * 컨트롤러 · DTO · `AuthErrorCode`.
  */
+
+// ── 공통 ──────────────────────────────────────────────
+
+/** 가입용 코드로 비밀번호를 바꾸지 못하게 서버가 구분하는 값 */
+export type VerificationPurpose = 'SIGNUP' | 'PASSWORD_RESET'
 
 // ── 요청 ──────────────────────────────────────────────
 
 export interface PhoneSendRequest {
-  /** 하이픈 없는 11자리 (01012345678) */
+  /** "010-1234-5678" 형식. 하이픈 필수 */
   phone: string
+  purpose: VerificationPurpose
 }
 
 export interface PhoneVerifyRequest {
   phone: string
-  /** 6자리 인증번호 */
+  /** 6자리 인증번호. Mock 서버에서는 항상 "000000" */
   code: string
 }
 
@@ -26,18 +34,37 @@ export interface EmailCheckRequest {
 
 export interface SignupRequest {
   name: string
+  /** "010-1234-5678" 형식 */
   phone: string
   email: string
   password: string
-  /** 동의한 약관 키 목록 (예: ['service', 'privacy']) */
-  agreements: string[]
-  /** 연동하기로 선택한 기관 id 목록 */
-  institutionIds: string[]
+  /** 이용약관 동의 (필수) */
+  agreedTerms: boolean
+  /** 개인정보 수집·이용 동의 (필수) */
+  agreedPrivacy: boolean
+  /** 위치정보 동의 (선택) */
+  agreedLocation: boolean
 }
 
 export interface LoginRequest {
   email: string
   password: string
+  rememberMe: boolean
+}
+
+export interface TokenRefreshRequest {
+  refreshToken: string
+}
+
+export interface PasswordFindRequest {
+  /** 이메일 또는 휴대폰 번호 */
+  emailOrPhone: string
+}
+
+export interface PasswordResetRequest {
+  phone: string
+  code: string
+  newPassword: string
 }
 
 // ── 응답 ──────────────────────────────────────────────
@@ -56,84 +83,65 @@ export interface EmailCheckResponse {
   available: boolean
 }
 
-export interface TokenResponse {
+export interface UserSummary {
+  userId: number
+  name: string
+  /** false면 마이데이터 연동 등 온보딩이 남아 있다 — 프론트가 그리로 보낸다 */
+  onboardingCompleted: boolean
+}
+
+export interface LoginResponse {
+  accessToken: string
+  refreshToken: string
+  user: UserSummary
+}
+
+export interface SignupResponse {
+  userId: number
   accessToken: string
   refreshToken: string
 }
 
-export interface MemberSummary {
-  memberId: number
-  name: string
-  email: string
+/** 액세스 토큰 재발급 응답. 리프레시 토큰은 회전시키지 않는다 */
+export interface TokenResponse {
+  accessToken: string
 }
 
-export interface LoginResponse extends TokenResponse {
-  member: MemberSummary
-}
-
-export type SignupResponse = LoginResponse
-
-// ── Mock 유틸 ─────────────────────────────────────────
-
-/** 네트워크가 있는 척. 화면의 로딩 상태를 실제처럼 확인하려고 둔다. */
-const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
-
-/** Mock 구간에서만 쓰는 가짜 토큰. 실제 JWT 형식이 아니어도 상관없다. */
-const mockTokens = (): TokenResponse => ({
-  accessToken: `mock-access-token-${Date.now()}`,
-  refreshToken: `mock-refresh-token-${Date.now()}`,
-})
+// ── API ───────────────────────────────────────────────
 
 export const authApi = {
   /** 휴대폰 인증번호 발송 */
-  async sendPhoneCode(body: PhoneSendRequest): Promise<PhoneSendResponse> {
-    console.log('[mock] POST /auth/phone/send', body)
-    await delay()
-    return { expiresIn: 180 }
-    // TODO(real): return api.post<PhoneSendResponse>('/auth/phone/send', body)
-  },
+  sendPhoneCode: (body: PhoneSendRequest) =>
+    api.post<PhoneSendResponse>('/api/auth/phone/send', body),
 
-  /**
-   * 휴대폰 인증번호 확인.
-   *
-   * ⚠️ Mock에서는 코드가 **"000000"일 때만** 통과한다. 그 외에는 실패 응답과
-   * 같은 모양으로 `verified: false`를 돌려준다 — 화면은 이 값만 보면 된다.
-   */
-  async verifyPhoneCode(body: PhoneVerifyRequest): Promise<PhoneVerifyResponse> {
-    console.log('[mock] POST /auth/phone/verify', body)
-    await delay()
-    return { verified: body.code === '000000' }
-    // TODO(real): return api.post<PhoneVerifyResponse>('/auth/phone/verify', body)
-  },
+  /** 휴대폰 인증번호 확인 */
+  verifyPhoneCode: (body: PhoneVerifyRequest) =>
+    api.post<PhoneVerifyResponse>('/api/auth/phone/verify', body),
 
   /** 이메일 중복 확인 */
-  async checkEmail(body: EmailCheckRequest): Promise<EmailCheckResponse> {
-    console.log('[mock] GET /auth/email/check', body)
-    await delay()
-    // Mock: 'test@dday.com'만 이미 쓰이는 이메일로 취급한다.
-    return { available: body.email !== 'test@dday.com' }
-    // TODO(real): return api.get<EmailCheckResponse>(`/auth/email/check?email=${encodeURIComponent(body.email)}`)
-  },
+  checkEmail: (body: EmailCheckRequest) =>
+    api.post<EmailCheckResponse>('/api/auth/email/check', body),
 
-  /** 회원가입 — 6단계에서 모은 값을 한 번에 보낸다 */
-  async signup(body: SignupRequest): Promise<SignupResponse> {
-    console.log('[mock] POST /auth/signup', body)
-    await delay(600)
-    return {
-      ...mockTokens(),
-      member: { memberId: 1, name: body.name, email: body.email },
-    }
-    // TODO(real): return api.post<SignupResponse>('/auth/signup', body)
-  },
+  /**
+   * 회원가입 — `/phone/send`(purpose=SIGNUP) → `/phone/verify`를 먼저 마쳐야 한다.
+   * 성공하면 바로 로그인된 상태가 되도록 토큰까지 함께 내려온다.
+   */
+  signup: (body: SignupRequest) => api.post<SignupResponse>('/api/auth/signup', body),
 
   /** 로그인 */
-  async login(body: LoginRequest): Promise<LoginResponse> {
-    console.log('[mock] POST /auth/login', body)
-    await delay()
-    return {
-      ...mockTokens(),
-      member: { memberId: 1, name: '홍길동', email: body.email },
-    }
-    // TODO(real): return api.post<LoginResponse>('/auth/login', body)
-  },
+  login: (body: LoginRequest) => api.post<LoginResponse>('/api/auth/login', body),
+
+  /** 로그아웃. JWT 무상태라 서버는 할 일이 없다 — 토큰은 호출부가 스토어에서 지운다 */
+  logout: () => api.post<void>('/api/auth/logout'),
+
+  /** 액세스 토큰 재발급 */
+  reissue: (body: TokenRefreshRequest) => api.post<TokenResponse>('/api/auth/token/refresh', body),
+
+  /** 비밀번호 찾기 (인증번호 발송) */
+  findPassword: (body: PasswordFindRequest) =>
+    api.post<PhoneSendResponse>('/api/auth/password/find', body),
+
+  /** 비밀번호 재설정 */
+  resetPassword: (body: PasswordResetRequest) =>
+    api.post<void>('/api/auth/password/reset', body),
 }
