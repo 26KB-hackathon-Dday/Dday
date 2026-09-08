@@ -160,7 +160,8 @@ public class FinancialTransaction {
                                  UserAccount counterpartyAccount,
                                  FinancialTransaction originalTransaction,
                                  LocalDateTime transactionAt, LocalDateTime syncedAt,
-                                 TransactionType transactionType, Long amount,
+                                 TransactionType transactionType, TransactionStatus transactionStatus,
+                                 Long amount,
                                  String merchantName, String merchantRegno, String transMemo) {
         this.sourceType = sourceType;
         this.account = account;
@@ -175,7 +176,8 @@ public class FinancialTransaction {
         this.merchantName = merchantName;
         this.merchantRegno = merchantRegno;
         this.transMemo = transMemo;
-        this.transactionStatus = TransactionStatus.NORMAL;
+        this.transactionStatus = transactionStatus != null
+                ? transactionStatus : TransactionStatus.NORMAL;
         this.classificationStatus = ClassificationStatus.UNCLASSIFIED;
         this.newFundChecked = true;
     }
