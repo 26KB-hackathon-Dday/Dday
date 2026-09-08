@@ -42,9 +42,6 @@ public class UserResponse {
     /** 온보딩 시점 보유 자산. */
     private final Long initialAsset;
 
-    /** 주거 보증금. */
-    private final Long housingDeposit;
-
     private final SettlementReceived settlementReceived;
 
     /** 마이데이터 연결 여부. 미연결이면 예산·소비 화면이 빈 값으로 뜬다. */
@@ -64,7 +61,6 @@ public class UserResponse {
                 .regionCode(user.getRegionCode())
                 .housingType(user.getHousingType())
                 .initialAsset(user.getInitialAsset())
-                .housingDeposit(user.getHousingDeposit())
                 .settlementReceived(user.getSettlementReceived())
                 .mydataConnected(user.isMydataConnected())
                 .createdAt(user.getCreatedAt())

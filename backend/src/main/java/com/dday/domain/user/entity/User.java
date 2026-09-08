@@ -74,6 +74,14 @@ public class User {
     @Column(name = "region_code", columnDefinition = "CHAR(10)")
     private String regionCode;
 
+    /** 시·도 이름. 코드만 두면 화면에 지역을 띄울 때마다 코드표를 조회해야 한다. */
+    @Column(name = "region_name", length = 30)
+    private String regionName;
+
+    /** 시·군·구 이름. */
+    @Column(name = "district_name", length = 30)
+    private String districtName;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "housing_type", length = 30)
     private HousingType housingType;
@@ -102,10 +110,6 @@ public class User {
     /** 온보딩 시점의 보유 자산(원). 예산 초안의 출발점이다. */
     @Column(name = "initial_asset")
     private Long initialAsset;
-
-    /** 주거 보증금(원). 자산이지만 당장 쓸 수 없는 돈이라 초기자산과 따로 받는다. */
-    @Column(name = "housing_deposit")
-    private Long housingDeposit;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "settlement_received", length = 20)
@@ -172,22 +176,39 @@ public class User {
         return this.status == UserStatus.ACTIVE;
     }
 
-    /**
-     * 온보딩에서 받은 프로필을 채우고 완료로 표시한다.
-     *
-     * <p>{@code null}을 건너뛰지 않고 그대로 넣는다. 온보딩은 PATCH가 아니라 한 번에 끝나는
-     * 흐름이라, "안 보냈다"가 "안 바꾼다"가 아니라 "모르겠다"는 뜻이기 때문이다.
-     */
-    public void completeOnboarding(LocalDate protectionEndDate, String regionCode,
-                                   HousingType housingType, Long initialAsset,
-                                   Long housingDeposit,
-                                   SettlementReceived settlementReceived) {
+    // ── 온보딩 ──────────────────────────────────────────────────────────────
+    //
+    // 온보딩은 화면을 하나씩 넘기며 저장하므로 단계별 메서드로 나눈다. 한 번에 다 받는
+    // 메서드 하나로 두면 중간 단계에서는 안 넣은 값을 null로 넘겨야 하고, 그러면
+    // "아직 입력 안 함"과 "비우기"가 구분되지 않는다.
+
+    public void updateProtectionEndDate(LocalDate protectionEndDate) {
         this.protectionEndDate = protectionEndDate;
+    }
+
+    public void updateRegion(String regionCode, String regionName, String districtName) {
         this.regionCode = regionCode;
+        this.regionName = regionName;
+        this.districtName = districtName;
+    }
+
+    public void updateHousingType(HousingType housingType) {
         this.housingType = housingType;
+    }
+
+    /** 모아둔 자산과 자립정착금 수령 여부. 온보딩 자산 화면에서 함께 받는다. */
+    public void updateAssets(Long initialAsset, SettlementReceived settlementReceived) {
         this.initialAsset = initialAsset;
-        this.housingDeposit = housingDeposit;
         this.settlementReceived = settlementReceived;
+    }
+
+    /**
+     * 온보딩 완료 표시.
+     *
+     * <p>단계별 값은 이미 저장돼 있으므로 플래그만 세운다. 되돌리는 메서드는 두지 않는다 —
+     * 완료를 취소하는 흐름이 없고, 있으면 실수로 남의 온보딩을 되돌릴 여지만 생긴다.
+     */
+    public void completeOnboarding() {
         this.onboardingCompleted = true;
     }
 
