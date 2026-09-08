@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * 유저 × 제도 자격 판별 결과 — <b>시스템(SUBSIDY-002 배치)이 소유</b>한다.
@@ -50,7 +49,7 @@ public class UserProgramEligibility {
     @Column(nullable = false)
     private LocalDateTime evaluatedAt;
 
-    public UserProgramEligibility(UUID userId, String programId) {
+    public UserProgramEligibility(Long userId, String programId) {
         this.id = new UserProgramId(userId, programId);
         this.eligible = false;
         this.evaluatedAt = LocalDateTime.now();

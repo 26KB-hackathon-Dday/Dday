@@ -2,13 +2,11 @@ package com.dday.domain.welfare.entity;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UserProgramStatusTest {
 
-    private final UUID userId = UUID.randomUUID();
+    private final Long userId = 1L;
 
     private UserProgramStatus newStatus() {
         return new UserProgramStatus(userId, "WLF00001175");
