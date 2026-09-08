@@ -381,6 +381,7 @@ const router = createRouter({
         const titles: Record<string, string> = {
           ESSENTIAL: '필수 포켓',
           FREE: '자유 포켓',
+          EMERGENCY: '비상금 포켓',
         }
         const pocketType = typeof to.params.pocketType === 'string' ? to.params.pocketType : ''
         if (!titles[pocketType]) return { name: 'pockets', query: { month: to.query.month } }

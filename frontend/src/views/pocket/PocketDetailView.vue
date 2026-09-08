@@ -24,12 +24,16 @@ const summary = ref<PocketMonthlySummary | null>(null)
 const transactions = ref<PocketTransaction[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
-const supportedTypes: PocketType[] = ['ESSENTIAL', 'FREE']
+const supportedTypes: PocketType[] = ['ESSENTIAL', 'FREE', 'EMERGENCY']
 const pocketType = computed<PocketType | null>(() => {
   const value = typeof route.params.pocketType === 'string' ? route.params.pocketType : ''
   return supportedTypes.includes(value as PocketType) ? (value as PocketType) : null
 })
 const isFree = computed(() => pocketType.value === 'FREE')
+const isEmergency = computed(() => pocketType.value === 'EMERGENCY')
+const summaryTheme = computed(() =>
+  isEmergency.value ? ('teal' as const) : isFree.value ? ('orange' as const) : ('blue' as const),
+)
 const currentMonth = computed(() => {
   const queryMonth = typeof route.query.month === 'string' ? route.query.month : ''
   if (/^\d{4}-(0[1-9]|1[0-2])$/.test(queryMonth)) return queryMonth
@@ -72,9 +76,11 @@ async function load() {
   error.value = null
   try {
     const selectedType = pocketType.value
+    // 백엔드 거래 조회는 ESSENTIAL/FREE만 허용한다. EMERGENCY는 월 요약만 요청해
+    // 존재하지 않는 지원을 가장한 호출이나 화면용 가짜 거래를 만들지 않는다.
     const [monthly, allTransactions] = await Promise.all([
       pocketApi.findMonthly(currentMonth.value),
-      findAllTransactions(selectedType),
+      selectedType === 'EMERGENCY' ? Promise.resolve([]) : findAllTransactions(selectedType),
     ])
     summary.value = monthly.pockets.find((pocket) => pocket.pocketType === selectedType) ?? null
     if (!summary.value) throw new Error('POCKET_NOT_FOUND')
@@ -87,6 +93,11 @@ async function load() {
 }
 
 onMounted(load)
+
+function openBudgetReadjust() {
+  // 기존 재조정 화면은 month query를 계약으로 사용하지 않으므로 라우트 이름만 전달한다.
+  router.push({ name: 'pocket-budget-readjust' })
+}
 </script>
 
 <template>
@@ -97,9 +108,13 @@ onMounted(load)
       <button type="button" @click="load">다시 시도</button>
     </div>
     <template v-else-if="summary">
-      <PocketBudgetSummary :summary="summary" :theme="isFree ? 'orange' : 'blue'" />
+      <PocketBudgetSummary
+        :summary="summary"
+        :theme="summaryTheme"
+        :pill-label="isEmergency ? '이번 달 남은 비상금' : '이번 달 남은 예산'"
+      />
       <PocketSpendingDonut v-if="isFree" class="section" :categories="spendingCategories" />
-      <section v-else class="section">
+      <section v-else-if="!isEmergency" class="section">
         <header class="section__header">
           <h2>카테고리별 사용 현황</h2>
           <small>데이터 연동 예정</small>
@@ -124,7 +139,20 @@ onMounted(load)
             :transaction="transaction"
           />
         </ul>
-        <p v-else class="empty">이번 달 지출 내역이 없습니다.</p>
+        <p v-else class="empty">
+          {{
+            isEmergency
+              ? '비상금 사용 내역은 백엔드 연동이 필요합니다.'
+              : '이번 달 지출 내역이 없습니다.'
+          }}
+        </p>
+      </section>
+      <section v-if="isEmergency" class="adjustment">
+        <h2>이번 달 예산을 바꾸고 싶나요?</h2>
+        <p>남아 있는 예산 안에서 포켓별 금액을 다시 조정할 수 있어요.</p>
+        <button type="button" @click="openBudgetReadjust">
+          포켓 예산 조정하기 <span aria-hidden="true">→</span>
+        </button>
       </section>
     </template>
   </main>
@@ -196,6 +224,26 @@ onMounted(load)
   color: var(--c-text-3);
   text-align: center;
   font-size: 12px;
+}
+.adjustment {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--c-border);
+}
+.adjustment h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.adjustment p {
+  margin-top: 5px;
+  color: var(--c-text-2);
+  font-size: 12px;
+}
+.adjustment button {
+  margin-top: 14px;
+  color: var(--c-teal);
+  font-size: 13px;
+  font-weight: 600;
 }
 @media (max-width: 340px) {
   .detail-page {

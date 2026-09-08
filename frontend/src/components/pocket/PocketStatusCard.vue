@@ -13,7 +13,8 @@ const props = defineProps<{
   overAmount?: number | null
 }>()
 const emit = defineEmits<{ select: [pocketType: Exclude<PocketType, 'FUTURE_ASSET'>] }>()
-const clickable = computed(() => props.pocketType === 'ESSENTIAL' || props.pocketType === 'FREE')
+// 상세 화면을 지원하는 일반 포켓은 모두 버튼으로 렌더링해 부모에게 선택 이벤트를 전달한다.
+const clickable = computed(() => ['ESSENTIAL', 'FREE', 'EMERGENCY'].includes(props.pocketType))
 const iconName = computed(() =>
   props.pocketType === 'ESSENTIAL' ? 'pocket' : props.pocketType === 'FREE' ? 'benefit' : 'credit',
 )

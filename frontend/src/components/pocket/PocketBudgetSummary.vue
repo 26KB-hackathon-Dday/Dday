@@ -3,19 +3,26 @@ import { computed } from 'vue'
 import type { PocketMonthlySummary } from '@/api/pocket'
 import { formatWon } from '@/utils/format'
 
-const props = defineProps<{ summary: PocketMonthlySummary; theme: 'blue' | 'orange' }>()
+const props = withDefaults(
+  defineProps<{
+    summary: PocketMonthlySummary
+    theme: 'blue' | 'orange' | 'teal'
+    pillLabel?: string
+  }>(),
+  { pillLabel: '이번 달 남은 예산' },
+)
 const rate = computed(() => props.summary.usageRate ?? 0)
 const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
 </script>
 
 <template>
   <section class="summary" :class="`summary--${theme}`" aria-labelledby="remaining-title">
-    <p id="remaining-title" class="summary__pill">이번 달 남은 예산</p>
+    <p id="remaining-title" class="summary__pill">{{ pillLabel }}</p>
     <strong class="summary__remaining">{{ formatWon(summary.remainingAmount ?? 0) }}</strong>
     <dl class="summary__amounts">
       <div>
         <dt>사용</dt>
-        <dd>{{ formatWon(summary.usedAmount ?? 0) }}</dd>
+        <dd>{{ summary.usedAmount == null ? '집계 전' : formatWon(summary.usedAmount) }}</dd>
       </div>
       <div>
         <dt>총 예산</dt>
@@ -33,7 +40,7 @@ const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
       >
         <span :style="{ width: fillWidth }" />
       </div>
-      <small>{{ rate }}% 사용</small>
+      <small>{{ summary.usageRate == null ? '사용률 집계 전' : `${rate}% 사용` }}</small>
     </div>
   </section>
 </template>
@@ -48,6 +55,10 @@ const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
 .summary--orange {
   --summary-accent: #ff914d;
   --summary-soft: #fff5ef;
+}
+.summary--teal {
+  --summary-accent: var(--c-teal);
+  --summary-soft: #eaf9fa;
 }
 .summary__pill {
   display: inline-flex;
