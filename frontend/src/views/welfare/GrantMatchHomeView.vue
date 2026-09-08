@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { grantApi, type GrantCard, type GrantHome, type GrantReviewItem } from '@/api/grant'
 import checkIcon from '@/assets/icons/check.svg'
+import checkThinIcon from '@/assets/icons/check-thin.svg'
 import AppIcon from '@/components/AppIcon.vue'
 import GrantCardList from '@/components/GrantCardList.vue'
 import GrantReasonSheet from '@/components/GrantReasonSheet.vue'
@@ -122,17 +123,30 @@ async function onReviewAnswer(item: GrantReviewItem, receiving: boolean) {
       </div>
     </section>
 
-    <!-- 카드 목록 — 벤토 셀 클릭에 따라 '놓치고 있을 수 있어요' / '받고 있는 지원' 교체 -->
+    <!-- 카드 목록 — 벤토 셀 클릭에 따라 교체. '놓치고 있을 수 있는 지원'이 0건이면 빈 상태 -->
     <section class="cards">
-      <div class="cards__head">
-        <h3 class="cards__title">
-          {{ section === 'missing' ? '놓치고 있을 수 있어요' : '받고 있는 지원' }}
-        </h3>
-        <span v-if="section === 'missing'" class="cards__dot" />
-        <span v-else class="cards__count">{{ home.receivingList.length }}건</span>
+      <div v-if="section === 'missing' && home.missing.length === 0" class="empty">
+        <span class="empty__icon">
+          <img :src="checkThinIcon" alt="" />
+        </span>
+        <h3 class="empty__title">지금 확인된 놓친 지원이 없어요</h3>
+        <p class="empty__desc">
+          새로운 지원제도가 추가되거나<br />
+          내 조건이 달라지면 다시 알려드릴게요.
+        </p>
       </div>
 
-      <GrantCardList :cards="sectionCards" @select="openDetail" @reasons="openReasons" />
+      <template v-else>
+        <div class="cards__head">
+          <h3 class="cards__title">
+            {{ section === 'missing' ? '놓치고 있을 수 있어요' : '받고 있는 지원' }}
+          </h3>
+          <span v-if="section === 'missing'" class="cards__dot" />
+          <span v-else class="cards__count">{{ home.receivingList.length }}건</span>
+        </div>
+
+        <GrantCardList :cards="sectionCards" @select="openDetail" @reasons="openReasons" />
+      </template>
 
       <button type="button" class="cta" @click="router.push('/grants/all')">
         전체 지원제도 보러가기
@@ -310,6 +324,46 @@ async function onReviewAnswer(item: GrantReviewItem, receiving: boolean) {
   font-weight: 500;
   color: var(--c-text-3);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── 놓친 지원 0건 빈 상태 ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0 16px;
+}
+.empty__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 24px;
+  border-radius: 9999px;
+  background: var(--c-surface);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+.empty__icon img {
+  width: 27px;
+  height: 20px;
+  object-fit: contain;
+}
+.empty__title {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+  letter-spacing: -0.2px;
+  color: #000;
+}
+.empty__desc {
+  margin-top: 12px;
+  max-width: 280px;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 24px;
+  color: var(--c-text-2);
 }
 
 .cell--button {
