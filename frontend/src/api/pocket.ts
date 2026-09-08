@@ -43,10 +43,39 @@ export interface PocketInitializeResponse {
   totalCount: number
 }
 
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'SELF_TRANSFER' | 'OTHER'
+export type TransactionStatus = 'NORMAL' | 'CANCELED' | 'REFUNDED'
+
+export interface PocketTransaction {
+  transactionId: number
+  transactionAt: string
+  merchantName: string | null
+  memo: string | null
+  amount: number
+  transactionType: TransactionType
+  transactionStatus: TransactionStatus
+  category: { categoryId: number; categoryName: string } | null
+  classificationStatus: string | null
+  classificationSource: string | null
+}
+
+export interface PageResponse<T> {
+  content: T[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}
+
 export const pocketApi = {
   initialize: () => api.post<PocketInitializeResponse>('/api/pockets/initialize'),
   findAll: () => api.get<Pocket[]>('/api/pockets'),
   findById: (pocketId: number) => api.get<Pocket>(`/api/pockets/${pocketId}`),
   findMonthly: (month: string) =>
     api.get<PocketMonthlyResponse>(`/api/pockets/monthly?month=${encodeURIComponent(month)}`),
+  findTransactions: (pocketType: PocketType, month: string, page = 0, size = 3) =>
+    api.get<PageResponse<PocketTransaction>>(
+      `/api/pockets/${pocketType}/transactions?month=${encodeURIComponent(month)}&page=${page}&size=${size}`,
+    ),
 }

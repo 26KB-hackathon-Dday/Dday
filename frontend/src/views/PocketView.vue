@@ -4,13 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import PocketStatusCard from '@/components/pocket/PocketStatusCard.vue'
 import FutureAssetPocketCard from '@/components/pocket/FutureAssetPocketCard.vue'
-import {
-  POCKET_LABEL,
-  POCKET_ORDER,
-  pocketApi,
-  type PocketMonthlyResponse,
-} from '@/api/pocket'
+import { POCKET_LABEL, POCKET_ORDER, pocketApi, type PocketMonthlyResponse } from '@/api/pocket'
 import { ApiError } from '@/api/types'
+import { formatWon } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -34,7 +30,6 @@ const orderedPockets = computed(() =>
     (a, b) => POCKET_ORDER.indexOf(a.pocketType) - POCKET_ORDER.indexOf(b.pocketType),
   ),
 )
-const formatWon = (value: number) => `${Math.round(value).toLocaleString('ko-KR')}원`
 
 async function load() {
   loading.value = true
@@ -52,6 +47,14 @@ async function load() {
 function openNextBudget() {
   router.push({ name: 'pocket-budget-initial' })
 }
+function openPocketDetail(pocketType: 'ESSENTIAL' | 'FREE' | 'EMERGENCY') {
+  if (pocketType !== 'ESSENTIAL') return
+  router.push({
+    name: 'pocket-detail',
+    params: { pocketType },
+    query: { month: currentMonth.value },
+  })
+}
 onMounted(load)
 </script>
 
@@ -65,7 +68,12 @@ onMounted(load)
     <p v-if="loading" class="state" role="status">포켓 현황을 불러오는 중…</p>
     <div v-else-if="error" class="state error" role="alert">
       <p>{{ error }}</p>
-      <button v-if="needsBudgetConfirmation" type="button" class="budget-button" @click="openNextBudget">
+      <button
+        v-if="needsBudgetConfirmation"
+        type="button"
+        class="budget-button"
+        @click="openNextBudget"
+      >
         예산 확정하러 가기
       </button>
       <button v-else type="button" @click="load">다시 시도</button>
@@ -91,6 +99,7 @@ onMounted(load)
             :remaining="pocket.remainingAmount"
             :usage-rate="pocket.usageRate"
             :over-amount="pocket.overAmount"
+            @select="openPocketDetail"
           />
         </template>
       </section>

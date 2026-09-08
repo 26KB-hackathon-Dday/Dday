@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import type { PocketType } from '@/api/pocket'
+import { formatWon } from '@/utils/format'
 const props = defineProps<{
   pocketType: Exclude<PocketType, 'FUTURE_ASSET'>
   title: string
@@ -11,15 +12,22 @@ const props = defineProps<{
   usageRate: number | null
   overAmount?: number | null
 }>()
+const emit = defineEmits<{ select: [pocketType: Exclude<PocketType, 'FUTURE_ASSET'>] }>()
+const clickable = computed(() => props.pocketType === 'ESSENTIAL')
 const iconName = computed(() =>
   props.pocketType === 'ESSENTIAL' ? 'pocket' : props.pocketType === 'FREE' ? 'benefit' : 'credit',
 )
 const rate = computed(() => props.usageRate ?? 0)
 const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
-const formatWon = (value: number) => `${Math.round(value).toLocaleString('ko-KR')}원`
 </script>
 <template>
-  <article class="card" :class="`card--${pocketType.toLowerCase()}`">
+  <component
+    :is="clickable ? 'button' : 'article'"
+    class="card"
+    :class="[`card--${pocketType.toLowerCase()}`, { 'card--clickable': clickable }]"
+    :type="clickable ? 'button' : undefined"
+    @click="clickable && emit('select', pocketType)"
+  >
     <header>
       <AppIcon :name="iconName" :size="20" aria-hidden="true" />
       <h2>{{ title }}</h2>
@@ -55,14 +63,29 @@ const formatWon = (value: number) => `${Math.round(value).toLocaleString('ko-KR'
         <dd class="emphasis">{{ formatWon(remaining) }}</dd>
       </div>
     </dl>
-  </article>
+  </component>
 </template>
 <style scoped>
 .card {
   --accent: #397bc7;
+  display: block;
+  width: 100%;
   padding: 18px;
   border-radius: 14px;
   background: #eef4ff;
+  text-align: left;
+}
+.card--clickable {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+.card--clickable:hover {
+  filter: brightness(0.98);
+}
+.card--clickable:active {
+  transform: scale(0.99);
 }
 .card--free {
   --accent: #ff914d;

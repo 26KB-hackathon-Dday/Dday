@@ -363,8 +363,6 @@ const router = createRouter({
         title: '내 포켓',
       },
     },
-    // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
-    { path: '/:pathMatch(.*)*', redirect: '/' },
     {
       path: '/pockets/unexpected-income/amount',
       name: 'pocket-unexpected-income-amount',
@@ -373,6 +371,15 @@ const router = createRouter({
         title: '추가할 금액 지정',
       },
     },
+    {
+      // 모든 정적 /pockets/* 경로 뒤에 둬 budget-* 화면을 pocketType으로 오인하지 않게 한다.
+      path: '/pockets/:pocketType',
+      name: 'pocket-detail',
+      component: () => import('@/views/pocket/PocketDetailView.vue'),
+      meta: { title: '필수 포켓', requiresAuth: true },
+    },
+    // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
+    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
 
