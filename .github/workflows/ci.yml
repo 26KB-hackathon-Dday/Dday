@@ -157,6 +157,19 @@ jobs:
             set -e
             cd /home/${{ secrets.EC2_USER }}/dday
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            # JWT 서명키는 저장소에 둘 수 없고(공개되면 누구나 토큰을 위조한다) compose가
+            # 없으면 기동을 거부한다. 그래서 서버에 한 번 만들어 .env에 남긴다.
+            #
+            # 두 번째 배포부터는 이미 있으므로 건너뛴다 — 매번 새로 만들면 배포할 때마다
+            # 발급된 토큰이 전부 무효가 되어 사용자가 로그아웃된다.
+            #
+            # 키를 바꾸려면(유출 등) 서버에서 .env의 JWT_SECRET 줄을 지우고 재배포한다.
+            if ! grep -q '^JWT_SECRET=' .env 2>/dev/null; then
+              echo "JWT_SECRET=$(head -c 48 /dev/urandom | base64 | tr -d '\n')" >> .env
+              echo "JWT_SECRET 을 새로 생성해 .env 에 넣었다."
+            fi
+
             docker compose -f docker-compose.prod.yml pull backend
             docker compose -f docker-compose.prod.yml up -d
             # 태그가 바뀌면서 참조를 잃은 옛 이미지를 정리한다. 20GB 디스크가 금방 찬다.
