@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * 유저 × 제도 수급여부 · 즐겨찾기 — <b>사용자가 소유</b>한다 (SUBSIDY-003 수급여부 확인, SUBSIDY-008 관심 제도).
@@ -60,7 +59,7 @@ public class UserProgramStatus {
     /** {@code is_favorite == false}면 {@code null}. */
     private LocalDateTime favoritedAt;
 
-    public UserProgramStatus(UUID userId, String programId) {
+    public UserProgramStatus(Long userId, String programId) {
         this.id = new UserProgramId(userId, programId);
         this.receivingStatus = ReceivingStatus.UNKNOWN;
         this.favorite = false;

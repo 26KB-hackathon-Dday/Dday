@@ -2,13 +2,11 @@ package com.dday.domain.welfare.entity;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UserProgramEligibilityTest {
 
-    private final UUID userId = UUID.randomUUID();
+    private final Long userId = 1L;
 
     @Test
     void 생성시_복합키와_기본값이_잡힌다() {
