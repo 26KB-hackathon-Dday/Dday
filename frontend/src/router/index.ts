@@ -41,7 +41,7 @@ declare module 'vue-router' {
  * - **온보딩(랜딩·로그인·가입·마이데이터)** — 전부 정적 import다. 개수가 적고 순서대로
  *   이어지므로 코드 스플리팅해봐야 단계마다 네트워크 왕복만 늘어난다.
  *   자체 헤더를 그리므로 `hideChrome: true`로 공용 크롬을 끈다.
- * - **로그인 후 앱 화면(홈·포켓·지원금·마이페이지)** — 공용 상단바·하단 내비 안에서 돈다.
+ * - **로그인 후 앱 화면(홈·포켓·지원금·신용 관리)** — 공용 상단바·하단 내비 안에서 돈다.
  *   `meta.title`이 상단바 제목이 되고, 하단 탭은 모두 최상위 경로라 exact 활성만 보면 된다.
  */
 const router = createRouter({
@@ -104,10 +104,10 @@ const router = createRouter({
       meta: { title: '지원 상세', hideChrome: true },
     },
     {
-      path: '/mypage',
-      name: 'mypage',
+      path: '/credit-manage',
+      name: 'credit-manage',
       component: () => import('@/views/PlaceholderView.vue'),
-      meta: { title: '마이페이지' },
+      meta: { title: '신용 관리', requiresAuth: true },
     },
 
     // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다

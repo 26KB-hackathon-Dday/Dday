@@ -9,13 +9,14 @@
 import homeIcon from '@/assets/icons/home.svg'
 import pocketIcon from '@/assets/icons/pocket.svg'
 import welfareIcon from '@/assets/icons/welfare.svg'
-import mypageIcon from '@/assets/icons/mypage.svg'
+// TODO: 신용 관리 전용 아이콘이 생기면 교체. 지금은 사람 아이콘을 임시로 쓴다.
+import creditIcon from '@/assets/icons/mypage.svg'
 
 const tabs = [
   { to: '/', label: '홈', icon: homeIcon },
   { to: '/pockets', label: '내 포켓', icon: pocketIcon },
   { to: '/grants', label: '지원금', icon: welfareIcon },
-  { to: '/mypage', label: '마이페이지', icon: mypageIcon },
+  { to: '/credit-manage', label: '신용 관리', icon: creditIcon },
 ]
 </script>
 
