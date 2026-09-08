@@ -37,6 +37,7 @@ const isActive = (to: string) => route.path === to
       :to="tab.to"
       class="bottomnav__tab"
       :class="{ 'is-active': isActive(tab.to) }"
+      :data-tab="tab.to"
     >
       <span class="bottomnav__iconbox">
         <img
@@ -87,6 +88,15 @@ const isActive = (to: string) => route.path === to
 }
 .bottomnav__tab.is-active {
   color: #000;
+}
+
+/*
+ * 신용 관리 dark 아이콘은 원본과 차이가 작아 눌러도 티가 잘 안 난다.
+ * 활성일 때 순검정으로 눌러(brightness 0) 사방 0.4px 그림자로 획을 두껍게 보여준다.
+ */
+.bottomnav__tab[data-tab='/credit-manage'].is-active .bottomnav__icon {
+  filter: brightness(0) drop-shadow(0.4px 0 0 #000) drop-shadow(-0.4px 0 0 #000)
+    drop-shadow(0 0.4px 0 #000) drop-shadow(0 -0.4px 0 #000);
 }
 
 .bottomnav__label {
