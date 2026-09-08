@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  <wantedList>
+    <totalCount>3</totalCount>
+    <pageNo>1</pageNo>
+    <numOfRows>10</numOfRows>
+    <resultCode>0</resultCode>
+    <resultMessage>SUCCESS</resultMessage>
+    <servList>
+      <aplyMtdNm>방문, 전화, 우편, E-mail</aplyMtdNm>
+      <bizChrDeptNm>서울특별시 용산구 생활지원국 아동청소년과</bizChrDeptNm>
+      <ctpvNm>서울특별시</ctpvNm>
+      <inqNum>3223</inqNum>
+      <intrsThemaNmArray>보호·돌봄, 서민금융</intrsThemaNmArray>
+      <lastModYmd>20260723</lastModYmd>
+      <lifeNmArray>청년</lifeNmArray>
+      <servDgst>용산구 자립준비청년에게 생활보조수당을 지급하여 보호종료 후 경제적 부담을 완화하고 복지 향상을 통해 안정적인 사회정착 및 성공적 자립에 기여 </servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00006199&amp;wlfareInfoReldBztpCd=02</servDtlLink>
+      <servId>WLF00006199</servId>
+      <servNm>자립준비청년 생활보조수당 지원</servNm>
+      <sggNm>용산구</sggNm>
+      <sprtCycNm>월</sprtCycNm>
+      <srvPvsnNm>현금지급</srvPvsnNm>
+    </servList>
+    <servList>
+      <aplyMtdNm>방문, 전화, 우편</aplyMtdNm>
+      <bizChrDeptNm>전남광주통합특별시 여성가족정책관</bizChrDeptNm>
+      <ctpvNm>전남광주통합특별시</ctpvNm>
+      <inqNum>2873</inqNum>
+      <intrsThemaNmArray>주거, 보호·돌봄, 서민금융</intrsThemaNmArray>
+      <lastModYmd>20260723</lastModYmd>
+      <lifeNmArray>청소년, 청년</lifeNmArray>
+      <servDgst>보호 종결 후 자립하여 생활할 수 있도록 아동에게 정착금을 지원하여 주거지 마련 등 정상적인 사회적응 도모</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001803&amp;wlfareInfoReldBztpCd=02</servDtlLink>
+      <servId>WLF00001803</servId>
+      <servNm>자립준비청년(보호종료아동) 자립정착금</servNm>
+      <sprtCycNm>1회성</sprtCycNm>
+      <srvPvsnNm>현금지급</srvPvsnNm>
+    </servList>
+    <servList>
+      <aplyMtdNm>방문</aplyMtdNm>
+      <bizChrDeptNm>서울특별시 서대문구 교육문화체육국 아동청소년과</bizChrDeptNm>
+      <ctpvNm>서울특별시</ctpvNm>
+      <inqNum>3548</inqNum>
+      <intrsThemaNmArray>보호·돌봄, 서민금융</intrsThemaNmArray>
+      <lastModYmd>20260717</lastModYmd>
+      <lifeNmArray>아동, 청소년, 청년</lifeNmArray>
+      <servDgst>서대문구 자립준비청년 자립지원(사회첫걸음)수당을 추가 지원함으로써 보다 안정적인 자립을 도모</servDgst>
+      <servDtlLink>https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004197&amp;wlfareInfoReldBztpCd=02</servDtlLink>
+      <servId>WLF00004197</servId>
+      <servNm>서대문구 자립준비청년 자립지원(사회첫걸음)수당</servNm>
+      <sggNm>서대문구</sggNm>
+      <sprtCycNm>월</sprtCycNm>
+      <srvPvsnNm>현금지급</srvPvsnNm>
+    </servList>
+  </wantedList>
