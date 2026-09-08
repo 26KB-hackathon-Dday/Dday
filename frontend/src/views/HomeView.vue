@@ -202,10 +202,9 @@ const assetText = computed(() => {
 }
 .proj__desc {
   margin-top: 8px;
-  font-size: 11px;
-  font-weight: 300;
-  line-height: 14px;
-  letter-spacing: 0.22px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
   color: #fff;
 }
 .proj__link {
