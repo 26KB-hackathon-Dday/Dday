@@ -1,35 +1,40 @@
 @import './base.css';
 
+/**
+ * 디자인 토큰. 컴포넌트(PrimaryButton, TextField, 각 View)가 이 변수들을 쓴다.
+ * 값을 바꾸면 앱 전체에 반영된다 — 컴포넌트 안에 색·간격을 직접 박지 않는다.
+ */
+:root {
+  --color-primary: #1a1a1a;
+  --color-secondary: #8a8a8a;
+  --color-border: #e5e5e5;
+  --color-bg: #ffffff;
+  --color-bg-soft: #f5f5f5;
+  --color-disabled: #cccccc;
+  --color-danger: #e64545;
+  --color-accent: #1a1a1a;
+
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-page: 20px;
+
+  --radius-md: 12px;
+  --radius-lg: 20px;
+}
+
+html,
+body {
+  background-color: #f2f2f2;
+}
+
+/* 모바일 앱처럼 보이도록 폭을 제한하고 가운데 정렬한다.
+   데스크톱에서 열어도 430px 카드처럼 보이게 하기 위함. */
 #app {
-  max-width: 1280px;
+  max-width: 430px;
   margin: 0 auto;
-  padding: 2rem;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--color-bg);
   font-weight: normal;
-}
-
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
 }

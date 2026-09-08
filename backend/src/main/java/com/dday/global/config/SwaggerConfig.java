@@ -1,7 +1,9 @@
 package com.dday.global.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,11 +17,28 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
+    /**
+     * Swagger UI 우측 상단 <b>Authorize</b> 버튼이 이 이름을 쓴다.
+     * 컨트롤러의 {@code @SecurityRequirement(name = "bearerAuth")}와 문자열이 같아야 한다.
+     */
+    private static final String BEARER_AUTH = "bearerAuth";
+
     @Bean
     public OpenAPI ddayOpenAPI() {
-        return new OpenAPI().info(new Info()
-                .title("Dday API")
-                .description("26KB 해커톤 프로젝트 Dday의 백엔드 API")
-                .version("v0.0.1"));
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Dday API")
+                        .description("""
+                                26KB 해커톤 프로젝트 Dday의 백엔드 API
+
+                                인증이 필요한 API는 우측 상단 **Authorize**에 `/api/auth/login`으로 받은
+                                accessToken을 넣는다. (`Bearer ` 접두사는 Swagger가 알아서 붙인다)
+                                """)
+                        .version("v0.0.1"))
+                .components(new Components().addSecuritySchemes(BEARER_AUTH,
+                        new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")));
     }
 }

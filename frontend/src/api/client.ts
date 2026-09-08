@@ -1,5 +1,8 @@
 import { ApiError, type ApiResponse } from './types'
 
+export const ACCESS_TOKEN_KEY = 'accessToken'
+export const REFRESH_TOKEN_KEY = 'refreshToken'
+
 /**
  * 백엔드 호출 래퍼. 봉투를 벗겨서 `data`만 돌려준다.
  *
@@ -15,10 +18,13 @@ import { ApiError, type ApiResponse } from './types'
  * `e.message`를 그대로 띄우면 된다 — 그 문구가 백엔드 ErrorCode의 정본이다.
  */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+
   const res = await fetch(path, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...init?.headers,
     },
   })
