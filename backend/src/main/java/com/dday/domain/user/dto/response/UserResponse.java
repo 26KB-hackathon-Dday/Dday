@@ -1,17 +1,22 @@
 package com.dday.domain.user.dto.response;
 
+import com.dday.domain.user.entity.HousingType;
+import com.dday.domain.user.entity.SettlementReceived;
 import com.dday.domain.user.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
  * 마이페이지 회원 정보. <b>{@code passwordHash}는 절대 담지 않는다.</b>
  *
- * <p>온보딩·프로필 값(거주지역, 주거형태, 초기자산 등)은 아직 {@code User}에 없다.
- * 온보딩 도메인이 컬럼을 붙이면 여기에 필드를 더하면 된다.
+ * <p>온보딩 전에는 프로필 값이 전부 {@code null}이다. 프론트는 {@link #onboardingCompleted}로
+ * 분기하지 개별 필드의 null 여부로 판단하지 않는다 — "모르겠다"고 넘긴 항목이 있으면
+ * 온보딩을 마쳤는데도 null이 남기 때문이다.
  */
 @Getter
 @Builder
@@ -27,8 +32,24 @@ public class UserResponse {
     /** 프론트가 온보딩으로 보낼지 홈으로 보낼지 판단하는 값. */
     private final boolean onboardingCompleted;
 
-    /** 온보딩 전에는 {@code null}이다. */
-    private final LocalDateTime protectionEndDate;
+    /** D-day 계산 기준. 온보딩 전이면 {@code null}이다. */
+    private final LocalDate protectionEndDate;
+
+    /** 거주지 법정동 코드. */
+    private final String regionCode;
+
+    private final HousingType housingType;
+
+    /** 온보딩 시점 보유 자산. */
+    private final BigDecimal initialAsset;
+
+    /** 주거 보증금. */
+    private final BigDecimal housingDeposit;
+
+    private final SettlementReceived settlementReceived;
+
+    /** 마이데이터 연결 여부. 미연결이면 예산·소비 화면이 빈 값으로 뜬다. */
+    private final boolean mydataConnected;
 
     private final LocalDateTime createdAt;
 
@@ -41,6 +62,12 @@ public class UserResponse {
                 .agreedLocation(user.isAgreedLocation())
                 .onboardingCompleted(user.isOnboardingCompleted())
                 .protectionEndDate(user.getProtectionEndDate())
+                .regionCode(user.getRegionCode())
+                .housingType(user.getHousingType())
+                .initialAsset(user.getInitialAsset())
+                .housingDeposit(user.getHousingDeposit())
+                .settlementReceived(user.getSettlementReceived())
+                .mydataConnected(user.isMydataConnected())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

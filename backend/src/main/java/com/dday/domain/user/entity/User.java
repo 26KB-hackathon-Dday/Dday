@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -61,18 +63,61 @@ public class User {
     private boolean agreedLocation;
 
     /**
-     * 온보딩 완료 여부를 판단하는 근거. <b>쓰기는 온보딩 도메인 몫이라 읽기 전용으로 매핑한다.</b>
-     * (auth가 실수로 이 값을 덮어쓰면 남의 도메인 상태가 깨진다)
+     * 보호종료일. 지원 종료 예정일과 D-day 계산의 기준이다.
+     *
+     * <p>시각이 아니라 날짜다 — "2027-03-01 00:00"과 "2027-03-01 09:00"은 D-day가 같은데
+     * {@code LocalDateTime}으로 두면 둘이 다른 값이 되어 비교마다 시각을 잘라내야 한다.
      */
-    @Column(name = "protection_end_date", insertable = false, updatable = false)
-    private LocalDateTime protectionEndDate;
+    @Column(name = "protection_end_date")
+    private LocalDate protectionEndDate;
+
+    /** 거주지 법정동 코드. 지원금 지역 조건 매칭에 쓴다. */
+    @Column(name = "region_code", columnDefinition = "CHAR(10)")
+    private String regionCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "housing_type", length = 30)
+    private HousingType housingType;
+
+    /**
+     * 온보딩을 끝냈는지. 보호종료일이 있는지로 유추하지 않고 플래그를 따로 둔다 —
+     * 온보딩에서 보호종료일을 모르겠다고 넘긴 사람이 영영 온보딩 화면에 갇힌다.
+     */
+    @Column(name = "onboarding_completed", nullable = false)
+    private boolean onboardingCompleted;
+
+    /** 마이데이터를 한 번이라도 연결했는지. */
+    @Column(name = "mydata_connected", nullable = false)
+    private boolean mydataConnected;
+
+    @Column(name = "mydata_connected_at")
+    private LocalDateTime mydataConnectedAt;
+
+    /**
+     * 마이데이터 동의 만료 시각. 법정 유효기간이 있어 지나면 재동의를 받아야 하고,
+     * 그 전에는 동기화를 돌려선 안 된다.
+     */
+    @Column(name = "mydata_consent_expires_at")
+    private LocalDateTime mydataConsentExpiresAt;
+
+    /** 온보딩 시점의 보유 자산. 예산 초안의 출발점이다. */
+    @Column(name = "initial_asset", precision = 12, scale = 0)
+    private BigDecimal initialAsset;
+
+    /** 주거 보증금. 자산이지만 당장 쓸 수 없는 돈이라 초기자산과 따로 받는다. */
+    @Column(name = "housing_deposit", precision = 12, scale = 0)
+    private BigDecimal housingDeposit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "settlement_received", length = 20)
+    private SettlementReceived settlementReceived;
 
     /**
      * 탈퇴 사유. 자유 입력이라 enum이 아니다 — 선택지가 아직 확정되지 않았고,
      * 확정되면 여기에 코드 컬럼을 하나 더 두고 이 필드는 "기타" 상세로 남기면 된다.
      * 탈퇴하지 않은 회원은 {@code null}이므로 nullable이다.
      */
-    @Column(name = "withdraw_reason", length = 500)
+    @Column(name = "withdrawal_reason", length = 100)
     private String withdrawReason;
 
     @Column(name = "withdrawn_at")
@@ -129,10 +174,37 @@ public class User {
     }
 
     /**
-     * 온보딩을 마쳤는지. 지금은 보호종료일이 설정됐는지로 판단한다 —
-     * 온보딩 도메인이 완료 플래그를 따로 만들면 그때 이 메서드만 고치면 된다.
+     * 온보딩에서 받은 프로필을 채우고 완료로 표시한다.
+     *
+     * <p>{@code null}을 건너뛰지 않고 그대로 넣는다. 온보딩은 PATCH가 아니라 한 번에 끝나는
+     * 흐름이라, "안 보냈다"가 "안 바꾼다"가 아니라 "모르겠다"는 뜻이기 때문이다.
      */
-    public boolean isOnboardingCompleted() {
-        return this.protectionEndDate != null;
+    public void completeOnboarding(LocalDate protectionEndDate, String regionCode,
+                                   HousingType housingType, BigDecimal initialAsset,
+                                   BigDecimal housingDeposit,
+                                   SettlementReceived settlementReceived) {
+        this.protectionEndDate = protectionEndDate;
+        this.regionCode = regionCode;
+        this.housingType = housingType;
+        this.initialAsset = initialAsset;
+        this.housingDeposit = housingDeposit;
+        this.settlementReceived = settlementReceived;
+        this.onboardingCompleted = true;
+    }
+
+    /** 마이데이터 연결 완료. 최초 연결 시각은 처음 한 번만 남긴다 — 재연결로 덮어쓰면 언제부터 쓴 건지 사라진다. */
+    public void connectMydata(LocalDateTime connectedAt, LocalDateTime consentExpiresAt) {
+        this.mydataConnected = true;
+        if (this.mydataConnectedAt == null) {
+            this.mydataConnectedAt = connectedAt;
+        }
+        this.mydataConsentExpiresAt = consentExpiresAt;
+    }
+
+    /** 동의가 아직 살아있는지. 만료됐으면 동기화를 돌리지 않고 재동의를 받아야 한다. */
+    public boolean hasValidMydataConsent(LocalDateTime now) {
+        return this.mydataConnected
+                && this.mydataConsentExpiresAt != null
+                && this.mydataConsentExpiresAt.isAfter(now);
     }
 }
