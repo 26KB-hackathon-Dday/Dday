@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,4 +66,7 @@ public interface WelfareProgramRepository extends JpaRepository<WelfareProgram, 
      */
     List<WelfareProgram> findByCurationStatusAndSourceOrderByServId(CurationStatus curationStatus,
                                                                     ProgramSource source);
+
+    /** 홈 집계 — 자격 있는 제도들을 servId(=programId)로 한 번에. */
+    List<WelfareProgram> findByServIdIn(Collection<String> servIds);
 }

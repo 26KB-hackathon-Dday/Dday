@@ -4,11 +4,10 @@ import { api } from './client'
 /**
  * 지원금 도메인 API.
  *
- * - 전체 목록·상세: 백엔드 `/api/v1/welfare-programs` 에 연결됨.
- * - 홈 대시보드(`fetchHome`): 아직 목 데이터. 유저별 자격 판별(SUBSIDY-002)·수급 상태가
- *   있어야 하는데 `/me/subsidies` 엔드포인트가 없다 (docs/welfare-api/matching-spec.md).
+ * - 전체 목록·상세: 백엔드 `/api/v1/welfare-programs` (공개, 인증 불필요).
+ * - 홈 대시보드(`fetchHome`)·수급 여부(`updateReceivingStatus`): `/api/v1/me/subsidies/**` (JWT 필요).
  *
- * 백엔드 계약 정본: `backend/.../welfare/dto/response/WelfareProgram*Response.java`
+ * 백엔드 계약 정본: `backend/.../welfare/dto/response/*.java`
  */
 
 // ── 전체 목록 (GET /api/v1/welfare-programs) ──────────────────────────────
@@ -96,11 +95,93 @@ export const grantApi = {
     }
   },
 
-  /** 홈 대시보드. TODO: `/me/subsidies` 생기면 실호출로 교체. */
-  fetchHome: (): Promise<GrantHome> => Promise.resolve(MOCK_HOME),
+  /** 지원금 매칭 홈. 자격 판별 이력이 없으면 서버가 이 호출에서 먼저 판별한다. */
+  async fetchHome(): Promise<GrantHome> {
+    return toGrantHome(await api.get<SubsidyHomeResponse>('/api/v1/me/subsidies/home'))
+  },
+
+  /** 수급 여부 등록/수정 (되묻기 결과). 자격 없는 제도면 INELIGIBLE_PROGRAM. */
+  updateReceivingStatus(programId: string, receiving: boolean): Promise<void> {
+    return api.patch(`/api/v1/me/subsidies/${encodeURIComponent(programId)}/receiving-status`, {
+      receivingStatus: receiving ? 'RECEIVING' : 'NOT_RECEIVING',
+    })
+  },
 }
 
-// ── 홈 대시보드 (목 — /me/subsidies 미구현) ──────────────────────────────
+// ── 홈 대시보드 (GET /api/v1/me/subsidies/home) ─────────────────────────
+
+/** 백엔드 `SubsidyHomeResponse`. */
+interface SubsidyHomeResponse {
+  summary: {
+    confirmed: number
+    receiving: number
+    actionNeeded: number
+    needsReview: number
+    totalMonthlyEquivalentAmount: number
+    evaluatedAt: string | null
+  }
+  receivingList: SubsidyCard[]
+  missing: SubsidyCard[]
+  reviewQueue: SubsidyCard[]
+}
+
+interface SubsidyCard {
+  programId: string
+  name: string
+  category: string | null
+  benefitText: string | null
+  monthlyEquivalentAmount: number | null
+  matchedCriteria: string[]
+}
+
+/** 판별 조건 키 → 사람이 읽는 라벨. 서버가 `matched_criteria`에 키만 준다. */
+const CRITERIA_LABEL: Record<string, string> = {
+  protectionEndDate: '자립준비청년 대상',
+  protectionPhase: '보호종료 후 지원 대상',
+  region: '거주 지역 일치',
+}
+
+function toReasons(matched: string[]): GrantReason[] {
+  return matched.map((k) => ({ met: true, title: CRITERIA_LABEL[k] ?? k, detail: '' }))
+}
+
+function toCard(c: SubsidyCard, tag: GrantCard['tags'][number], withReasons: boolean): GrantCard {
+  return {
+    id: c.programId,
+    title: c.name,
+    amountText: c.benefitText ?? '지원 내용 확인 필요',
+    tags: [tag],
+    ...(withReasons && c.matchedCriteria.length
+      ? {
+          reasons: toReasons(c.matchedCriteria),
+          reasonFootnote: '현재 정보를 기준으로 일부 조건에 해당하여 추천되었습니다.',
+        }
+      : {}),
+  }
+}
+
+function toGrantHome(res: SubsidyHomeResponse): GrantHome {
+  return {
+    summary: {
+      confirmed: res.summary.confirmed,
+      receiving: res.summary.receiving,
+      actionNeeded: res.summary.actionNeeded,
+      needsReview: res.summary.needsReview,
+      lastUpdated: res.summary.evaluatedAt
+        ? res.summary.evaluatedAt.slice(0, 10).replace(/-/g, '.')
+        : '-',
+    },
+    missing: res.missing.map((c) => toCard(c, { label: '신청 가능성 높음', tone: 'teal' }, true)),
+    receivingList: res.receivingList.map((c) => toCard(c, { label: '수급 중', tone: 'teal' }, false)),
+    reviewQueue: res.reviewQueue.map((c) => ({
+      id: c.programId,
+      programName: c.name,
+      amountText: c.benefitText ?? '',
+    })),
+  }
+}
+
+// ── 프론트 화면용 타입 ─────────────────────────────────────────────────
 
 /**
  * "나에게 추천된 이유" 한 줄. `/me` 자격판별(SUBSIDY-002) 결과물이라 상세 API엔 없다 —
@@ -143,70 +224,3 @@ export interface GrantHome {
   reviewQueue: GrantReviewItem[]
 }
 
-const MOCK_HOME: GrantHome = {
-  summary: {
-    confirmed: 6,
-    receiving: 3,
-    actionNeeded: 2,
-    needsReview: 1,
-    lastUpdated: '2026.09.07',
-  },
-  missing: [
-    {
-      id: 'WLF00004661',
-      tags: [{ label: '신청 가능성 높음', tone: 'teal' }],
-      title: '청년월세 지원사업',
-      amountText: '월 200,000원',
-      reasons: [
-        { met: true, title: '연령 조건 충족', detail: '현재 만 28세로 대상에 포함됩니다.' },
-        { met: true, title: '거주 지역 일치', detail: '서울시 거주 등록이 확인되었습니다.' },
-        {
-          met: false,
-          title: '소득/재산 기준 확인 필요',
-          detail: '본인 및 가구원 소득액 조회가 필요합니다.',
-        },
-      ],
-      reasonFootnote: '현재 정보를 기준으로 일부 조건에 해당하여 추천되었습니다.',
-    },
-    {
-      id: 'WLF00000060',
-      tags: [
-        { label: '신청 가능성 높음', tone: 'blue' },
-        { label: '상시 접수', tone: 'neutral' },
-      ],
-      title: '청년내일저축계좌',
-      amountText: '월 100,000원',
-      reasons: [
-        { met: true, title: '연령 조건 충족', detail: '만 19~34세 가입 연령에 해당합니다.' },
-        { met: true, title: '근로·사업소득 확인', detail: '월 10만원 이상 소득이 확인되었습니다.' },
-        {
-          met: false,
-          title: '가구 소득인정액 확인 필요',
-          detail: '중위소득 100% 이하 여부 조회가 필요합니다.',
-        },
-      ],
-      reasonFootnote: '현재 정보를 기준으로 일부 조건에 해당하여 추천되었습니다.',
-    },
-  ],
-  receivingList: [
-    {
-      id: 'WLF00001175',
-      tags: [{ label: '수급 중', tone: 'teal' }],
-      title: '자립준비청년 자립수당 지급',
-      amountText: '월 500,000원',
-    },
-    {
-      id: 'WLF00006199',
-      tags: [{ label: '수급 중', tone: 'teal' }],
-      title: '자립준비청년 생활보조수당 지원',
-      amountText: '월 200,000원',
-    },
-    {
-      id: 'WLF00005445',
-      tags: [{ label: '지급 완료', tone: 'neutral' }],
-      title: '자립준비청년(보호종료아동) 자립정착금 지원',
-      amountText: '1,000만원 (1회)',
-    },
-  ],
-  reviewQueue: [{ id: 'WLF00001175', programName: '자립수당', amountText: '월 500,000원' }],
-}
