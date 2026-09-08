@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import GrantMatchHomeView from '@/views/GrantMatchHomeView.vue'
+import GrantMatchHomeView from '@/views/welfare/GrantMatchHomeView.vue'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -41,13 +41,13 @@ const router = createRouter({
       // '/grants/:id'보다 먼저 둔다 ('all'이 id로 잡히지 않도록).
       path: '/grants/all',
       name: 'grant-list',
-      component: () => import('@/views/GrantListView.vue'),
+      component: () => import('@/views/welfare/GrantListView.vue'),
       meta: { title: '전체 지원제도' },
     },
     {
       path: '/grants/:id',
       name: 'grant-detail',
-      component: () => import('@/views/GrantDetailView.vue'),
+      component: () => import('@/views/welfare/GrantDetailView.vue'),
       meta: { title: '지원 상세', hideChrome: true },
     },
     {
