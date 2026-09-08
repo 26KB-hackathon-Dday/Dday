@@ -1,3 +1,4 @@
+
 # 모든 프로파일 공통 설정. 환경마다 달라지는 값(DB 접속정보, CORS 출처)은
 # application-{local,prod}.yml에만 둔다.
 spring:
