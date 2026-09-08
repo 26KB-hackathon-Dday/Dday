@@ -29,11 +29,15 @@ public class CreditScoreController {
             각 항목의 `diff`는 **직전 기록 대비 증감**이다. 가장 오래된 항목이라도 비교할 기록이
             서버에 남아 있으면 채워지고, 정말 없을 때만 `null`이다.
 
-            `latestScore`·`diffFromPrevious`는 `items[0]`의 값과 같다 —
+            각 항목의 `percentile`은 **상위 몇 %인지**다 (소수점 한 자리). 1000점이면 0.6,
+            800점이면 58.3처럼 작을수록 좋다. **KCB(올크레딧) 2025년말 인원분포 기준**이라
+            NICE 점수에는 맞지 않는다.
+
+            `latestScore`·`latestPercentile`·`diffFromPrevious`는 `items[0]`의 값과 같다 —
             상단 요약과 그래프가 서로 다른 컴포넌트라 프론트가 매번 첫 원소를 꺼내지 않게 꺼내 뒀다.
 
             **기록이 없어도 404가 아니다.** 온보딩 직후에는 이력이 없는 게 정상이라
-            `latestScore: null`, `items: []`인 200을 준다.
+            `latestScore: null`, `latestPercentile: null`, `items: []`인 200을 준다.
             """)
     @GetMapping("/scores/recent")
     public ResponseEntity<ApiResponse<CreditScoreHistoryResponse>> findRecent(

@@ -14,8 +14,12 @@ import java.util.List;
 /**
  * 신용점수 이력을 조회하는 애플리케이션 서비스다.
  *
- * <p>이 기능의 핵심은 점수 자체가 아니라 <b>변화</b>다. 그래서 조회 결과를 그대로 내리지 않고
- * 항목마다 직전 기록과의 증감을 붙여서 내려준다.
+ * <p>이 기능의 핵심은 점수 자체가 아니라 <b>변화</b>와 <b>위치</b>다. 그래서 조회 결과를 그대로
+ * 내리지 않고, 항목마다 직전 기록과의 증감과 상위 몇 %인지를 붙여서 내려준다.
+ *
+ * <p>상위 %는 {@link CreditPercentileCalculator}가 계산한다. 점수가 1~1000을 벗어나면 그쪽에서
+ * {@code IllegalArgumentException}이 나 500이 되는데, <b>일부러 삼키지 않는다.</b> 점수는 우리
+ * DB에서 오는 값이라 범위를 벗어났다면 화면에 빈 칸을 띄울 게 아니라 데이터를 고쳐야 한다.
  *
  * <p>인터페이스를 두지 않는다 — 구현체가 하나뿐인데 인터페이스를 만들면 파일만 두 배가 된다
  * (AGENTS.md §7).
@@ -43,7 +47,9 @@ public class CreditScoreService {
 
         List<CreditScoreItemResponse> items = new ArrayList<>();
         for (int i = 0; i < Math.min(records.size(), RECENT_SIZE); i++) {
-            items.add(CreditScoreItemResponse.of(records.get(i), diffFromPrevious(records, i)));
+            CreditScore creditScore = records.get(i);
+            items.add(CreditScoreItemResponse.of(creditScore, diffFromPrevious(records, i),
+                    CreditPercentileCalculator.percentileOf(creditScore.getScore())));
         }
         return CreditScoreHistoryResponse.of(items);
     }

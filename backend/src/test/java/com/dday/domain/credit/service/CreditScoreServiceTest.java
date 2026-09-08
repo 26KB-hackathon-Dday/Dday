@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -112,12 +113,38 @@ class CreditScoreServiceTest {
     }
 
     @Test
+    void 각_항목에_상위_퍼센트를_붙인다() {
+        givenRecords(
+                score(2L, 812, BASE),
+                score(1L, 700, BASE.minusDays(30))
+        );
+
+        CreditScoreHistoryResponse result = creditScoreService.findRecent(USER_ID);
+
+        assertThat(result.getItems()).extracting(CreditScoreItemResponse::getPercentile)
+                .containsExactly(new BigDecimal("57.0"), new BigDecimal("85.1"));
+    }
+
+    @Test
+    void 최신_상위_퍼센트는_첫_항목의_값이다() {
+        givenRecords(
+                score(2L, 812, BASE),
+                score(1L, 700, BASE.minusDays(30))
+        );
+
+        CreditScoreHistoryResponse result = creditScoreService.findRecent(USER_ID);
+
+        assertThat(result.getLatestPercentile()).isEqualByComparingTo("57.0");
+    }
+
+    @Test
     void 기록이_없으면_빈_응답을_준다() {
         givenRecords();
 
         CreditScoreHistoryResponse result = creditScoreService.findRecent(USER_ID);
 
         assertThat(result.getLatestScore()).isNull();
+        assertThat(result.getLatestPercentile()).isNull();
         assertThat(result.getDiffFromPrevious()).isNull();
         assertThat(result.getItems()).isEmpty();
     }
