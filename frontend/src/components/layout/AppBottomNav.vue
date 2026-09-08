@@ -1,23 +1,33 @@
 <script setup lang="ts">
 /**
  * 하단 탭 내비. 탭 목록은 여기서 소유하고, 활성 표시는 라우트로 판단한다.
- * 탭 경로가 모두 최상위라 exact 활성만 보면 된다 (RouterLink가 붙이는 클래스).
+ * 탭 경로가 모두 최상위라 exact 활성만 보면 된다.
  *
- * 아이콘은 임베디드 래스터가 든 손그림 SVG라 CSS 마스크가 안 먹는다 — `<img>`로 렌더하고
- * 활성/비활성은 색이 아니라 불투명도로 가른다.
+ * 아이콘은 임베디드 래스터가 든 손그림 SVG라 CSS 마스크가 안 먹는다 — `<img>`로 렌더하고,
+ * 활성 탭은 진한 `dark-*` 아이콘으로 교체한다 (불투명도로 흐리지 않는다).
  */
+import { useRoute } from 'vue-router'
+
 import homeIcon from '@/assets/icons/home.svg'
+import homeIconActive from '@/assets/icons/dark-home.svg'
 import pocketIcon from '@/assets/icons/pocket.svg'
+import pocketIconActive from '@/assets/icons/dark-pocket.svg'
 import welfareIcon from '@/assets/icons/welfare.svg'
-// TODO: 신용 관리 전용 아이콘이 생기면 교체. 지금은 사람 아이콘을 임시로 쓴다.
+import welfareIconActive from '@/assets/icons/dark-welfare.svg'
+// 비활성은 사람(마이페이지) 아이콘을 임시로 쓴다. 활성은 신용 전용 dark 아이콘.
 import creditIcon from '@/assets/icons/mypage.svg'
+import creditIconActive from '@/assets/icons/dark-credit.svg'
+
+const route = useRoute()
 
 const tabs = [
-  { to: '/', label: '홈', icon: homeIcon },
-  { to: '/pockets', label: '내 포켓', icon: pocketIcon },
-  { to: '/grants', label: '지원금', icon: welfareIcon },
-  { to: '/credit-manage', label: '신용 관리', icon: creditIcon },
+  { to: '/', label: '홈', icon: homeIcon, iconActive: homeIconActive },
+  { to: '/pockets', label: '내 포켓', icon: pocketIcon, iconActive: pocketIconActive },
+  { to: '/grants', label: '지원금', icon: welfareIcon, iconActive: welfareIconActive },
+  { to: '/credit-manage', label: '신용 관리', icon: creditIcon, iconActive: creditIconActive },
 ]
+
+const isActive = (to: string) => route.path === to
 </script>
 
 <template>
@@ -27,10 +37,14 @@ const tabs = [
       :key="tab.to"
       :to="tab.to"
       class="bottomnav__tab"
-      exact-active-class="is-active"
+      :class="{ 'is-active': isActive(tab.to) }"
     >
       <span class="bottomnav__iconbox">
-        <img :src="tab.icon" alt="" class="bottomnav__icon" />
+        <img
+          :src="isActive(tab.to) ? tab.iconActive : tab.icon"
+          alt=""
+          class="bottomnav__icon"
+        />
       </span>
       <span class="bottomnav__label">{{ tab.label }}</span>
     </RouterLink>
@@ -71,13 +85,9 @@ const tabs = [
   max-width: 26px;
   width: auto;
   object-fit: contain;
-  opacity: 0.4;
 }
 .bottomnav__tab.is-active {
   color: #000;
-}
-.bottomnav__tab.is-active .bottomnav__icon {
-  opacity: 1;
 }
 
 .bottomnav__label {
