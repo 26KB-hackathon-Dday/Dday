@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UserWithdrawRequest {
 
-    @Size(max = 500, message = "탈퇴 사유는 500자 이하로 입력해주세요.")
+    @Size(max = 100, message = "탈퇴 사유는 100자 이하로 입력해주세요.")
     private String reason;
 }

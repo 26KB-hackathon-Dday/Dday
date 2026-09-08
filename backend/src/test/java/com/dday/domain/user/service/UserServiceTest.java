@@ -73,7 +73,10 @@ class UserServiceTest {
         assertThat(response.getEmail()).isEqualTo("test@dday.com");
         assertThat(response.getName()).isEqualTo("김디데이");
         // passwordHash 필드 자체가 UserResponse에 없다 — 있으면 컴파일이 깨진다.
-        assertThat(response).hasNoNullFieldsOrPropertiesExcept("protectionEndDate", "createdAt");
+        // 온보딩 전 회원이라 프로필 값은 전부 비어 있다. 여기 없는 필드가 null이면 실패한다.
+        assertThat(response).hasNoNullFieldsOrPropertiesExcept(
+                "protectionEndDate", "regionCode", "housingType", "initialAsset",
+                "housingDeposit", "settlementReceived", "createdAt");
     }
 
     @Test
