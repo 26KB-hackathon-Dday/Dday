@@ -23,4 +23,8 @@ public interface MockMydataAccountTransactionRepository
             @Param("mockAccountId") Long mockAccountId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    /** 복제용. 기간을 걸지 않고 그 계좌의 거래를 통째로 가져온다. */
+    java.util.List<com.dday.domain.mockmydata.entity.MockMydataAccountTransaction>
+            findAllByMockAccountMockAccountIdOrderByMockTransactionId(Long mockAccountId);
 }

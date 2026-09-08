@@ -1,7 +1,9 @@
 package com.dday.domain.mydata.controller;
 
 import com.dday.domain.mydata.dto.MydataSuccessCode;
+import com.dday.domain.mydata.dto.response.MydataConnectResponse;
 import com.dday.domain.mydata.dto.response.MydataSyncResponse;
+import com.dday.domain.mydata.service.MydataConnectService;
 import com.dday.domain.mydata.service.MydataService;
 import com.dday.global.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +28,20 @@ import java.time.LocalDateTime;
 public class MydataController {
 
     private final MydataService mydataService;
+    private final MydataConnectService mydataConnectService;
+
+    @Operation(summary = "MyData 연동", description = """
+            온보딩의 기관 선택 화면이 부른다. 동의 기록 → 데모 목데이터 준비 → 첫 동기화를
+            한 번에 끝내므로, 성공하면 바로 소비 내역 화면을 열 수 있다.
+
+            이미 연동한 회원이 다시 불러도 안전하다 — 동의는 갱신되고 거래는 중복 저장되지 않는다.
+            """)
+    @PostMapping("/connect")
+    public ResponseEntity<ApiResponse<MydataConnectResponse>> connect(
+            @AuthenticationPrincipal Long userId) {
+        return ApiResponse.of(MydataSuccessCode.MYDATA_CONNECTED,
+                mydataConnectService.connect(userId));
+    }
 
     @Operation(summary = "MyData 계좌·카드·거래 동기화", description = """
             로그인 회원의 계좌와 카드 정보를 갱신하고 거래를 중복 없이 저장한다.
