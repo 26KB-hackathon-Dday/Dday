@@ -48,7 +48,7 @@ function openNextBudget() {
   router.push({ name: 'pocket-budget-initial' })
 }
 function openPocketDetail(pocketType: 'ESSENTIAL' | 'FREE' | 'EMERGENCY') {
-  if (pocketType !== 'ESSENTIAL' && pocketType !== 'FREE') return
+  if (!['ESSENTIAL', 'FREE', 'EMERGENCY'].includes(pocketType)) return
   router.push({
     name: 'pocket-detail',
     params: { pocketType },
