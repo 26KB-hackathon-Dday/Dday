@@ -309,6 +309,12 @@ const router = createRouter({
       component: () => import('@/views/credit/CreditHomeView.vue'),
       meta: { title: '신용 관리', requiresAuth: true },
     },
+    {
+      path: '/credit-manage/rates',
+      name: 'credit-expected-rates',
+      component: () => import('@/views/credit/ExpectedRateView.vue'),
+      meta: { title: '예상 금리', requiresAuth: true },
+    },
 
     {
       path: '/pockets/unexpected-income/allocate',
