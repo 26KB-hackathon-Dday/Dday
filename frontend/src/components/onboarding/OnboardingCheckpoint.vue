@@ -1,29 +1,35 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+/** 온보딩 중간 체크포인트 화면(자립 시작·생활 정보 입력 완료) 공통 레이아웃 */
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
 
-const router = useRouter()
+defineProps<{
+  title: string
+  buttonText?: string
+}>()
 
-function start() {
-  router.replace('/onboarding/intro')
-}
+defineEmits<{ next: [] }>()
 </script>
 
 <template>
   <div class="page">
     <div class="content">
       <div class="check-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="m5 12.5 4.5 4.5L19 7" />
         </svg>
       </div>
-
-      <h1 class="title">가입이 완료되었어요</h1>
-      <p class="subtitle">이제 나에게 맞는 자립 계획을 만들어볼게요.</p>
+      <h1 class="title">{{ title }}</h1>
     </div>
 
     <div class="actions">
-      <PrimaryButton @click="start">시작하기 →</PrimaryButton>
+      <PrimaryButton @click="$emit('next')">{{ buttonText ?? '계속하기' }}</PrimaryButton>
     </div>
   </div>
 </template>
@@ -82,16 +88,10 @@ function start() {
 }
 
 .title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-primary);
-}
-
-.subtitle {
-  margin-top: var(--space-sm);
-  font-size: 14px;
-  color: var(--color-secondary);
 }
 
 .actions {

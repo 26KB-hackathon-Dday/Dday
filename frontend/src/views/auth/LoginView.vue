@@ -36,12 +36,13 @@ async function submit() {
       rememberMe: keepLoggedIn.value,
     })
     auth.setTokens(result)
+    auth.setOnboardingCompleted(result.user.onboardingCompleted)
 
-    // 가드가 붙여준 원래 목적지가 있으면 그리로, 온보딩이 안 끝났으면 마이데이터로, 아니면 홈으로.
+    // 가드가 붙여준 원래 목적지가 있으면 그리로, 온보딩이 안 끝났으면 온보딩으로, 아니면 홈으로.
     // replace라서 뒤로가기로 로그인 화면에 다시 오지 않는다.
     const redirect = route.query.redirect
     if (typeof redirect === 'string') router.replace(redirect)
-    else if (!result.user.onboardingCompleted) router.replace('/mydata')
+    else if (!result.user.onboardingCompleted) router.replace('/onboarding/intro')
     else router.replace('/pockets')
   } catch (e) {
     // 백엔드 ErrorCode의 message가 문구의 정본이라 그대로 띄운다 (AGENTS.md §2).

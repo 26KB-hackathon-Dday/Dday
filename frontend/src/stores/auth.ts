@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/client'
+import { ACCESS_TOKEN_KEY, ONBOARDING_COMPLETED_KEY, REFRESH_TOKEN_KEY } from '@/api/client'
 
 /** 로그인/가입 응답 중 토큰 저장에 필요한 부분만. */
 interface Tokens {
@@ -21,6 +21,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => !!accessToken.value)
 
+  const onboardingCompleted = ref(localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true')
+
   /** 로그인·회원가입 성공 응답을 그대로 넘기면 된다. */
   function setTokens(tokens: Tokens) {
     accessToken.value = tokens.accessToken
@@ -29,13 +31,29 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken)
   }
 
+  /** 로그인 응답의 `user.onboardingCompleted` 또는 온보딩 완료(`/complete`) 성공 시 부른다.
+   *  라우터 가드가 새로고침 후에도 읽어야 하므로 localStorage에도 남긴다. */
+  function setOnboardingCompleted(value: boolean) {
+    onboardingCompleted.value = value
+    localStorage.setItem(ONBOARDING_COMPLETED_KEY, String(value))
+  }
+
   /** 토큰만 지운다. 화면 이동은 부르는 쪽이 정한다. */
   function logout() {
     accessToken.value = null
     refreshToken.value = null
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
+    localStorage.removeItem(ONBOARDING_COMPLETED_KEY)
   }
 
-  return { accessToken, refreshToken, isLoggedIn, setTokens, logout }
+  return {
+    accessToken,
+    refreshToken,
+    isLoggedIn,
+    onboardingCompleted,
+    setTokens,
+    setOnboardingCompleted,
+    logout,
+  }
 })
