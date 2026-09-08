@@ -1,7 +1,6 @@
 <template>
   <div class="confirm-page">
     <main class="confirm-content">
-      <!-- 상단 -->
       <section class="intro-section">
         <h2 class="intro-title">
           9월 계획을<br />
@@ -14,7 +13,6 @@
         </p>
       </section>
 
-      <!-- 총 예산 -->
       <section class="total-card">
         <span class="total-label"> 이번 달 총 예산 </span>
 
@@ -23,7 +21,6 @@
         </strong>
       </section>
 
-      <!-- 포켓 -->
       <section class="pocket-list">
         <div class="pocket-row pocket-row--essential">
           <span class="pocket-badge pocket-badge--essential"> 필수 포켓 </span>
@@ -82,7 +79,6 @@
         </div>
       </section>
 
-      <!-- 예상 자산 -->
       <section class="forecast-card">
         <div class="forecast-icon">↗</div>
 
@@ -93,7 +89,6 @@
         </strong>
       </section>
 
-      <!-- 하단 -->
       <section class="bottom-area">
         <div class="bottom-divider" />
 
@@ -112,19 +107,22 @@ import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 
-const getQueryNumber = (value: string | string[] | null | undefined, fallback: number) => {
-  const raw = Array.isArray(value) ? value[0] : value
+const getQueryNumber = (value: unknown, fallback: number): number => {
+  let rawValue: unknown = value
 
-  const parsed = Number(raw)
+  if (Array.isArray(rawValue)) {
+    rawValue = rawValue[0]
+  }
+
+  if (typeof rawValue !== 'string' && typeof rawValue !== 'number') {
+    return fallback
+  }
+
+  const parsed = Number(rawValue)
 
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-/*
- * 재조정 화면에서 query로 넘겨준 값.
- *
- * fallback은 화면 단독 확인용 더미값.
- */
 const totalBudget = computed(() => getQueryNumber(route.query.total, 3_000_000))
 
 const essentialBudget = computed(() => getQueryNumber(route.query.essential, 1_000_000))
@@ -137,7 +135,7 @@ const emergencyBudget = computed(() => getQueryNumber(route.query.emergency, 800
 
 const expectedAsset = computed(() => getQueryNumber(route.query.expectedAsset, 31_200_000))
 
-const getPercentage = (amount: number) => {
+const getPercentage = (amount: number): number => {
   if (totalBudget.value <= 0) {
     return 0
   }
@@ -145,15 +143,11 @@ const getPercentage = (amount: number) => {
   return Math.round((amount / totalBudget.value) * 100)
 }
 
-const formatCurrency = (value: number) => {
+const formatCurrency = (value: number): string => {
   return `${Math.round(value).toLocaleString('ko-KR')}원`
 }
 
-const formatShortCurrency = (value: number) => {
-  /*
-   * 디자인처럼
-   * 31,200,000원 → 3,120만원
-   */
+const formatShortCurrency = (value: number): string => {
   if (value >= 10_000) {
     const manwon = Math.round(value / 10_000)
 
@@ -180,14 +174,12 @@ const handleConfirm = () => {
 
   /*
    * TODO:
-   * 여기서 백엔드 API 호출
+   * 백엔드 API 호출
    *
-   * PATCH /api/pockets/budget
-   *
-   * 저장 성공 후 실제 포켓 진행중 화면으로 이동
+   * 저장 성공 후
+   * 실제 포켓 진행중 화면으로 이동
    */
 
-  // 아직 팀원 화면이 없으므로 임시
   router.back()
 }
 </script>
@@ -215,10 +207,6 @@ const handleConfirm = () => {
   padding: 28px 28px 36px;
 }
 
-/* =========================
-   INTRO
-========================= */
-
 .intro-section {
   margin-bottom: 20px;
 }
@@ -241,10 +229,6 @@ const handleConfirm = () => {
   font-size: 12px;
   line-height: 1.6;
 }
-
-/* =========================
-   TOTAL
-========================= */
 
 .total-card {
   display: flex;
@@ -277,10 +261,6 @@ const handleConfirm = () => {
 
   letter-spacing: -0.5px;
 }
-
-/* =========================
-   POCKET
-========================= */
 
 .pocket-list {
   display: flex;
@@ -400,10 +380,6 @@ const handleConfirm = () => {
   background: #d1f1f1;
 }
 
-/* =========================
-   FORECAST
-========================= */
-
 .forecast-card {
   display: flex;
   flex-direction: column;
@@ -443,10 +419,6 @@ const handleConfirm = () => {
 
   letter-spacing: -0.8px;
 }
-
-/* =========================
-   BOTTOM
-========================= */
 
 .bottom-area {
   margin-top: auto;

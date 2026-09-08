@@ -55,20 +55,80 @@ const router = createRouter({
 
     // 회원가입 6단계
     { path: '/signup', redirect: '/signup/start' },
-    { path: '/signup/start', name: 'signup-start', component: SignupStartView, meta: { hideChrome: true } },
-    { path: '/signup/name', name: 'signup-name', component: SignupNameView, meta: { hideChrome: true } },
-    { path: '/signup/phone', name: 'signup-phone', component: SignupPhoneView, meta: { hideChrome: true } },
-    { path: '/signup/phone/verify', name: 'signup-phone-verify', component: SignupPhoneVerifyView, meta: { hideChrome: true } },
-    { path: '/signup/email', name: 'signup-email', component: SignupEmailView, meta: { hideChrome: true } },
-    { path: '/signup/password', name: 'signup-password', component: SignupPasswordView, meta: { hideChrome: true } },
-    { path: '/signup/terms', name: 'signup-terms', component: SignupTermsView, meta: { hideChrome: true } },
-    { path: '/signup/done', name: 'signup-done', component: SignupDoneView, meta: { hideChrome: true } },
+    {
+      path: '/signup/start',
+      name: 'signup-start',
+      component: SignupStartView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/name',
+      name: 'signup-name',
+      component: SignupNameView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/phone',
+      name: 'signup-phone',
+      component: SignupPhoneView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/phone/verify',
+      name: 'signup-phone-verify',
+      component: SignupPhoneVerifyView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/email',
+      name: 'signup-email',
+      component: SignupEmailView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/password',
+      name: 'signup-password',
+      component: SignupPasswordView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/terms',
+      name: 'signup-terms',
+      component: SignupTermsView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/done',
+      name: 'signup-done',
+      component: SignupDoneView,
+      meta: { hideChrome: true },
+    },
 
     // 마이데이터 연동
-    { path: '/mydata', name: 'mydata-intro', component: MydataIntroView, meta: { hideChrome: true } },
-    { path: '/mydata/consent', name: 'mydata-consent', component: MydataConsentView, meta: { hideChrome: true } },
-    { path: '/mydata/select', name: 'mydata-select', component: MydataSelectView, meta: { hideChrome: true } },
-    { path: '/mydata/done', name: 'mydata-done', component: MydataDoneView, meta: { hideChrome: true } },
+    {
+      path: '/mydata',
+      name: 'mydata-intro',
+      component: MydataIntroView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/mydata/consent',
+      name: 'mydata-consent',
+      component: MydataConsentView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/mydata/select',
+      name: 'mydata-select',
+      component: MydataSelectView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/mydata/done',
+      name: 'mydata-done',
+      component: MydataDoneView,
+      meta: { hideChrome: true },
+    },
 
     // ── 앱 화면 (로그인 후) — 하단 탭 순서와 같다 ─────────────────────────
     {
@@ -125,19 +185,7 @@ const router = createRouter({
       component: () => import('@/views/PlaceholderView.vue'),
       meta: { title: '신용 관리', requiresAuth: true },
     },
-<<<<<<< Updated upstream
 
-    // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
-    { path: '/:pathMatch(.*)*', redirect: '/' },
-=======
-    {
-      path: '/pockets/unexpected-income/amount',
-      name: 'pocket-unexpected-income-amount',
-      component: () => import('@/views/pocket/UnexpectedIncomeAmountView.vue'),
-      meta: {
-        title: '추가할 금액 지정',
-      },
-    },
     {
       path: '/pockets/unexpected-income/allocate',
       name: 'pocket-unexpected-income-allocate',
@@ -178,7 +226,16 @@ const router = createRouter({
         title: '내 포켓',
       },
     },
->>>>>>> Stashed changes
+    // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
+    { path: '/:pathMatch(.*)*', redirect: '/' },
+    {
+      path: '/pockets/unexpected-income/amount',
+      name: 'pocket-unexpected-income-amount',
+      component: () => import('@/views/pocket/UnexpectedIncomeAmountView.vue'),
+      meta: {
+        title: '추가할 금액 지정',
+      },
+    },
   ],
 })
 
