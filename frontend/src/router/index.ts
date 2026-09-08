@@ -55,20 +55,80 @@ const router = createRouter({
 
     // 회원가입 6단계
     { path: '/signup', redirect: '/signup/start' },
-    { path: '/signup/start', name: 'signup-start', component: SignupStartView, meta: { hideChrome: true } },
-    { path: '/signup/name', name: 'signup-name', component: SignupNameView, meta: { hideChrome: true } },
-    { path: '/signup/phone', name: 'signup-phone', component: SignupPhoneView, meta: { hideChrome: true } },
-    { path: '/signup/phone/verify', name: 'signup-phone-verify', component: SignupPhoneVerifyView, meta: { hideChrome: true } },
-    { path: '/signup/email', name: 'signup-email', component: SignupEmailView, meta: { hideChrome: true } },
-    { path: '/signup/password', name: 'signup-password', component: SignupPasswordView, meta: { hideChrome: true } },
-    { path: '/signup/terms', name: 'signup-terms', component: SignupTermsView, meta: { hideChrome: true } },
-    { path: '/signup/done', name: 'signup-done', component: SignupDoneView, meta: { hideChrome: true } },
+    {
+      path: '/signup/start',
+      name: 'signup-start',
+      component: SignupStartView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/name',
+      name: 'signup-name',
+      component: SignupNameView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/phone',
+      name: 'signup-phone',
+      component: SignupPhoneView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/phone/verify',
+      name: 'signup-phone-verify',
+      component: SignupPhoneVerifyView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/email',
+      name: 'signup-email',
+      component: SignupEmailView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/password',
+      name: 'signup-password',
+      component: SignupPasswordView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/terms',
+      name: 'signup-terms',
+      component: SignupTermsView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/signup/done',
+      name: 'signup-done',
+      component: SignupDoneView,
+      meta: { hideChrome: true },
+    },
 
     // 마이데이터 연동
-    { path: '/mydata', name: 'mydata-intro', component: MydataIntroView, meta: { hideChrome: true } },
-    { path: '/mydata/consent', name: 'mydata-consent', component: MydataConsentView, meta: { hideChrome: true } },
-    { path: '/mydata/select', name: 'mydata-select', component: MydataSelectView, meta: { hideChrome: true } },
-    { path: '/mydata/done', name: 'mydata-done', component: MydataDoneView, meta: { hideChrome: true } },
+    {
+      path: '/mydata',
+      name: 'mydata-intro',
+      component: MydataIntroView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/mydata/consent',
+      name: 'mydata-consent',
+      component: MydataConsentView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/mydata/select',
+      name: 'mydata-select',
+      component: MydataSelectView,
+      meta: { hideChrome: true },
+    },
+    {
+      path: '/mydata/done',
+      name: 'mydata-done',
+      component: MydataDoneView,
+      meta: { hideChrome: true },
+    },
 
     // ── 앱 화면 (로그인 후) — 하단 탭 순서와 같다 ─────────────────────────
     {
@@ -83,6 +143,22 @@ const router = createRouter({
       name: 'pockets',
       component: () => import('@/views/PocketView.vue'),
       meta: { title: '내 포켓', requiresAuth: true },
+    },
+    {
+      path: '/pockets/budget-initial',
+      name: 'pocket-budget-initial',
+      component: () => import('@/views/pocket/PocketBudgetInitialView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/budget-adjust',
+      name: 'pocket-budget-adjust',
+      component: () => import('@/views/pocket/PocketBudgetAdjustView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
     },
     {
       path: '/grants',
@@ -110,8 +186,56 @@ const router = createRouter({
       meta: { title: '신용 관리', requiresAuth: true },
     },
 
+    {
+      path: '/pockets/unexpected-income/allocate',
+      name: 'pocket-unexpected-income-allocate',
+      component: () => import('@/views/pocket/UnexpectedIncomeAllocateView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/income-match-test',
+      name: 'pocket-income-match-test',
+      component: () => import('@/views/pocket/IncomeMatchTestView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/budget-readjust',
+      name: 'pocket-budget-readjust',
+      component: () => import('@/views/pocket/PocketBudgetReAdjustView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/unexpected-income-test',
+      name: 'pocket-unexpected-income-test',
+      component: () => import('@/views/pocket/UnexpectedIncomeModalTestView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
+    {
+      path: '/pockets/budget-readjust/confirm',
+      name: 'pocket-budget-readjust-confirm',
+      component: () => import('@/views/pocket/PocketBudgetReAdjustConfirmView.vue'),
+      meta: {
+        title: '내 포켓',
+      },
+    },
     // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
     { path: '/:pathMatch(.*)*', redirect: '/' },
+    {
+      path: '/pockets/unexpected-income/amount',
+      name: 'pocket-unexpected-income-amount',
+      component: () => import('@/views/pocket/UnexpectedIncomeAmountView.vue'),
+      meta: {
+        title: '추가할 금액 지정',
+      },
+    },
   ],
 })
 
