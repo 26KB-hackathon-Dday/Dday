@@ -5,6 +5,7 @@ import com.dday.domain.mydata.client.dto.*;
 import com.dday.domain.mydata.dto.MydataErrorCode;
 import com.dday.domain.mydata.dto.response.MydataSyncResponse;
 import com.dday.global.exception.BusinessException;
+import com.dday.domain.pocket.service.TransactionClassificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class MydataService {
 
     private final MydataClient mydataClient;
     private final MydataSyncWriter syncWriter;
+    private final TransactionClassificationService classificationService;
 
     /**
      * 사용자의 금융 원천을 갱신하고 요청 기간의 모든 계좌·카드 거래를 동기화한다.
@@ -83,6 +85,8 @@ public class MydataService {
         } catch (DataAccessException exception) {
             throw new BusinessException(MydataErrorCode.MYDATA_SYNC_FAILURE);
         }
+        // 새 거래 저장이 끝난 뒤 별도 분류 트랜잭션을 실행한다. 실패해도 원본 거래는 남아 재시도할 수 있다.
+        classificationService.classifyUnclassified(userId);
         return MydataSyncResponse.builder()
                 .accountCount(accounts.size())
                 .cardCount(cards.size())

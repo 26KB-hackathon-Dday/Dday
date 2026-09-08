@@ -3,9 +3,11 @@ package com.dday.domain.pocket.controller;
 import com.dday.domain.pocket.dto.response.CategoryListResponse;
 import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
 import com.dday.domain.pocket.dto.response.TransactionDetailResponse;
+import com.dday.domain.pocket.dto.response.AutoClassificationResponse;
 import com.dday.domain.pocket.service.CategoryService;
 import com.dday.domain.pocket.service.PocketService;
 import com.dday.domain.pocket.service.TransactionQueryService;
+import com.dday.domain.pocket.service.TransactionClassificationService;
 import com.dday.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import java.util.List;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,6 +39,8 @@ class PocketQueryControllerTest {
     private TransactionQueryService transactionQueryService;
     @Mock
     private CategoryService categoryService;
+    @Mock
+    private TransactionClassificationService transactionClassificationService;
 
     private MockMvc mockMvc;
 
@@ -43,7 +48,7 @@ class PocketQueryControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new PocketController(pocketService, transactionQueryService),
-                        new TransactionController(transactionQueryService),
+                        new TransactionController(transactionQueryService, transactionClassificationService),
                         new CategoryController(categoryService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(authenticatedUser(1L))
@@ -85,6 +90,20 @@ class PocketQueryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("TRANSACTION_FOUND"))
                 .andExpect(jsonPath("$.data.transactionId").value(10));
+    }
+
+    @Test
+    void 미분류_거래_자동_분류_결과를_반환한다() throws Exception {
+        given(transactionClassificationService.classifyUnclassified(1L))
+                .willReturn(AutoClassificationResponse.builder()
+                        .targetCount(3).userRuleCount(2).defaultFreeCount(1)
+                        .remainingUnclassifiedCount(0).build());
+
+        mockMvc.perform(post("/api/transactions/classify"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("TRANSACTIONS_CLASSIFIED"))
+                .andExpect(jsonPath("$.data.targetCount").value(3))
+                .andExpect(jsonPath("$.data.userRuleCount").value(2));
     }
 
     private HandlerMethodArgumentResolver authenticatedUser(Long userId) {
