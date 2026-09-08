@@ -13,7 +13,7 @@ const props = defineProps<{
   overAmount?: number | null
 }>()
 const emit = defineEmits<{ select: [pocketType: Exclude<PocketType, 'FUTURE_ASSET'>] }>()
-const clickable = computed(() => props.pocketType === 'ESSENTIAL')
+const clickable = computed(() => props.pocketType === 'ESSENTIAL' || props.pocketType === 'FREE')
 const iconName = computed(() =>
   props.pocketType === 'ESSENTIAL' ? 'pocket' : props.pocketType === 'FREE' ? 'benefit' : 'credit',
 )
