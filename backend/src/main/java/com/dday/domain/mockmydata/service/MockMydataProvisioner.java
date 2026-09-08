@@ -2,6 +2,7 @@ package com.dday.domain.mockmydata.service;
 
 import com.dday.domain.mockmydata.entity.*;
 import com.dday.domain.mockmydata.repository.*;
+import com.dday.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,9 +28,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MockMydataProvisioner {
 
-    /** 복제 원본이 되는 데모 계정의 user_id. {@code data.sql}의 시드와 같아야 한다. */
-    public static final Long TEMPLATE_SERVICE_USER_ID = 9001L;
+    /**
+     * 복제 원본이 되는 데모 계정의 이메일. {@code data.sql}의 시드와 같아야 한다.
+     *
+     * <p><b>user_id가 아니라 이메일로 찾는다.</b> 시드는 9001을 넣으려 하지만 그 이메일이
+     * 이미 다른 id로 가입돼 있으면 유니크 키에 걸려 기존 행이 갱신될 뿐이라 id를 단정할 수 없다.
+     */
+    public static final String TEMPLATE_EMAIL = "user1@test.com";
 
+    private final UserRepository serviceUserRepository;
     private final MockMydataUserRepository userRepository;
     private final MockMydataAccountRepository accountRepository;
     private final MockMydataCardRepository cardRepository;
@@ -47,18 +54,25 @@ public class MockMydataProvisioner {
      */
     @Transactional
     public boolean provision(Long serviceUserId, String name) {
-        if (serviceUserId == null || TEMPLATE_SERVICE_USER_ID.equals(serviceUserId)) {
-            return false;   // 원본 본인은 복제 대상이 아니다
+        if (serviceUserId == null) {
+            return false;
         }
         if (userRepository.findByServiceUserId(serviceUserId).isPresent()) {
             return false;   // 이미 붙어 있다
         }
 
-        MockMydataUser template = userRepository.findByServiceUserId(TEMPLATE_SERVICE_USER_ID)
+        Long templateUserId = serviceUserRepository.findByEmail(TEMPLATE_EMAIL)
+                .map(u -> u.getUserId())
                 .orElse(null);
+        if (templateUserId == null || templateUserId.equals(serviceUserId)) {
+            // 원본이 없거나(시드를 안 넣은 DB) 원본 본인이면 복제할 게 없다.
+            return false;
+        }
+
+        MockMydataUser template = userRepository.findByServiceUserId(templateUserId).orElse(null);
         if (template == null) {
-            log.warn("목데이터 원본(serviceUserId={})이 없어 복제를 건너뛴다. data.sql 시드를 확인할 것.",
-                    TEMPLATE_SERVICE_USER_ID);
+            log.warn("목데이터 원본({})이 없어 복제를 건너뛴다. data.sql 시드를 확인할 것.",
+                    TEMPLATE_EMAIL);
             return false;
         }
 

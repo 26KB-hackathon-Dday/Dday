@@ -50,6 +50,11 @@ SELECT 1;
 --   2) 값을 크게 잡아 실제 가입자의 auto-increment 구간과 겹치지 않게 한다. 1로 박으면
 --      이미 그 id를 쓰는 진짜 회원을 시드가 덮어쓴다.
 --
+-- ⚠️ **9001이 실제 id라고 가정하면 안 된다.** 이 이메일이 이미 다른 id로 가입돼 있으면
+--    (운영 DB에서 실제로 그랬다) ON DUPLICATE KEY UPDATE가 uk_users_email에 걸려
+--    그 기존 행을 갱신할 뿐 9001 행은 생기지 않는다. 그래서 아래 시드는 전부
+--    id를 박지 않고 **이메일로 조회해서** 붙인다.
+--
 -- password_hash는 BCrypt라 매번 값이 다르다. 아래 해시는 test1234! 로 로그인되는 것을
 -- 확인한 값이며, **다시 만들지 말고 그대로 둔다** (바꾸면 로그인이 깨진다).
 INSERT INTO users (
@@ -91,7 +96,8 @@ INSERT INTO users (
 -- 온보딩에서 받는 주거비. users.housing_type = MONTHLY 와 앞뒤가 맞아야 한다.
 -- estimated_monthly(월 예상 주거비)는 컬럼이 없다 — 월세+관리비로 매번 계산한다.
 INSERT INTO housing_cost (user_id, deposit, monthly_rent, maintenance_fee, updated_at)
-VALUES (9001, 10000000, 450000, 70000, '2026-09-01 00:00:00')
+SELECT u.user_id, 10000000, 450000, 70000, '2026-09-01 00:00:00'
+FROM users u WHERE u.email = 'user1@test.com'
 ON DUPLICATE KEY UPDATE
     deposit = VALUES(deposit),
     monthly_rent = VALUES(monthly_rent),
@@ -101,10 +107,14 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO recurring_income (
     recurring_income_id, user_id, income_name, income_type, expected_amount,
     deposit_timing, source_name, auto_match_enabled, created_at, updated_at
-) VALUES
-    (9001, 9001, '편의점 아르바이트', 'SALARY',    1200000, '매월 25일', '지에스리테일', 0, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
-    (9002, 9001, '자립수당',        'ALLOWANCE',  500000, '매월 20일', '강남구청',     0, '2026-09-01 00:00:00', '2026-09-01 00:00:00')
+)
+SELECT 9001, u.user_id, '편의점 아르바이트', 'SALARY', 1200000, '매월 25일', '지에스리테일', 0, '2026-09-01 00:00:00', '2026-09-01 00:00:00'
+FROM users u WHERE u.email = 'user1@test.com'
+UNION ALL
+SELECT 9002, u.user_id, '자립수당', 'ALLOWANCE', 500000, '매월 20일', '강남구청', 0, '2026-09-01 00:00:00', '2026-09-01 00:00:00'
+FROM users u WHERE u.email = 'user1@test.com'
 ON DUPLICATE KEY UPDATE
+    user_id = VALUES(user_id),
     income_name = VALUES(income_name),
     income_type = VALUES(income_type),
     expected_amount = VALUES(expected_amount),
@@ -122,15 +132,18 @@ ON DUPLICATE KEY UPDATE
 --
 -- 이름과 순서는 PocketService.initialize 와 같아야 한다. 한쪽만 바꾸면
 -- 시드로 만든 계정과 가입으로 만든 계정의 화면이 달라진다.
-INSERT INTO pocket (pocket_id, user_id, pocket_type, pocket_name, created_at)
-VALUES
-    (9001, 9001, 'ESSENTIAL',    '필수 포켓',     '2026-09-01 00:00:00'),
-    (9002, 9001, 'FREE',         '자유 포켓',     '2026-09-01 00:00:00'),
-    (9003, 9001, 'EMERGENCY',    '비상금 포켓',   '2026-09-01 00:00:00'),
-    (9004, 9001, 'FUTURE_ASSET', '미래자산 포켓', '2026-09-01 00:00:00')
-ON DUPLICATE KEY UPDATE
-    pocket_type = VALUES(pocket_type),
-    pocket_name = VALUES(pocket_name);
+-- pocket_id를 박지 않고 INSERT IGNORE로 넣는다. uk_user_pocket_type(user_id, pocket_type)이
+-- 중복을 막아주므로 멱등하고, 고정 id가 실제 회원의 포켓과 부딪힐 일도 없다.
+INSERT IGNORE INTO pocket (user_id, pocket_type, pocket_name, created_at)
+SELECT u.user_id, t.pocket_type, t.pocket_name, '2026-09-01 00:00:00'
+FROM users u
+JOIN (
+    SELECT 'ESSENTIAL'    AS pocket_type, '필수 포켓'     AS pocket_name
+    UNION ALL SELECT 'FREE',         '자유 포켓'
+    UNION ALL SELECT 'EMERGENCY',    '비상금 포켓'
+    UNION ALL SELECT 'FUTURE_ASSET', '미래자산 포켓'
+) t
+WHERE u.email = 'user1@test.com';
 
 -- ── 지원제도 (welfare_program) ────────────────────────────────────────────
 -- 시드를 두지 않는다. welfare_program은 수집 배치(POST /internal/welfare/collect)가
@@ -153,8 +166,11 @@ ON DUPLICATE KEY UPDATE
 --
 -- 금액 단위는 원이고 전부 양수다. 입출금 방향은 transaction_type 이 들고 있다.
 INSERT INTO mock_mydata_user (mock_user_id, service_user_id, name, created_at, updated_at)
-VALUES (9001, 9001, '막스', '2026-09-01 00:00:00', '2026-09-01 00:00:00')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+SELECT 9001, u.user_id, '막스', '2026-09-01 00:00:00', '2026-09-01 00:00:00'
+FROM users u WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    service_user_id = VALUES(service_user_id),
+    name = VALUES(name);
 
 -- 계좌 3개: KB 주거래 + KB 청년적금 + 신한 비상금
 INSERT INTO mock_mydata_account (
