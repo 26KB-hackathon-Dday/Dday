@@ -48,6 +48,8 @@ public class SecurityConfig {
             "/api/v1/welfare-programs", "/api/v1/welfare-programs/**",
             // 수집 트리거·리뷰 큐. 컨트롤러가 @Profile("local")이라 운영에는 아예 등록되지 않는다.
             "/internal/welfare/**",
+            // 로컬 MyData 연동 검증용 Mock API. 컨트롤러가 local 프로파일에서만 등록된다.
+            "/mock/mydata/**",
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
