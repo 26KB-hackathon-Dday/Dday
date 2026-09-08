@@ -32,6 +32,16 @@ services:
 
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
 
+      # 복지서비스 수집 API 키 (domain/welfare).
+      #
+      # application-prod.yml이 ${WELFARE_API_KEY}를 기본값 없이 요구하므로, 여기서 넘기지
+      # 않으면 스프링이 플레이스홀더를 못 채워 기동 중에 죽는다 — 컨테이너는 뜨는데
+      # 앱이 즉시 종료돼 포트가 안 열린다.
+      #
+      # 빈 값을 허용한다. 키가 없어도 앱은 떠야 하고(다른 기능은 멀쩡하다), 수집 잡만
+      # 실패하면 된다. 실제 수집을 돌리려면 서버 .env에 data.go.kr 디코딩 키를 넣는다.
+      WELFARE_API_KEY: ${WELFARE_API_KEY:-}
+
       # JWT 서명키. 기본값을 주지 않는다 — 없으면 컨테이너가 아예 안 뜬다.
       # 이 값이 바뀌면 발급된 토큰이 전부 무효가 되므로 재배포할 때 유지해야 한다.
       #   openssl rand -base64 48   으로 만들어 서버 .env에 넣는다.
