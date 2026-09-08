@@ -46,6 +46,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // JWT. 0.12.x는 Jwts.builder().subject() / parser().verifyWith() 형태다 —
+    // 인터넷 예제 대부분이 0.11.x(setSubject/parserBuilder)라 그대로 복사하면 컴파일이 깨진다.
+    // impl·jackson은 런타임에만 필요하다(구현체와 JSON 직렬화).
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     // 복지서비스 수집 배치 (domain/welfare). 매월 1일 외부 API를 긁어와 청년 대상 여부를 룰로 판정한다.
     // BATCH_* 메타테이블은 application.yml의 spring.batch.jdbc.initialize-schema로 만든다.
@@ -67,6 +75,7 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

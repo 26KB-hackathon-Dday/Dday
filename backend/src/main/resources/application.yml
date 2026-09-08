@@ -55,6 +55,16 @@ spring:
       # CREATE TABLE IF NOT EXISTS라 매 기동 돌아도 안전하다.
       initialize-schema: always
 
+# JWT. JwtTokenProvider가 생성자에서 @Value로 읽는다 — 값이 비면 기동 단계에서 죽는다.
+jwt:
+  # HS256 서명키. Base64든 평문이든 받지만 어느 쪽이든 디코딩 결과가 32바이트 이상이어야 한다.
+  # ⚠️ 운영에서는 반드시 JWT_SECRET 환경변수로 덮는다. 아래 기본값은 로컬 전용이고 저장소에 공개돼 있다.
+  secret: ${JWT_SECRET:dday-local-development-only-secret-key-please-override-in-production}
+  # 밀리초. 해커톤 기간에는 시연 도중 토큰이 만료되는 게 더 큰 사고라 길게 잡았다.
+  # 공개 서비스로 갈 때는 액세스를 30분~2시간으로 줄이고 리프레시 회전을 붙여야 한다.
+  access-token-validity: 31536000000    # 365일
+  refresh-token-validity: 315360000000  # 10년
+
 server:
   port: 8080
   # 에러 응답은 GlobalExceptionHandler가 만든다. 스프링 기본 흰 화면(/error)을 끈다.

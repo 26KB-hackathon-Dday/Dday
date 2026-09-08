@@ -13,6 +13,11 @@ spring:
   jpa:
     show-sql: false
 
+# 기본값을 지우고 환경변수를 강제한다. 공개된 로컬 시크릿으로 운영 토큰이 서명되면
+# 누구나 남의 계정 토큰을 위조할 수 있다 — 비어 있으면 기동에서 실패하는 게 맞다.
+jwt:
+  secret: ${JWT_SECRET}
+
 logging:
   level:
     root: info

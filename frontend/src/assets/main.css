@@ -1,10 +1,44 @@
 @import './base.css';
 
+/**
+ * 온보딩 화면(랜딩·로그인·가입)과 공용 컴포넌트(PrimaryButton, TextField, StepProgress)가
+ * 쓰는 디자인 토큰.
+ *
+ * ⚠️ 앱 화면(지원금·포켓)은 base.css의 `--c-*` / `--app-max`를 쓴다. 지금은 두 벌이
+ * 공존한다 — 쓰는 화면이 서로 겹치지 않아 동작에는 문제가 없지만, 언젠가 한쪽으로
+ * 합쳐야 한다. 새 화면을 만들 때는 base.css의 `--c-*`를 쓴다.
+ */
+:root {
+  --color-primary: #1a1a1a;
+  --color-secondary: #8a8a8a;
+  --color-border: #e5e5e5;
+  --color-bg: #ffffff;
+  --color-bg-soft: #f5f5f5;
+  --color-disabled: #cccccc;
+  --color-danger: #e64545;
+  --color-accent: #1a1a1a;
+
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-page: 20px;
+
+  --radius-md: 12px;
+  --radius-lg: 20px;
+}
+
+html,
+body {
+  background-color: #f2f2f2;
+}
+
 /* 앱 셸 — 상단바 · 스크롤 본문 · 하단 내비를 세로로 쌓고,
-   데스크톱에서는 폰 폭(--app-max)으로 가운데 정렬한다. */
+   데스크톱에서는 폰 폭(--app-max)으로 가운데 정렬한다.
+   폭 제한은 #app이 아니라 .app-shell이 맡는다 (온보딩 화면도 이 셸 안에서 돈다). */
 #app {
   min-height: 100vh;
   min-height: 100dvh;
+  font-weight: normal;
 }
 
 .app-shell {
@@ -19,5 +53,14 @@
 }
 
 .app-shell__body {
+  flex: 1 0 auto;
+  /* 온보딩 화면은 min-height:100dvh로 세로를 꽉 채운다. 셸 안에서도 그게 성립하려면
+     본문이 남는 높이를 실제로 차지해야 한다 (flex 아이템의 기본 min-height:auto 회피). */
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell__body > * {
   flex: 1 0 auto;
 }
