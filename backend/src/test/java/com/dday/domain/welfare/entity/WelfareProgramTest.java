@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -62,13 +61,13 @@ class WelfareProgramTest {
         WelfareProgram p = BeanUtils.instantiateClass(WelfareProgram.class);
         ReflectionTestUtils.setField(p, "source", ProgramSource.MANUAL_CURATION);
         ReflectionTestUtils.setField(p, "targetDescription", "관리자가 정리한 지원대상");
-        ReflectionTestUtils.setField(p, "supportAmount", new BigDecimal("300000"));
+        ReflectionTestUtils.setField(p, "supportAmount", 300_000L);
 
-        p.applyDetail(new BigDecimal("999999"), 24, "2026", "API가 준 잡탕 텍스트",
+        p.applyDetail(999_999L, 24, "2026", "API가 준 잡탕 텍스트",
                 "채널", "https://x", "010", "<detail/>");
 
         assertThat(p.getTargetDescription()).isEqualTo("관리자가 정리한 지원대상");
-        assertThat(p.getSupportAmount()).isEqualByComparingTo("300000");
+        assertThat(p.getSupportAmount()).isEqualTo(300_000L);
         assertThat(p.getRawDetailXml()).isEqualTo("<detail/>"); // 원문만 갱신
     }
 

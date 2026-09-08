@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,10 +19,10 @@ class WelfareProgramDetailResponseTest {
     @Test
     void CASH_MONTHLY면_incomeChange가_채워진다() {
         var res = WelfareProgramDetailResponse.from(
-                program(SupportType.CASH, SupportAmountType.MONTHLY, new BigDecimal("200000"), 12));
+                program(SupportType.CASH, SupportAmountType.MONTHLY, 200_000L, 12));
 
         assertThat(res.getIncomeChange()).isNotNull();
-        assertThat(res.getIncomeChange().getMonthlyAmount()).isEqualByComparingTo("200000");
+        assertThat(res.getIncomeChange().getMonthlyAmount()).isEqualTo(200_000L);
         assertThat(res.getIncomeChange().getDurationMonths()).isEqualTo(12);
         assertThat(res.getIncomeChange().getTitle()).isEqualTo("12개월 간 예상 수입 변화");
     }
@@ -31,7 +30,7 @@ class WelfareProgramDetailResponseTest {
     @Test
     void 개월수가_없으면_헤딩이_상시_문구가_된다() {
         var res = WelfareProgramDetailResponse.from(
-                program(SupportType.CASH, SupportAmountType.MONTHLY, new BigDecimal("500000"), null));
+                program(SupportType.CASH, SupportAmountType.MONTHLY, 500_000L, null));
 
         assertThat(res.getIncomeChange()).isNotNull();
         assertThat(res.getIncomeChange().getTitle()).isEqualTo("매월 예상 수입 변화");
@@ -41,7 +40,7 @@ class WelfareProgramDetailResponseTest {
     @Test
     void 일회성_CASH는_incomeChange가_null() {
         var res = WelfareProgramDetailResponse.from(
-                program(SupportType.CASH, SupportAmountType.FIXED, new BigDecimal("10000000"), null));
+                program(SupportType.CASH, SupportAmountType.FIXED, 10_000_000L, null));
 
         assertThat(res.getIncomeChange()).isNull();
     }
@@ -49,7 +48,7 @@ class WelfareProgramDetailResponseTest {
     @Test
     void 대출은_월별이어도_incomeChange가_null() {
         var res = WelfareProgramDetailResponse.from(
-                program(SupportType.LOAN, SupportAmountType.MONTHLY, new BigDecimal("300000"), 24));
+                program(SupportType.LOAN, SupportAmountType.MONTHLY, 300_000L, 24));
 
         assertThat(res.getIncomeChange()).isNull();
     }
@@ -75,12 +74,12 @@ class WelfareProgramDetailResponseTest {
     @Test
     void servDgst가_없으면_description은_null() {
         var res = WelfareProgramDetailResponse.from(
-                program(SupportType.CASH, SupportAmountType.MONTHLY, new BigDecimal("200000"), 12));
+                program(SupportType.CASH, SupportAmountType.MONTHLY, 200_000L, 12));
         assertThat(res.getDescription()).isNull();
     }
 
     private static WelfareProgram program(SupportType type, SupportAmountType amountType,
-                                          BigDecimal amount, Integer months) {
+                                          Long amount, Integer months) {
         WelfareProgram p = BeanUtils.instantiateClass(WelfareProgram.class);
         ReflectionTestUtils.setField(p, "servId", "WLF_TEST");
         ReflectionTestUtils.setField(p, "servNm", "테스트 제도");

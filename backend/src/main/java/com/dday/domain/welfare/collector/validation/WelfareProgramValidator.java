@@ -5,7 +5,6 @@ import com.dday.domain.welfare.entity.SupportType;
 import com.dday.domain.welfare.entity.WelfareProgram;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -22,9 +21,9 @@ import java.util.regex.Pattern;
 @Component
 public class WelfareProgramValidator {
 
-    private static final BigDecimal MIN_AMOUNT = new BigDecimal("10000");
-    private static final BigDecimal MAX_MONTHLY = new BigDecimal("10000000");
-    private static final BigDecimal MAX_TOTAL = new BigDecimal("200000000");
+    private static final long MIN_AMOUNT = 10_000L;
+    private static final long MAX_MONTHLY = 10_000_000L;
+    private static final long MAX_TOTAL = 200_000_000L;
 
     /**
      * 자격요건이 아니라 접수 안내·공고문일 때의 신호. {@code ※}는 부연·주의 마커라 첫머리에 오면
@@ -72,12 +71,12 @@ public class WelfareProgramValidator {
         return !validate(p).isEmpty();
     }
 
-    private static boolean amountLooksWrong(BigDecimal amount, SupportAmountType type) {
-        if (amount.compareTo(MIN_AMOUNT) < 0) {
+    private static boolean amountLooksWrong(Long amount, SupportAmountType type) {
+        if (amount < MIN_AMOUNT) {
             return true;
         }
-        BigDecimal ceiling = type == SupportAmountType.MONTHLY ? MAX_MONTHLY : MAX_TOTAL;
-        return amount.compareTo(ceiling) > 0;
+        long ceiling = type == SupportAmountType.MONTHLY ? MAX_MONTHLY : MAX_TOTAL;
+        return amount > ceiling;
     }
 
     private static boolean looksLikeNotice(String target) {

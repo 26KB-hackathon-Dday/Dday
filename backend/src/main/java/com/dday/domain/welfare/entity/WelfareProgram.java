@@ -196,9 +196,9 @@ public class WelfareProgram {
     @Column(length = 20)
     private SupportType supportType;
 
-    /** 지원 금액. 돈이므로 {@link BigDecimal}. */
-    @Column(precision = 15, scale = 2)
-    private BigDecimal supportAmount;
+    /** 지원 금액(원). 원 단위 정수라 {@code Long}이다 (AGENTS.md §4). */
+    @Column
+    private Long supportAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
@@ -324,7 +324,7 @@ public class WelfareProgram {
      * <p>{@link ProgramSource#MANUAL_CURATION} 행은 {@code rawDetailXml}만 갱신하고 파싱값은
      * 건드리지 않는다 — 관리자가 소유.
      */
-    public void applyDetail(BigDecimal supportAmount, Integer supportDurationMonths, String crtrYr,
+    public void applyDetail(Long supportAmount, Integer supportDurationMonths, String crtrYr,
                             String targetDescription,
                             String applyChannelName, String applyChannelUrl, String applyChannelPhone,
                             String rawDetailXml) {

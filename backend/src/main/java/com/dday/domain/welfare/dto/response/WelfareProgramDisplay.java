@@ -2,8 +2,6 @@ package com.dday.domain.welfare.dto.response;
 
 import com.dday.domain.welfare.entity.SupportAmountType;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -22,11 +20,11 @@ final class WelfareProgramDisplay {
     }
 
     /** 예: {@code 월 200,000원} / {@code 1,000만원은 표기 안 함 — 원 단위로 그대로}. */
-    static String benefitText(BigDecimal amount, SupportAmountType type) {
+    static String benefitText(Long amount, SupportAmountType type) {
         if (amount == null) {
             return null;
         }
-        String won = String.format("%,d원", amount.setScale(0, RoundingMode.HALF_UP).longValueExact());
+        String won = String.format("%,d원", amount);
         if (type == null) {
             return won;
         }

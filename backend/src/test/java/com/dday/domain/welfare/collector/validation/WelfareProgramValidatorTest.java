@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +20,7 @@ class WelfareProgramValidatorTest {
         WelfareProgram p = program(Map.of(
                 "category", "생활",
                 "supportType", SupportType.CASH,
-                "supportAmount", new BigDecimal("500000"),
+                "supportAmount", 500_000L,
                 "supportAmountType", SupportAmountType.MONTHLY,
                 "targetDescription", "만 19세 ~ 34세 무주택 청년을 지원합니다.",
                 "applyChannelName", "보건복지상담센터",
@@ -60,7 +59,7 @@ class WelfareProgramValidatorTest {
         WelfareProgram p = program(Map.of(
                 "category", "생활",
                 "supportType", SupportType.CASH,
-                "supportAmount", new BigDecimal("48000000"),
+                "supportAmount", 48_000_000L,
                 "supportAmountType", SupportAmountType.MONTHLY,
                 "targetDescription", "청년"));
         assertThat(validator.validate(p)).contains(WelfareIssue.AMOUNT_SUSPICIOUS);
@@ -71,7 +70,7 @@ class WelfareProgramValidatorTest {
         WelfareProgram p = program(Map.of(
                 "category", "생활",
                 "supportType", SupportType.CASH,
-                "supportAmount", new BigDecimal("10000000"),
+                "supportAmount", 10_000_000L,
                 "supportAmountType", SupportAmountType.FIXED,
                 "targetDescription", "청년",
                 "applyChannelPhone", "129"));

@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +34,7 @@ public class WelfareReviewItemResponse {
     // ── 문제일 수 있는 현재 값 ──
     private String category;
     private SupportType supportType;
-    private BigDecimal supportAmount;
+    private Long supportAmount;
     private SupportAmountType supportAmountType;
     private Integer supportDurationMonths;
     private String targetDescription;

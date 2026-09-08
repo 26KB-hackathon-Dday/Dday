@@ -3,7 +3,6 @@ package com.dday.domain.welfare.dto.response;
 import com.dday.domain.welfare.entity.SupportAmountType;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,7 +14,7 @@ class WelfareProgramDisplayTest {
 
     @Test
     void 금액_타입별_문구() {
-        BigDecimal amount = new BigDecimal("200000");
+        long amount = 200_000L;
         assertThat(WelfareProgramDisplay.benefitText(amount, SupportAmountType.MONTHLY)).isEqualTo("월 200,000원");
         assertThat(WelfareProgramDisplay.benefitText(amount, SupportAmountType.FIXED)).isEqualTo("200,000원 (1회)");
         assertThat(WelfareProgramDisplay.benefitText(amount, SupportAmountType.LIMIT)).isEqualTo("최대 200,000원");

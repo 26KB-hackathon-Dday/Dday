@@ -20,7 +20,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -138,7 +137,7 @@ class WelfareProgramServiceTest {
         ReflectionTestUtils.setField(program, "servId", servId);
         ReflectionTestUtils.setField(program, "servNm", name);
         ReflectionTestUtils.setField(program, "category", category);
-        ReflectionTestUtils.setField(program, "supportAmount", new BigDecimal("200000"));
+        ReflectionTestUtils.setField(program, "supportAmount", 200_000L);
         ReflectionTestUtils.setField(program, "ongoingApplication", true);
         return program;
     }
