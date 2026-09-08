@@ -119,11 +119,9 @@ function formatDiff(diff: number): string {
         </div>
       </template>
 
-      <!--
-        예상 금리 화면은 API(`/api/credit/rates/expected`)만 있고 아직 라우트가 없다.
-        죽은 링크를 만들지 않으려고 비활성으로 둔다. 화면이 생기면 RouterLink로 바꾼다.
-      -->
-      <button type="button" class="cta" disabled>예상 금리 보러 가기 <span aria-hidden="true">→</span></button>
+      <RouterLink to="/credit-manage/rates" class="cta">
+        예상 금리 보러 가기 <span aria-hidden="true">→</span>
+      </RouterLink>
     </template>
   </div>
 </template>
@@ -256,9 +254,5 @@ function formatDiff(diff: number): string {
   color: #fff;
   font-size: 16px;
   font-weight: 600;
-}
-
-.cta:disabled {
-  cursor: default;
 }
 </style>

@@ -38,6 +38,8 @@ export type LenderType = 'BANK' | 'CAPITAL' | 'CARD'
 
 export interface LenderRate {
   lenderType: LenderType
+  /** 화면에 그대로 쓰는 업권 이름 ("은행"·"캐피탈"·"카드사"). 정본은 서버다. */
+  label: string
   /** 이 평균에 들어간 회사 수. 공시가 없는 구간이면 null. */
   institutionCount: number | null
   /**

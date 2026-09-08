@@ -85,6 +85,7 @@ public class ExpectedRateService {
 
         return LenderRateResponse.builder()
                 .lenderType(lender)
+                .label(lender.getLabel())
                 .institutionCount(current == null ? null : current.sampleSize())
                 .currentRate(current == null ? null : current.rate())
                 .currentAnnualInterest(currentInterest)
