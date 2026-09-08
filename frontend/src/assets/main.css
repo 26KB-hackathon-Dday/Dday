@@ -1,35 +1,23 @@
 @import './base.css';
 
+/* 앱 셸 — 상단바 · 스크롤 본문 · 하단 내비를 세로로 쌓고,
+   데스크톱에서는 폰 폭(--app-max)으로 가운데 정렬한다. */
 #app {
-  max-width: 1280px;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: var(--app-max);
   margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+  background: var(--c-bg);
+  box-shadow: 0 0 0 1px var(--c-border);
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+.app-shell__body {
+  flex: 1 0 auto;
 }
