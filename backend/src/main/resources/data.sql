@@ -150,12 +150,91 @@ WHERE u.email = 'user1@test.com'
 ON DUPLICATE KEY UPDATE pocket_name = VALUES(pocket_name);
 
 -- ── 지원제도 (welfare_program) ────────────────────────────────────────────
--- 시드를 두지 않는다. welfare_program은 수집 배치(POST /internal/welfare/collect)가
--- 공공데이터포털에서 긁어와 채운다. 시드 serv_id가 실제 제도 ID와 겹쳐 upsert되면
--- "수집 필드는 진짜 + 매칭 필드는 추측값"인 하이브리드 행이 생겨서 뺐다.
 --
--- 매칭 API용 필드(category·support_amount·support_duration_months 등)는 수집기가 아직
--- 안 채우므로 당분간 NULL이다. 채우는 로직은 후속 (docs/welfare-api/matching-spec.md).
+-- 원래는 수집 배치(POST /internal/welfare/collect)가 공공데이터포털에서 긁어와 채운다.
+-- 그런데 운영에 WELFARE_API_KEY 가 없어 수집이 한 번도 돌지 않았고, 지원금 화면이
+-- 빈 채로 남아 시연을 못 한다. 그래서 **시연용 최소 세트**를 넣는다.
+--
+-- ⚠️ serv_id 를 'DEMO-' 로 시작하게 잡았다. 실제 제도 ID(숫자)와 절대 겹치지 않게 해서,
+--    나중에 수집기가 돌아도 진짜 데이터를 덮어쓰지 않는다. 수집이 정상화되면 이 블록을 지운다.
+--
+-- source = MANUAL_CURATION 이어야 목록에 뜬다. 조회 쿼리가 NEEDS_REVIEW 인 수집 후보를
+-- 걸러내기 때문이다 (WelfareProgramRepository.search).
+INSERT INTO welfare_program (
+    id, serv_id, agency_type, source, serv_nm, serv_dgst, jur_mnof_nm,
+    category, target_description, protection_phase,
+    support_type, support_amount, support_amount_type, support_duration_months,
+    application_deadline, ongoing_application,
+    apply_channel_name, apply_channel_url, apply_channel_phone,
+    required_documents, youth_status, curation_status, region_code,
+    collected_at, created_at, updated_at
+) VALUES
+    ('11111111-1111-4111-8111-000000000001', 'DEMO-0001', 'CENTRAL', 'MANUAL_CURATION',
+     '자립수당', '보호종료 후 5년간 매월 지급되는 자립수당입니다.', '보건복지부',
+     '생계', '아동복지시설·가정위탁 보호가 종료된 지 5년 이내인 청년', 'POST_TERMINATION',
+     'CASH', 500000, 'MONTHLY', 60,
+     NULL, 1, '주민센터', 'https://www.bokjiro.go.kr', '129',
+     '신분증, 보호종료확인서, 통장사본', 'STRONG_YOUTH', 'OK', NULL,
+     '2026-09-01 00:00:00', '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+
+    ('11111111-1111-4111-8111-000000000002', 'DEMO-0002', 'CENTRAL', 'MANUAL_CURATION',
+     '자립정착금', '보호종료 시 한 번 지급되는 정착 지원금입니다.', '보건복지부',
+     '생계', '보호가 종료되는 자립준비청년', 'PRE_TERMINATION',
+     'CASH', 10000000, 'FIXED', NULL,
+     NULL, 1, '지자체 아동복지팀', 'https://www.bokjiro.go.kr', '129',
+     '신분증, 보호종료확인서', 'STRONG_YOUTH', 'OK', NULL,
+     '2026-09-01 00:00:00', '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+
+    ('11111111-1111-4111-8111-000000000003', 'DEMO-0003', 'CENTRAL', 'MANUAL_CURATION',
+     '청년월세 특별지원', '월 최대 20만원의 월세를 최대 12개월 지원합니다.', '국토교통부',
+     '주거', '만 19~34세 무주택 청년 중 소득·재산 기준을 충족하는 사람', 'BOTH',
+     'CASH', 200000, 'MONTHLY', 12,
+     '2026-12-31', 0, '복지로', 'https://www.bokjiro.go.kr', '1600-0777',
+     '임대차계약서, 통장사본, 소득증빙', 'AUTO_APPROVED', 'OK', NULL,
+     '2026-09-01 00:00:00', '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+
+    ('11111111-1111-4111-8111-000000000004', 'DEMO-0004', 'CENTRAL', 'MANUAL_CURATION',
+     '디딤씨앗통장', '본인이 적립하면 정부가 같은 금액을 매칭 적립합니다.', '보건복지부',
+     '자산형성', '보호대상아동 및 보호종료 5년 이내 청년', 'BOTH',
+     'CASH', 100000, 'MONTHLY', 60,
+     NULL, 1, '주민센터', 'https://www.bokjiro.go.kr', '129',
+     '신분증, 통장사본', 'STRONG_YOUTH', 'OK', NULL,
+     '2026-09-01 00:00:00', '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+
+    ('11111111-1111-4111-8111-000000000005', 'DEMO-0005', 'LOCAL', 'MANUAL_CURATION',
+     '서울시 자립준비청년 주거지원', '전세보증금 이자를 지원합니다.', '서울특별시',
+     '주거', '서울에 거주하는 자립준비청년', 'POST_TERMINATION',
+     'LOAN', 50000000, 'LIMIT', NULL,
+     '2026-11-30', 0, '서울주거포털', 'https://housing.seoul.go.kr', '02-120',
+     '임대차계약서, 보호종료확인서', 'STRONG_YOUTH', 'OK', '11',
+     '2026-09-01 00:00:00', '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+
+    ('11111111-1111-4111-8111-000000000006', 'DEMO-0006', 'CENTRAL', 'MANUAL_CURATION',
+     '자립준비청년 심리정서 지원', '전문 상담을 무료로 받을 수 있습니다.', '보건복지부',
+     '의료', '보호종료 5년 이내 자립준비청년', 'POST_TERMINATION',
+     'SERVICE', NULL, NULL, NULL,
+     NULL, 1, '아동권리보장원', 'https://www.ncrc.or.kr', '02-6454-8500',
+     '신분증', 'STRONG_YOUTH', 'OK', NULL,
+     '2026-09-01 00:00:00', '2026-09-01 00:00:00', '2026-09-01 00:00:00')
+ON DUPLICATE KEY UPDATE
+    serv_nm = VALUES(serv_nm),
+    serv_dgst = VALUES(serv_dgst),
+    category = VALUES(category),
+    target_description = VALUES(target_description),
+    protection_phase = VALUES(protection_phase),
+    support_type = VALUES(support_type),
+    support_amount = VALUES(support_amount),
+    support_amount_type = VALUES(support_amount_type),
+    support_duration_months = VALUES(support_duration_months),
+    application_deadline = VALUES(application_deadline),
+    ongoing_application = VALUES(ongoing_application),
+    apply_channel_name = VALUES(apply_channel_name),
+    apply_channel_url = VALUES(apply_channel_url),
+    apply_channel_phone = VALUES(apply_channel_phone),
+    required_documents = VALUES(required_documents),
+    youth_status = VALUES(youth_status),
+    curation_status = VALUES(curation_status),
+    source = VALUES(source);
 
 -- ── 마이데이터 목데이터 (mock_mydata_*) ───────────────────────────────────
 --
@@ -275,3 +354,106 @@ ON DUPLICATE KEY UPDATE
     merchant_regno = VALUES(merchant_regno),
     transaction_status = VALUES(transaction_status),
     original_transaction_id = VALUES(original_transaction_id);
+
+-- ── 소비 카테고리 (category) ──────────────────────────────────────────────
+--
+-- 회원과 무관한 마스터 데이터다. 비어 있으면 자동분류가 카테고리를 못 붙여서
+-- 소비 내역이 전부 '자유 포켓'으로만 떨어지고 화면의 분류가 비어 보인다.
+--
+-- default_pocket_type: 그 카테고리 소비가 기본으로 들어갈 포켓.
+--   ESSENTIAL(필수) 월세·공과금·통신비처럼 안 쓸 수 없는 것
+--   FREE(자유)      식비·쇼핑처럼 조절 가능한 것
+--   FUTURE_ASSET    저축·투자
+--
+-- id를 박고 uk_category_code로 멱등성을 잡는다. 계층은 parent_category_id 자기참조인데
+-- 지금은 1단계만 쓴다 — 대분류를 만들면 화면이 두 번 접어야 해서 데모에 득이 없다.
+INSERT INTO category (category_id, parent_category_id, category_code, category_name, default_pocket_type, is_active)
+VALUES
+    (1,  NULL, 'HOUSING',       '주거·관리비',  'ESSENTIAL',    1),
+    (2,  NULL, 'UTILITY',       '공과금',       'ESSENTIAL',    1),
+    (3,  NULL, 'TELECOM',       '통신비',       'ESSENTIAL',    1),
+    (4,  NULL, 'INSURANCE',     '보험료',       'ESSENTIAL',    1),
+    (5,  NULL, 'TRANSPORT',     '교통비',       'ESSENTIAL',    1),
+    (6,  NULL, 'FOOD',          '식비',         'FREE',         1),
+    (7,  NULL, 'CAFE',          '카페·간식',    'FREE',         1),
+    (8,  NULL, 'CONVENIENCE',   '편의점·마트',  'FREE',         1),
+    (9,  NULL, 'SHOPPING',      '쇼핑',         'FREE',         1),
+    (10, NULL, 'BEAUTY',        '뷰티·미용',    'FREE',         1),
+    (11, NULL, 'CULTURE',       '문화·여가',    'FREE',         1),
+    (12, NULL, 'SUBSCRIPTION',  '구독료',       'FREE',         1),
+    (13, NULL, 'MEDICAL',       '의료·건강',    'ESSENTIAL',    1),
+    (14, NULL, 'EDUCATION',     '교육·자기계발','FREE',         1),
+    (15, NULL, 'SAVINGS',       '저축·투자',    'FUTURE_ASSET', 1),
+    (16, NULL, 'ETC',           '기타',         'FREE',         1)
+ON DUPLICATE KEY UPDATE
+    category_name = VALUES(category_name),
+    default_pocket_type = VALUES(default_pocket_type),
+    is_active = VALUES(is_active);
+
+-- ── 월 예산 (monthly_budget / monthly_pocket_budget / budget_draft_factor) ─
+--
+-- 데모 계정의 2026년 9월 예산이다. 온보딩 완료 시 예산 초안을 만드는 로직
+-- (OnboardingService의 TODO)이 아직 없어서 시드로 채운다. 그 로직이 붙으면
+-- 이 블록은 지운다 — 안 그러면 초안이 두 번 생긴다.
+--
+-- 숫자는 위 정기수입·주거비와 맞물린다. 한쪽만 고치면 화면 합계가 어긋난다.
+--   수입   급여 1,200,000 + 자립수당 500,000            = 1,700,000
+--   고정지출 월세 450,000 + 관리비 70,000 + 통신비 38,500 = 558,500
+--   가용    1,700,000 - 558,500                          = 1,141,500
+--
+-- user_id / pocket_id 를 박지 않고 조회해서 넣는다. 시드가 만든 회원 id가 환경마다
+-- 다를 수 있고(이메일이 이미 있으면 기존 id를 쓴다), 포켓 id는 auto-increment다.
+INSERT INTO monthly_budget (
+    monthly_budget_id, user_id, budget_month, total_budget_amount, budget_status,
+    draft_summary, draft_created_at, confirmed_at, created_at, updated_at
+)
+SELECT 9001, u.user_id, '2026-09-01', 1141500, 'CONFIRMED',
+       '수입 170만원에서 고정지출 55.85만원을 뺀 114.15만원을 이번 달 예산으로 잡았어요.',
+       '2026-09-01 00:00:00', '2026-09-01 09:00:00',
+       '2026-09-01 00:00:00', '2026-09-01 00:00:00'
+FROM users u WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    total_budget_amount = VALUES(total_budget_amount),
+    budget_status = VALUES(budget_status),
+    draft_summary = VALUES(draft_summary),
+    confirmed_at = VALUES(confirmed_at);
+
+-- 포켓별 배분. 합계가 total_budget_amount(1,141,500)와 같아야 한다.
+--   필수 558,500 + 자유 400,000 + 비상금 100,000 + 미래자산 83,000 = 1,141,500
+-- 포켓은 이름이 아니라 pocket_type 으로 찾는다 - 이름은 사용자가 바꿀 수 있다.
+INSERT INTO monthly_pocket_budget (
+    monthly_budget_id, pocket_id, target_amount, allocation_method, created_at, updated_at
+)
+SELECT mb.monthly_budget_id, p.pocket_id, t.target_amount, t.allocation_method,
+       '2026-09-01 00:00:00', '2026-09-01 00:00:00'
+FROM monthly_budget mb
+JOIN users u ON u.user_id = mb.user_id AND u.email = 'user1@test.com'
+JOIN pocket p ON p.user_id = u.user_id
+JOIN (
+    SELECT 'ESSENTIAL'    AS pocket_type, 558500 AS target_amount, 'SYSTEM_DRAFT'   AS allocation_method
+    UNION ALL SELECT 'FREE',         400000, 'USER_INPUT'
+    UNION ALL SELECT 'EMERGENCY',    100000, 'USER_INPUT'
+    UNION ALL SELECT 'FUTURE_ASSET',  83000, 'AUTO_REMAINDER'
+) t ON t.pocket_type = p.pocket_type
+WHERE mb.monthly_budget_id = 9001
+ON DUPLICATE KEY UPDATE
+    target_amount = VALUES(target_amount),
+    allocation_method = VALUES(allocation_method);
+
+-- 예산이 그 금액이 된 근거. "가용 114만원"만 던지면 사용자가 믿을 이유가 없어서
+-- 더하고 뺀 항목을 그대로 보여준다. 금액은 전부 양수고 방향은 factor_type 이 안다.
+INSERT INTO budget_draft_factor (
+    budget_draft_factor_id, monthly_budget_id, factor_type, factor_name, amount,
+    source_type, description, created_at
+) VALUES
+    (9001, 9001, 'SALARY',        '편의점 아르바이트', 1200000, 'USER_INPUT', '정기수입으로 등록한 금액', '2026-09-01 00:00:00'),
+    (9002, 9001, 'ALLOWANCE',     '자립수당',           500000, 'POLICY',     '자립준비청년 자립수당',   '2026-09-01 00:00:00'),
+    (9003, 9001, 'RENT',          '월세',               450000, 'USER_INPUT', '온보딩에서 입력한 주거비', '2026-09-01 00:00:00'),
+    (9004, 9001, 'UTILITY',       '관리비',              70000, 'USER_INPUT', '온보딩에서 입력한 주거비', '2026-09-01 00:00:00'),
+    (9005, 9001, 'TELECOM',       '통신비',              38500, 'MYDATA',     '최근 3개월 평균',          '2026-09-01 00:00:00')
+ON DUPLICATE KEY UPDATE
+    factor_type = VALUES(factor_type),
+    factor_name = VALUES(factor_name),
+    amount = VALUES(amount),
+    source_type = VALUES(source_type),
+    description = VALUES(description);
