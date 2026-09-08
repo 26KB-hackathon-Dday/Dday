@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,9 +69,12 @@ class SubsidyHomeServiceTest {
                 status("B", ReceivingStatus.NOT_RECEIVING),
                 status("C", ReceivingStatus.NOT_RECEIVING)));
         // D는 status 행 없음 → 확인 필요
+        LocalDateTime lastEval = LocalDateTime.of(2026, 9, 8, 20, 13);
+        given(eligibilityRepository.findLastEvaluatedAt(USER_ID)).willReturn(lastEval);
 
         SubsidyHomeResponse res = service.getHome(USER_ID);
 
+        assertThat(res.getSummary().getEvaluatedAt()).isEqualTo(lastEval);
         assertThat(res.getSummary().getConfirmed()).isEqualTo(4);
         assertThat(res.getReceivingList()).extracting(SubsidyHomeResponse.SubsidyCard::getProgramId)
                 .containsExactly("A");

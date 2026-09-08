@@ -16,8 +16,8 @@ class EligibilityEvaluatorTest {
     private final EligibilityEvaluator evaluator = new EligibilityEvaluator();
 
     @Test
-    void 보호종료일이_없으면_부적격() {
-        var result = evaluator.evaluate(user(null), program(null));
+    void 자립준비청년_전용_제도는_보호종료일이_없으면_부적격() {
+        var result = evaluator.evaluate(user(null), program(ProtectionPhase.POST_TERMINATION));
 
         assertThat(result.eligible()).isFalse();
         assertThat(result.ineligibleReason()).contains("보호종료일");
@@ -25,12 +25,11 @@ class EligibilityEvaluatorTest {
     }
 
     @Test
-    void 보호_종료_전_아동_대상_제도는_부적격() {
+    void 보호_종료_전_아동_대상_제도는_보호종료일이_있어도_부적격() {
         var result = evaluator.evaluate(user(LocalDate.of(2024, 1, 1)), program(ProtectionPhase.PRE_TERMINATION));
 
         assertThat(result.eligible()).isFalse();
         assertThat(result.ineligibleReason()).contains("보호 종료 전 아동");
-        assertThat(result.matchedCriteria()).containsExactly("protectionEndDate");
     }
 
     @Test
@@ -43,7 +42,15 @@ class EligibilityEvaluatorTest {
     }
 
     @Test
-    void protectionPhase가_미분류여도_보호종료일만_있으면_적격() {
+    void 미분류_제도는_보호종료일이_없어도_적격() {
+        var result = evaluator.evaluate(user(null), program(null));
+
+        assertThat(result.eligible()).isTrue();
+        assertThat(result.matchedCriteria()).isEmpty();
+    }
+
+    @Test
+    void 미분류_제도에_보호종료일이_있으면_근거로_남긴다() {
         var result = evaluator.evaluate(user(LocalDate.of(2024, 1, 1)), program(null));
 
         assertThat(result.eligible()).isTrue();

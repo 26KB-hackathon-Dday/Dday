@@ -2,6 +2,7 @@ package com.dday.domain.welfare.entity;
 
 import com.dday.domain.welfare.client.dto.WelfareListItem;
 import com.dday.domain.welfare.collector.Classification;
+import com.dday.domain.welfare.collector.curation.ProtectionPhaseClassifier;
 import com.dday.domain.welfare.collector.curation.SupportCycleMapper;
 import com.dday.domain.welfare.collector.curation.SupportTypeMapper;
 import com.dday.domain.welfare.collector.curation.WelfareCategoryClassifier;
@@ -186,7 +187,8 @@ public class WelfareProgram {
 
     /**
      * 보호 종료 전(아동)·후(자립준비청년) 구분 (명세서 §2.1 {@code protectionPhase}).
-     * {@code null}이면 미분류 — 수집 배치가 채우는 로직은 후속.
+     * {@link ProtectionPhaseClassifier}가 지원대상·제도명 키워드로 채운다. {@code null}이면
+     * 일반 대상(자립준비청년 여부 무관)이거나 미분류.
      */
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
@@ -341,6 +343,21 @@ public class WelfareProgram {
         this.applyChannelName = clip(applyChannelName, 120);
         this.applyChannelUrl = clip(applyChannelUrl, 500);
         this.applyChannelPhone = clip(applyChannelPhone, 40);
+        refreshProtectionPhase();
+    }
+
+    /**
+     * 지원대상·제도명 텍스트에서 보호단계(자립준비청년 전용 여부)를 다시 판정한다.
+     * 상세보강이 {@code targetDescription}을 채운 직후, 그리고 매 수집 잡의 품질 스텝이
+     * 전 행에 호출한다 — 분류기가 개선되면 기존 행도 따라오도록.
+     * {@link ProgramSource#MANUAL_CURATION} 행은 관리자가 값을 소유하므로 건드리지 않는다.
+     */
+    public void refreshProtectionPhase() {
+        if (this.source == ProgramSource.MANUAL_CURATION) {
+            return;
+        }
+        this.protectionPhase = ProtectionPhaseClassifier.classify(
+                this.servNm, this.servDgst, this.targetDescription);
     }
 
     /**

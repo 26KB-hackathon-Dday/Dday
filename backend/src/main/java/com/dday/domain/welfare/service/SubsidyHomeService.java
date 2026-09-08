@@ -91,10 +91,7 @@ public class SubsidyHomeService {
             }
         }
 
-        LocalDateTime evaluatedAt = eligible.stream()
-                .map(UserProgramEligibility::getEvaluatedAt)
-                .max(LocalDateTime::compareTo)
-                .orElse(null);
+        LocalDateTime evaluatedAt = eligibilityRepository.findLastEvaluatedAt(userId);
 
         return SubsidyHomeResponse.builder()
                 .summary(Summary.builder()
