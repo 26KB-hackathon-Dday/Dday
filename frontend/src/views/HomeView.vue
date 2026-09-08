@@ -130,7 +130,6 @@ const assetText = computed(() => {
 }
 .hero__note {
   margin-top: 24px;
-  text-align: center;
   font-size: 13px;
   font-weight: 300;
   line-height: 20px;
