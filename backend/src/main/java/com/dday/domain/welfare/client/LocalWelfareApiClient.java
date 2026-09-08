@@ -2,6 +2,7 @@ package com.dday.domain.welfare.client;
 
 import com.dday.domain.welfare.client.dto.LcgvWelfareListItem;
 import com.dday.domain.welfare.client.dto.LcgvWelfareListResponse;
+import com.dday.domain.welfare.client.dto.WelfareDetailResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import org.springframework.web.client.RestClientException;
 public class LocalWelfareApiClient {
 
     private static final String LIST_PATH = "/LcgvWelfarelist";
+    private static final String DETAIL_PATH = "/LcgvWelfaredetailed";
 
     private final RestClient restClient;
     private final String serviceKey;
@@ -84,6 +86,33 @@ public class LocalWelfareApiClient {
         }
         log.debug("지자체 복지 목록 pageNo={} totalCount={} 수신 {}건", pageNo, response.getTotalCount(),
                 response.servListOrEmpty().size());
+        return response;
+    }
+
+    /** 지자체 제도 상세 1건. 루트는 중앙과 같은 {@code <wantedDtl>}. */
+    public WelfareDetailResponse fetchDetail(String servId) {
+        String body;
+        try {
+            body = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path(DETAIL_PATH)
+                            .queryParam("serviceKey", serviceKey)
+                            .queryParam("servId", servId)
+                            .build())
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientException e) {
+            throw new WelfareApiException("지자체 복지 상세 API 호출 실패 (servId=" + servId + ")", e);
+        }
+        if (body == null || body.isBlank()) {
+            throw new WelfareApiException("지자체 복지 상세 API 응답이 비어 있다 (servId=" + servId + ")");
+        }
+        WelfareDetailResponse response = WelfareXml.readDetailResponse(body);
+        if (!response.isSuccess()) {
+            throw new WelfareApiException("지자체 복지 상세 API 오류 응답 (servId=" + servId
+                    + ", resultCode=" + response.getResultCode() + ")");
+        }
+        response.setRawXml(body);
         return response;
     }
 }

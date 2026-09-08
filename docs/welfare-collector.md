@@ -40,12 +40,43 @@ API 스펙·필드 의미·룰의 근거는 [welfare-api/NOTES.md](./welfare-api
 `LcgvWelfareListItem#toCommon()`에서 중앙 포맷(`WelfareListItem`)으로 변환되어, 이후
 Processor·Writer·판정 룰을 그대로 공유한다. 필드 대조는 NOTES.md §11-3.
 
-**빠진 Step 3 (후속):** REVIEW_QUEUE 건을 상세 API로 보강 —
-`crtrYr`(중앙)·`enfcEndYmd`(지자체)·`raw_detail_xml` 저장, 상세 텍스트에 Rule 1 키워드가 있으면
-`STRONG_YOUTH`로 승격.
+**Step 3 `enrichDetailStep` (구현됨):** 저장된 제도 전부(`raw_detail_xml IS NULL`) 상세 API 호출
+(`NationalWelfaredetailedV001` / `LcgvWelfaredetailed`, 루트 `<wantedDtl>` 공용) →
+- `tgtrDtlCn`(중앙)/`sprtTrgtCn`(지자체) → `target_description` (공백만 정규화, 원문 통과) — **전 제도**
+- `inqplCtadrList`(문의처)·`inqplHmpgReldList`(홈페이지) → `apply_channel_name/phone/url`
+  (URL 스킴 없으면 `https://` 부착) — **전 제도**
+- `alwServCn`(지원내용) → `support_amount`·`support_duration_months` (정규식) — **CASH만**
+- `crtrYr`·`raw_detail_xml` 저장
+
+`raw_detail_xml`이 채워지면 다음 실행에서 제외(멱등). 배경은 [welfare-api/matching-spec.md](./welfare-api/matching-spec.md).
+
+- 금액을 CASH만 뽑는 이유: 대출 한도·서비스 단가는 "지원액"이 아니라 성격이 달라 파싱하면 오해를 부른다.
+- 파싱은 best-effort다 — "여러 제도 한 필드"(해외취업), "본인 납입액을 지원액처럼"(내일저축계좌)은
+  틀린다. LLM 추출·상세 텍스트 Rule 1 재판정·신선도 판정은 아직 범위 아님.
+- `target_description`은 결정론 규칙으로 "정리"하지 않는다. 관공서 자유서술을 정규식으로 자르면
+  형태가 다른 원문에서 자격요건을 통째로 날린다(청년월세 실제 사례). 원문을 그대로 두고,
+  이상한 건 Step 4가 잡는다.
+
+**Step 4 `reportQualityStep` (구현됨):** 저장분 전체를 `WelfareProgramValidator`로 훑어
+`curation_status`(`OK`/`NEEDS_REVIEW`)·`curation_issues`(걸린 이슈 이름, 쉼표 구분)에 기록하고
+집계를 잡 로그로 남긴다. 큐레이션 값(카테고리·금액·지원대상)은 건드리지 않는다 — "이 행을
+사람이 봐야 하나"만 판정한다. 매 수집마다 다시 판정해 덮어쓴다.
+
+점검 항목: `CATEGORY_MISSING`, `CASH_WITHOUT_AMOUNT`, `AMOUNT_SUSPICIOUS`(월>1천만·총>2억·<1만),
+`TARGET_MISSING`, `TARGET_LOOKS_LIKE_NOTICE`(`※` 시작 또는 앞머리 접수기간류 단어), `CHANNEL_MISSING`.
+탐지 규칙이라 오탐이 좀 있어도 된다 — 사람이 큐에서 확인하니까.
+
+`NEEDS_REVIEW` 행은 공개 API(검색 목록·상세)에서 뺀다 — 검색은 `WelfareProgramRepository#search`
+`where` 절에서, 상세는 `WelfareProgramService`가 `isPubliclyVisible()`로 걸러 404. 규칙은
+`WelfareProgram#isPubliclyVisible()` 한 곳(검증 전 `null`은 노출, `MANUAL_CURATION`은 항상 노출).
+
+**리뷰 큐 (구현됨):** `GET /internal/welfare/review-queue` (local 프로파일) — `NEEDS_REVIEW`이고
+아직 `source = API_CANDIDATE`인 행 + 걸린 사유 + 문제 필드 현재 값 + `detailLink`(복지로 원본).
+관리자는 DB에서 직접 고친 뒤 `source`를 `MANUAL_CURATION`으로 바꾼다 → 재수집이 큐레이션 필드를
+안 덮고(`applyCollection`/`applyDetail`이 `collected_at`·원문 XML만 갱신), 큐에서 빠지고, 검증에
+걸려도 공개 API엔 노출된다. 되돌리려면 `API_CANDIDATE`로. 쓰기 엔드포인트·강제 재보강은 아직.
 
 - **신선도 / 종료 판정은 이번 범위 아님.** 지자체 `last_mod_ymd`는 저장만 (후속에서 활용).
-- **LLM 파싱은 이번 범위 아님.**
 
 ---
 
@@ -221,8 +252,9 @@ com.dday.domain.welfare
 
 ## 8. 빠지는 것 (후속)
 
-- **상세보강 스텝** — REVIEW_QUEUE 건 상세 API 호출, `crtrYr`(중앙)·`enfcBgngYmd`/`enfcEndYmd`(지자체)·
-  `raw_detail_xml` 저장, 상세 텍스트로 Rule 1 재검사 → STRONG_YOUTH 승격.
+- **상세 텍스트로 Rule 1 재검사 → STRONG_YOUTH 승격** — Step 3가 상세는 부르지만 지금은
+  금액 추출만 한다. 청년 재판정은 아직.
+- **LLM 금액 추출 / 추출 신뢰도 낮은 건 관리자 큐로** — matching-spec §6.3.
 - 신선도 / 종료 감지 — 중앙 diff, 지자체 `last_mod_ymd`·`enfc_end_ymd` 활용.
 - 지자체 2차 수집 — `searchWrd=보호종료`로 "보호종료아동" 표기 제도까지 (NOTES §11-2).
 - `region_code` 행정표준코드 정규화 (지금은 `ctpv_nm`/`sgg_nm` 문자열만).

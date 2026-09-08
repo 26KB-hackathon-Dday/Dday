@@ -2,6 +2,7 @@ package com.dday.domain.welfare.client;
 
 import com.dday.domain.welfare.client.dto.LcgvWelfareListItem;
 import com.dday.domain.welfare.client.dto.LcgvWelfareListResponse;
+import com.dday.domain.welfare.client.dto.WelfareDetailResponse;
 import com.dday.domain.welfare.client.dto.WelfareListItem;
 import com.dday.domain.welfare.client.dto.WelfareListResponse;
 import jakarta.xml.bind.JAXBContext;
@@ -26,6 +27,7 @@ public final class WelfareXml {
 
     private static final JAXBContext CENTRAL_CONTEXT = createContext(WelfareListResponse.class, WelfareListItem.class);
     private static final JAXBContext LOCAL_CONTEXT = createContext(LcgvWelfareListResponse.class, LcgvWelfareListItem.class);
+    private static final JAXBContext DETAIL_CONTEXT = createContext(WelfareDetailResponse.class);
 
     private WelfareXml() {
     }
@@ -44,6 +46,11 @@ public final class WelfareXml {
 
     public static LcgvWelfareListResponse readLcgvListResponse(String xml) {
         return read(LOCAL_CONTEXT, xml, LcgvWelfareListResponse.class);
+    }
+
+    /** 상세조회 응답. 중앙·지자체 공용(루트 {@code <wantedDtl>}). */
+    public static WelfareDetailResponse readDetailResponse(String xml) {
+        return read(DETAIL_CONTEXT, xml, WelfareDetailResponse.class);
     }
 
     /** 항목 하나를 {@code <servList>} XML로 되돌린다. 원본 보존용. 실패해도 수집은 막지 않는다. */
