@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppIcon from '@/components/AppIcon.vue'
+import { formatWon } from '@/utils/format'
 defineProps<{ title: string; budget: number }>()
-const formatWon = (value: number) => `${Math.round(value).toLocaleString('ko-KR')}원`
 </script>
 <template>
   <article class="card">
