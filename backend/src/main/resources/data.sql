@@ -134,7 +134,10 @@ ON DUPLICATE KEY UPDATE
 -- 시드로 만든 계정과 가입으로 만든 계정의 화면이 달라진다.
 -- pocket_id를 박지 않고 INSERT IGNORE로 넣는다. uk_user_pocket_type(user_id, pocket_type)이
 -- 중복을 막아주므로 멱등하고, 고정 id가 실제 회원의 포켓과 부딪힐 일도 없다.
-INSERT IGNORE INTO pocket (user_id, pocket_type, pocket_name, created_at)
+-- IGNORE가 아니라 ON DUPLICATE KEY UPDATE를 쓴다. IGNORE로 두면 이미 들어간 행을 절대
+-- 고치지 못해서, 한 번 잘못 들어간 이름(인코딩 사고 등)이 영영 남는다.
+-- 중복 판정은 uk_user_pocket_type(user_id, pocket_type)이 한다.
+INSERT INTO pocket (user_id, pocket_type, pocket_name, created_at)
 SELECT u.user_id, t.pocket_type, t.pocket_name, '2026-09-01 00:00:00'
 FROM users u
 JOIN (
@@ -143,7 +146,8 @@ JOIN (
     UNION ALL SELECT 'EMERGENCY',    '비상금 포켓'
     UNION ALL SELECT 'FUTURE_ASSET', '미래자산 포켓'
 ) t
-WHERE u.email = 'user1@test.com';
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE pocket_name = VALUES(pocket_name);
 
 -- ── 지원제도 (welfare_program) ────────────────────────────────────────────
 -- 시드를 두지 않는다. welfare_program은 수집 배치(POST /internal/welfare/collect)가

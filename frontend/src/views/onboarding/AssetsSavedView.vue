@@ -32,11 +32,8 @@ onMounted(async () => {
     const result = await mydataApi.connect({
       institutionIds: bankInstitutions.map((i) => i.institutionId),
     })
-    accounts.value = result.accounts.map((account) => ({
-      ...account,
-      institutionName:
-        bankInstitutions.find((i) => i.institutionId === account.institutionId)?.name ?? '',
-    }))
+    // 기관 이름은 서버가 내려준 값을 그대로 쓴다. 프론트에서 코드를 이름으로 바꾸지 않는다.
+    accounts.value = result.accounts
     onboarding.totalSaved = result.accounts.reduce((sum, account) => sum + account.balance, 0)
   } catch (e) {
     errorMessage.value = e instanceof ApiError ? e.message : '마이데이터 연동 정보를 불러오지 못했어요.'
