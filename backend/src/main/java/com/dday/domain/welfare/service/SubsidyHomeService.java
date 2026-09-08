@@ -49,10 +49,8 @@ public class SubsidyHomeService {
 
     @Transactional
     public SubsidyHomeResponse getHome(Long userId) {
-        // 판별 이력이 없으면 (첫 조회·온보딩 직후) 먼저 평가한다.
-        if (!eligibilityRepository.existsByIdUserId(userId)) {
-            eligibilityService.evaluate(userId);
-        }
+        // 첫 조회거나, 마지막 판별 뒤 프로필이 바뀌었으면(보호종료일 입력 등) 먼저 재평가한다.
+        eligibilityService.evaluateIfStale(userId);
 
         List<UserProgramEligibility> eligible = eligibilityRepository.findByIdUserIdAndEligibleTrue(userId);
         List<String> programIds = eligible.stream().map(e -> e.getId().getProgramId()).toList();

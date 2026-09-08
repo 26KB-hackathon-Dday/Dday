@@ -69,4 +69,11 @@ public interface WelfareProgramRepository extends JpaRepository<WelfareProgram, 
 
     /** 홈 집계 — 자격 있는 제도들을 servId(=programId)로 한 번에. */
     List<WelfareProgram> findByServIdIn(Collection<String> servIds);
+
+    /**
+     * 카탈로그가 마지막으로 바뀐 시각. 자격 재판별 stale 판단에 쓴다 — 이 시각이 유저의
+     * 마지막 판별보다 뒤면(수집·큐레이션이 돎) 다시 판별한다. 테이블이 비면 {@code null}.
+     */
+    @Query("select max(p.updatedAt) from WelfareProgram p")
+    LocalDateTime findMaxUpdatedAt();
 }
