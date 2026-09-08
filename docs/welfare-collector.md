@@ -62,6 +62,10 @@ Processor·Writer·판정 룰을 그대로 공유한다. 필드 대조는 NOTES.
 집계를 잡 로그로 남긴다. 큐레이션 값(카테고리·금액·지원대상)은 건드리지 않는다 — "이 행을
 사람이 봐야 하나"만 판정한다. 매 수집마다 다시 판정해 덮어쓴다.
 
+예외로 `protection_phase`만 여기서 다시 파생한다(`ProtectionPhaseClassifier`) — 분류기 키워드가
+좋아졌을 때 상세 재호출 없이 기존 행에도 반영되도록. 시드 행(상세보강 안 탄 것)도 같이 채워진다.
+`MANUAL_CURATION` 행은 건너뛴다.
+
 점검 항목: `CATEGORY_MISSING`, `CASH_WITHOUT_AMOUNT`, `AMOUNT_SUSPICIOUS`(월>1천만·총>2억·<1만),
 `TARGET_MISSING`, `TARGET_LOOKS_LIKE_NOTICE`(`※` 시작 또는 앞머리 접수기간류 단어), `CHANNEL_MISSING`.
 탐지 규칙이라 오탐이 좀 있어도 된다 — 사람이 큐에서 확인하니까.

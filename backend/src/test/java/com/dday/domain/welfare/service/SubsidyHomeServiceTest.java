@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,18 +45,16 @@ class SubsidyHomeServiceTest {
     }
 
     @Test
-    void 판별_이력이_없으면_먼저_평가한다() {
-        given(eligibilityRepository.existsByIdUserId(USER_ID)).willReturn(false);
+    void 홈_조회는_먼저_stale_재평가를_트리거한다() {
         given(eligibilityRepository.findByIdUserIdAndEligibleTrue(USER_ID)).willReturn(List.of());
 
         service.getHome(USER_ID);
 
-        org.mockito.Mockito.verify(eligibilityService).evaluate(USER_ID);
+        org.mockito.Mockito.verify(eligibilityService).evaluateIfStale(USER_ID);
     }
 
     @Test
     void 수급상태로_세_버킷으로_나누고_월환산_합계를_낸다() {
-        given(eligibilityRepository.existsByIdUserId(USER_ID)).willReturn(true);
         given(eligibilityRepository.findByIdUserIdAndEligibleTrue(USER_ID)).willReturn(List.of(
                 eligibility("A"), eligibility("B"), eligibility("C"), eligibility("D")));
         given(welfareProgramRepository.findByServIdIn(any())).willReturn(List.of(
@@ -68,9 +67,12 @@ class SubsidyHomeServiceTest {
                 status("B", ReceivingStatus.NOT_RECEIVING),
                 status("C", ReceivingStatus.NOT_RECEIVING)));
         // D는 status 행 없음 → 확인 필요
+        LocalDateTime lastEval = LocalDateTime.of(2026, 9, 8, 20, 13);
+        given(eligibilityRepository.findLastEvaluatedAt(USER_ID)).willReturn(lastEval);
 
         SubsidyHomeResponse res = service.getHome(USER_ID);
 
+        assertThat(res.getSummary().getEvaluatedAt()).isEqualTo(lastEval);
         assertThat(res.getSummary().getConfirmed()).isEqualTo(4);
         assertThat(res.getReceivingList()).extracting(SubsidyHomeResponse.SubsidyCard::getProgramId)
                 .containsExactly("A");
@@ -84,7 +86,6 @@ class SubsidyHomeServiceTest {
 
     @Test
     void 자격_있는_제도가_없으면_전부_빈_목록() {
-        given(eligibilityRepository.existsByIdUserId(USER_ID)).willReturn(true);
         given(eligibilityRepository.findByIdUserIdAndEligibleTrue(USER_ID)).willReturn(List.of());
 
         SubsidyHomeResponse res = service.getHome(USER_ID);

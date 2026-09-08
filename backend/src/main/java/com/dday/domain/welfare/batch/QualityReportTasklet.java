@@ -21,6 +21,9 @@ import java.util.List;
  *
  * <p>큐레이션 값(카테고리·금액·지원대상 등)은 그대로 두고, "이 행을 사람이 봐야 하나"만
  * 판정해 박는다. 리뷰 큐 조회(다음 단계)는 이 컬럼을 읽는다.
+ *
+ * <p>여기서 {@code protection_phase}만 예외로 다시 파생한다 — 분류기 키워드가 좋아졌을 때
+ * 재수집(상세 재호출) 없이 기존 행에도 반영되도록. 상세보강을 안 탄 시드 행도 같이 채워진다.
  */
 @Slf4j
 @Component
@@ -34,6 +37,7 @@ public class QualityReportTasklet implements Tasklet {
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) {
         List<WelfareProgram> all = repository.findAll();
         for (WelfareProgram program : all) {
+            program.refreshProtectionPhase();
             List<WelfareIssue> issues = validator.validate(program);
             program.applyCurationReview(issues);
         }
