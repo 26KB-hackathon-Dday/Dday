@@ -34,7 +34,7 @@ const isSelected = (id: string) => signup.selectedInstitutions.includes(id)
 const canSubmit = computed(() => signup.selectedInstitutions.length > 0)
 
 function skip() {
-  if (!window.confirm('금융기관 연결을 건너뛸까요? 나중에 마이페이지에서 다시 연결할 수 있어요.')) return
+  if (!window.confirm('금융기관 연결을 건너뛸까요? 나중에 신용 관리에서 다시 연결할 수 있어요.')) return
   signup.selectedInstitutions = []
   router.push('/signup/done')
 }
