@@ -159,7 +159,11 @@ Error
 - 🔜 `eligibility_criteria` / `application_channel` / `required_documents` / `detection_params`
   → **JSON 컬럼**. 지금은 `requiredDocuments`(`|` 구분 문자열), `applyChannel*`(flat 3컬럼).
 - 🔜 `detection_strategy` enum(RECURRING_DEPOSIT …), `verified_at`, `source_synced_at`,
-  `region_code`, `agency` 컬럼 추가.
+  `agency` 컬럼 추가.
+- 부분 ✅ `region_code` VARCHAR(10). `RegionCodeResolver`가 `ctpvNm`/`sggNm`에서 파생 —
+  **v1은 시도 2자리만**(`11`=서울). CENTRAL/전국은 `null`. 시도명을 못 풀면 `null` +
+  `WelfareIssue.REGION_UNRESOLVED`로 리뷰 큐. 시군구 5자리 정밀도·유저 거주지 대조는
+  자격 매칭 붙일 때. (2026-07-01 광주+전남 → 전남광주통합특별시 29)
 - 부분 ✅ enum 값 정리: `source`에 `MANUAL_CURATION` 추가(리뷰 큐 동결용) 완료. 나머지 🔜 —
   `support_type`에서 `LOAN` 제거, `support_amount_type`에서 `SEMIANNUAL` 제거,
   `support_amount` DECIMAL → BIGINT, `name` NOT NULL.
@@ -219,6 +223,7 @@ Error
 | `requiredDocuments` | 상세에 구조화 필드 없음 (`applmetList`=신청절차 텍스트만) | LLM 필요 | 🔜 |
 | `applicationDeadline` | 목록·중앙상세에 없음. 텍스트에만 | 🔜 |
 | `protectionPhase` | 지원대상·제도명 키워드 — "자립준비청년"·"보호종료" → `POST_TERMINATION`, "보호대상아동"·"보호 중인 아동" → `PRE_TERMINATION`, 그 외 `null` | `ProtectionPhaseClassifier`. 상세보강 직후 + Step 4가 전 행 재파생. LLM 분류로 가는 다리 | ✅ (키워드 v1) |
+| `regionCode` | 목록 API `ctpvNm`(시도명) → 법정동 2자리 코드. `sggNm`은 v1에서 미사용 | `RegionCodeResolver` (시도명↔코드 표 20행). 못 풀면 `null` + `REGION_UNRESOLVED`. 수집 시 + Step 4 재파생 | ✅ (시도 단위 v1) |
 
 정규화 카테고리 값: `주거` · `생활` · `자산형성` · `기타` (프론트 칩 = 전체 + 이 4개).
 자립준비청년 대상 제도는 대부분 "생활 유지"(수당·학자금·취업)라 `생활`이 큰 통이 된다.

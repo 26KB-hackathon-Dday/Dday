@@ -3,6 +3,7 @@ package com.dday.domain.welfare.entity;
 import com.dday.domain.welfare.client.dto.WelfareListItem;
 import com.dday.domain.welfare.collector.Classification;
 import com.dday.domain.welfare.collector.curation.ProtectionPhaseClassifier;
+import com.dday.domain.welfare.collector.curation.RegionCodeResolver;
 import com.dday.domain.welfare.collector.curation.SupportCycleMapper;
 import com.dday.domain.welfare.collector.curation.SupportTypeMapper;
 import com.dday.domain.welfare.collector.curation.WelfareCategoryClassifier;
@@ -80,6 +81,14 @@ public class WelfareProgram {
     /** 시군구명 (예: {@code 용산구}). 광역 사업·CENTRAL은 {@code null}. */
     @Column(length = 30)
     private String sggNm;
+
+    /**
+     * 거주지 매칭용 법정동 코드. {@link RegionCodeResolver}가 {@code ctpvNm}/{@code sggNm}에서 파생한다.
+     * v1은 시도 2자리({@code 11}=서울). CENTRAL/전국은 {@code null}. 시도명을 못 풀면 {@code null}이고
+     * {@link com.dday.domain.welfare.collector.validation.WelfareIssue#REGION_UNRESOLVED}로 리뷰 큐에 오른다.
+     */
+    @Column(length = 10)
+    private String regionCode;
 
     /** LOCAL 사업담당부서 전체 문자열. CENTRAL은 {@code jurMnofNm}+{@code jurOrgNm}을 쓴다. */
     @Column(length = 255)
@@ -314,6 +323,19 @@ public class WelfareProgram {
         this.category = WelfareCategoryClassifier.classify(this.servNm, this.intrsThemaArray);
         this.supportAmountType = SupportCycleMapper.toAmountType(this.sprtCycNm);
         this.supportType = SupportTypeMapper.from(this.srvPvsnNm);
+        refreshRegionCode();
+    }
+
+    /**
+     * 지역명({@code ctpvNm}/{@code sggNm})에서 법정동 코드를 다시 파생한다. 수집 시 +
+     * 매 수집 잡의 품질 스텝이 전 행에 호출한다 — 코드표가 늘면 기존 행도 따라오도록.
+     * {@link ProgramSource#MANUAL_CURATION} 행은 관리자가 값을 소유하므로 건드리지 않는다.
+     */
+    public void refreshRegionCode() {
+        if (this.source == ProgramSource.MANUAL_CURATION) {
+            return;
+        }
+        this.regionCode = RegionCodeResolver.resolve(this.ctpvNm, this.sggNm);
     }
 
     /**

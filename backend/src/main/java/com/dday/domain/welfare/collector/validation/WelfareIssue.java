@@ -14,7 +14,8 @@ public enum WelfareIssue {
     AMOUNT_SUSPICIOUS("지원 금액이 비현실적 (월 1천만원 초과 / 총 2억 초과 / 1만원 미만)"),
     TARGET_MISSING("지원대상 서술 없음 (상세 API에 tgtrDtlCn·sprtTrgtCn 모두 비어 있음)"),
     TARGET_LOOKS_LIKE_NOTICE("지원대상이 자격요건이 아니라 안내문·공고문 형태"),
-    CHANNEL_MISSING("신청채널 정보 전무 (이름·URL·전화 모두 없음)");
+    CHANNEL_MISSING("신청채널 정보 전무 (이름·URL·전화 모두 없음)"),
+    REGION_UNRESOLVED("LOCAL 제도인데 시도명을 법정동 코드로 못 풀었다 (코드표에 없는 이름)");
 
     private final String description;
 

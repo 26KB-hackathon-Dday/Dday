@@ -127,6 +127,29 @@ class WelfareProgramValidatorTest {
         assertThat(validator.validate(p)).contains(WelfareIssue.CHANNEL_MISSING);
     }
 
+    @Test
+    void 시도명이_있는데_코드가_없으면_REGION_UNRESOLVED() {
+        WelfareProgram p = program(Map.of(
+                "category", "생활", "targetDescription", "청년", "applyChannelPhone", "02-0000",
+                "ctpvNm", "전남광주통합특별시")); // regionCode는 안 채움 (resolver가 못 풀었다고 가정)
+        assertThat(validator.validate(p)).contains(WelfareIssue.REGION_UNRESOLVED);
+    }
+
+    @Test
+    void 시도_코드가_풀렸으면_안_잡는다() {
+        WelfareProgram p = program(Map.of(
+                "category", "생활", "targetDescription", "청년", "applyChannelPhone", "02-0000",
+                "ctpvNm", "서울특별시", "regionCode", "11"));
+        assertThat(validator.validate(p)).doesNotContain(WelfareIssue.REGION_UNRESOLVED);
+    }
+
+    @Test
+    void CENTRAL은_지역이_없어도_안_잡는다() {
+        WelfareProgram p = program(Map.of(
+                "category", "생활", "targetDescription", "청년", "applyChannelPhone", "129")); // ctpvNm null
+        assertThat(validator.validate(p)).doesNotContain(WelfareIssue.REGION_UNRESOLVED);
+    }
+
     private static WelfareProgram program(Map<String, Object> fields) {
         WelfareProgram p = BeanUtils.instantiateClass(WelfareProgram.class);
         ReflectionTestUtils.setField(p, "servId", "WLF_TEST");
