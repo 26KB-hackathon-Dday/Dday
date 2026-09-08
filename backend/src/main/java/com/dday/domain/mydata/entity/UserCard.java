@@ -84,8 +84,12 @@ public class UserCard {
         this.active = true;
     }
 
-    public void sync(LocalDateTime syncedAt) {
+    /** 카드 표시 정보를 갱신하되 사용자가 정한 선택 여부는 유지한다. */
+    public void sync(String cardName, CardType cardType, LocalDateTime syncedAt) {
+        this.cardName = cardName;
+        this.cardType = cardType;
         this.lastSyncedAt = syncedAt;
+        this.active = true;
     }
 
     public void select(boolean selected) {

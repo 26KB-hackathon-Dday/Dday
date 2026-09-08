@@ -32,6 +32,14 @@ import java.util.List;
  */
 public interface FinancialTransactionRepository extends JpaRepository<FinancialTransaction, Long> {
 
+    /** 한 계좌에서 이미 수집한 외부 거래 ID를 한 번에 읽어 건별 존재 확인 쿼리를 피한다. */
+    List<FinancialTransaction> findAllByAccountAccountIdAndSourceTransactionIdIn(
+            Long accountId, List<String> sourceTransactionIds);
+
+    /** 한 카드에서 이미 수집한 외부 거래 ID를 한 번에 읽어 중복 저장을 막는다. */
+    List<FinancialTransaction> findAllByCardCardIdAndSourceTransactionIdIn(
+            Long cardId, List<String> sourceTransactionIds);
+
     /**
      * 기간별 거래내역 한 페이지. 목록 화면이 쓰는 기본 조회다.
      *

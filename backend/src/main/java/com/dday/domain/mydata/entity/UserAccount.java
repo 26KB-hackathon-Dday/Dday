@@ -104,11 +104,21 @@ public class UserAccount {
         this.active = true;
     }
 
-    /** 재동기화. 잔액만 갱신하고 사용자가 고른 {@code selected}는 건드리지 않는다. */
-    public void sync(Long balance, Long availableBalance, LocalDateTime syncedAt) {
+    /**
+     * 외부 계좌의 최신 표시 정보와 잔액을 반영한다.
+     *
+     * <p>사용자가 정한 {@code selected}는 외부 데이터가 아니므로 절대 덮어쓰지 않는다.
+     * 이전 동기화에서 비활성 처리된 계좌가 다시 응답에 나타나면 활성 상태로 복구한다.
+     */
+    public void sync(String accountName, String productName, AccountType accountType,
+                     Long balance, Long availableBalance, LocalDateTime syncedAt) {
+        this.accountName = accountName;
+        this.productName = productName;
+        this.accountType = accountType;
         this.balance = balance;
         this.availableBalance = availableBalance;
         this.lastSyncedAt = syncedAt;
+        this.active = true;
     }
 
     public void select(boolean selected) {
