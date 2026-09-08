@@ -17,6 +17,11 @@ on:
   # 수동 실행에는 경로 필터가 걸리지 않는다.
   # 코드 변경 없이 재배포하거나 배선만 확인할 때의 탈출구다.
   workflow_dispatch:
+    inputs:
+      logs_only:
+        description: '배포하지 않고 운영 로그만 가져온다'
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -32,6 +37,7 @@ env:
 jobs:
   # ── 1. 컴파일 + 테스트 ────────────────────────────────────────────────────
   build:
+    if: ${{ !inputs.logs_only }}
     runs-on: ubuntu-latest
 
     # backend/.env.sample과 동일한 로컬 개발 전용 값이다 (운영 비밀값 아님).
@@ -80,7 +86,7 @@ jobs:
   # ── 2. 도커 이미지 빌드 + GHCR push ───────────────────────────────────────
   image:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && !inputs.logs_only
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -115,9 +121,29 @@ jobs:
   # ── 3. EC2 배포 ───────────────────────────────────────────────────────────
   # 저장소 Variable DEPLOY_ENABLED=true 일 때만 돈다.
   # EC2를 아직 안 만들었으면 이 잡은 통째로 건너뛴다 — main push가 빨갛게 뜨지 않는다.
+  # 배포가 아니라 "지금 서버가 왜 이러는지"를 볼 때 쓴다. 500이 나는데 EC2 SSH 키를 가진
+  # 사람이 없으면 아무도 원인을 못 보므로, Actions에서 로그만 떠올 수 있게 열어둔다.
+  #   gh workflow run ci.yml -f logs_only=true
+  logs:
+    if: ${{ inputs.logs_only }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump backend logs
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.EC2_USER }}/dday
+            echo "===== 컨테이너 상태 ====="
+            docker compose -f docker-compose.prod.yml ps -a
+            echo "===== backend 로그 (최근 300줄) ====="
+            docker compose -f docker-compose.prod.yml logs backend --tail 300 --no-color
+
   deploy:
     needs: image
-    if: vars.DEPLOY_ENABLED == 'true'
+    if: ${{ vars.DEPLOY_ENABLED == 'true' && !inputs.logs_only }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
