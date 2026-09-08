@@ -315,6 +315,13 @@ const router = createRouter({
       component: () => import('@/views/credit/ExpectedRateView.vue'),
       meta: { title: '예상 금리', requiresAuth: true },
     },
+    {
+      // 하단 탭엔 없고 상단바 계정 아이콘으로만 들어온다.
+      path: '/mypage',
+      name: 'mypage',
+      component: () => import('@/views/MyPageView.vue'),
+      meta: { title: '마이페이지', requiresAuth: true },
+    },
 
     {
       path: '/pockets/unexpected-income/allocate',
