@@ -184,6 +184,14 @@ public class WelfareProgram {
     @Column(length = 1000)
     private String targetDescription;
 
+    /**
+     * 보호 종료 전(아동)·후(자립준비청년) 구분 (명세서 §2.1 {@code protectionPhase}).
+     * {@code null}이면 미분류 — 수집 배치가 채우는 로직은 후속.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ProtectionPhase protectionPhase;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private SupportType supportType;
