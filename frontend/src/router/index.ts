@@ -19,6 +19,24 @@ import MydataDoneView from '@/views/signup/MydataDoneView.vue'
 
 import GrantMatchHomeView from '@/views/welfare/GrantMatchHomeView.vue'
 
+import OnboardingIntroView from '@/views/onboarding/OnboardingIntroView.vue'
+import ProtectionDateView from '@/views/onboarding/ProtectionDateView.vue'
+import ProtectionDateConfirmView from '@/views/onboarding/ProtectionDateConfirmView.vue'
+import ProtectionDateCheckpointView from '@/views/onboarding/ProtectionDateCheckpointView.vue'
+import RegionView from '@/views/onboarding/RegionView.vue'
+import RegionDistrictView from '@/views/onboarding/RegionDistrictView.vue'
+import RegionConfirmView from '@/views/onboarding/RegionConfirmView.vue'
+import HousingTypeView from '@/views/onboarding/HousingTypeView.vue'
+import HousingCostView from '@/views/onboarding/HousingCostView.vue'
+import HousingCheckpointView from '@/views/onboarding/HousingCheckpointView.vue'
+import IncomeListView from '@/views/onboarding/IncomeListView.vue'
+import IncomeNewView from '@/views/onboarding/IncomeNewView.vue'
+import AssetsSettlementView from '@/views/onboarding/AssetsSettlementView.vue'
+import AssetsSavedView from '@/views/onboarding/AssetsSavedView.vue'
+import ReviewView from '@/views/onboarding/ReviewView.vue'
+import ProcessingView from '@/views/onboarding/ProcessingView.vue'
+import OnboardingDoneView from '@/views/onboarding/OnboardingDoneView.vue'
+
 declare module 'vue-router' {
   interface RouteMeta {
     /**
@@ -128,6 +146,111 @@ const router = createRouter({
       name: 'mydata-done',
       component: MydataDoneView,
       meta: { hideChrome: true },
+    },
+
+    // 온보딩(자립 계획 생성) — 회원가입 완료 또는 onboardingCompleted=false 로그인 시 가드가 여기로 보낸다.
+    { path: '/onboarding', redirect: '/onboarding/intro' },
+    {
+      path: '/onboarding/intro',
+      name: 'onboarding-intro',
+      component: OnboardingIntroView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/protection-date',
+      name: 'onboarding-protection-date',
+      component: ProtectionDateView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/protection-date/confirm',
+      name: 'onboarding-protection-date-confirm',
+      component: ProtectionDateConfirmView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/protection-date/checkpoint',
+      name: 'onboarding-protection-date-checkpoint',
+      component: ProtectionDateCheckpointView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/region',
+      name: 'onboarding-region',
+      component: RegionView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/region/district',
+      name: 'onboarding-region-district',
+      component: RegionDistrictView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/region/confirm',
+      name: 'onboarding-region-confirm',
+      component: RegionConfirmView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/housing-type',
+      name: 'onboarding-housing-type',
+      component: HousingTypeView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/housing-cost',
+      name: 'onboarding-housing-cost',
+      component: HousingCostView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/housing-checkpoint',
+      name: 'onboarding-housing-checkpoint',
+      component: HousingCheckpointView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/income',
+      name: 'onboarding-income',
+      component: IncomeListView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/income/new',
+      name: 'onboarding-income-new',
+      component: IncomeNewView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/assets/settlement',
+      name: 'onboarding-assets-settlement',
+      component: AssetsSettlementView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/assets/saved',
+      name: 'onboarding-assets-saved',
+      component: AssetsSavedView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/review',
+      name: 'onboarding-review',
+      component: ReviewView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/processing',
+      name: 'onboarding-processing',
+      component: ProcessingView,
+      meta: { hideChrome: true, requiresAuth: true },
+    },
+    {
+      path: '/onboarding/done',
+      name: 'onboarding-done',
+      component: OnboardingDoneView,
+      meta: { hideChrome: true, requiresAuth: true },
     },
 
     // ── 앱 화면 (로그인 후) — 하단 탭 순서와 같다 ─────────────────────────
@@ -246,6 +369,17 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !isLoggedIn) {
     // 로그인 화면이 아니라 랜딩으로 보낸다. 처음 온 사용자에게는 가입 경로가 먼저 보여야 한다.
     return { name: 'landing' }
+  }
+
+  // 로그인은 했지만 온보딩(자립 계획 생성)을 안 끝낸 사용자는 온보딩 화면으로 보낸다.
+  // 온보딩 화면 자체는 무한 리다이렉트를 막기 위해 제외한다.
+  if (
+    to.meta.requiresAuth &&
+    isLoggedIn &&
+    localStorage.getItem('onboardingCompleted') !== 'true' &&
+    !to.path.startsWith('/onboarding')
+  ) {
+    return { name: 'onboarding-intro' }
   }
 })
 

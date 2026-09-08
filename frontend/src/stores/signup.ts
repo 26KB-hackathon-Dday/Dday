@@ -104,7 +104,10 @@ export const useSignupStore = defineStore('signup', () => {
         agreedPrivacy: agreedPrivacy.value,
         agreedLocation: agreedLocation.value,
       })
-      useAuthStore().setTokens(result)
+      const auth = useAuthStore()
+      auth.setTokens(result)
+      // 갓 가입한 계정은 온보딩이 안 끝난 상태다. 같은 기기의 이전 계정 값이 남아있지 않도록 명시적으로 false로 둔다.
+      auth.setOnboardingCompleted(false)
       return result
     } finally {
       submitting.value = false

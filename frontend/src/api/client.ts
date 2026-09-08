@@ -2,6 +2,8 @@ import { ApiError, type ApiResponse } from './types'
 
 export const ACCESS_TOKEN_KEY = 'accessToken'
 export const REFRESH_TOKEN_KEY = 'refreshToken'
+/** 로그인/가입 응답의 `onboardingCompleted`를 그대로 저장해둔 값. 라우터 가드가 읽는다. */
+export const ONBOARDING_COMPLETED_KEY = 'onboardingCompleted'
 
 /**
  * 백엔드 호출 래퍼. 봉투를 벗겨서 `data`만 돌려준다.
