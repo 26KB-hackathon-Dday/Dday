@@ -11,17 +11,20 @@ import {
   POCKET_LABEL,
   pocketApi,
   type PageResponse,
+  type PocketCategoryUsageItem as PocketCategoryUsageData,
+  type PocketCategoryUsageResponse,
   type PocketMonthlySummary,
   type PocketTransaction,
   type PocketType,
 } from '@/api/pocket'
 import { ApiError } from '@/api/types'
-import { ESSENTIAL_CATEGORY_USAGE_MOCK } from '@/data/essentialPocketDetailMock'
+import { formatWon } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
 const summary = ref<PocketMonthlySummary | null>(null)
 const transactions = ref<PocketTransaction[]>([])
+const categoryUsage = ref<PocketCategoryUsageResponse | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const supportedTypes: PocketType[] = ['ESSENTIAL', 'FREE', 'EMERGENCY']
@@ -54,6 +57,20 @@ const spendingCategories = computed<SpendingCategory[]>(() => {
   })
   return [...totals].map(([name, amount]) => ({ name, amount }))
 })
+const essentialCategories = computed<PocketCategoryUsageData[]>(() => {
+  const response = categoryUsage.value
+  if (!response) return []
+  const categories = [...response.categories]
+  if (response.unclassifiedUsedAmount > 0) {
+    categories.push({
+      categoryId: -1,
+      categoryCode: 'UNCLASSIFIED',
+      categoryName: '미분류',
+      usedAmount: response.unclassifiedUsedAmount,
+    })
+  }
+  return categories
+})
 
 async function findAllTransactions(type: PocketType) {
   const first = await pocketApi.findTransactions(type, currentMonth.value, 0, 100)
@@ -77,13 +94,17 @@ async function load() {
   try {
     const selectedType = pocketType.value
     // 필수·자유·비상금은 같은 포켓 거래 API를 사용한다.
-    const [monthly, allTransactions] = await Promise.all([
+    const [monthly, allTransactions, actualCategoryUsage] = await Promise.all([
       pocketApi.findMonthly(currentMonth.value),
       findAllTransactions(selectedType),
+      selectedType === 'ESSENTIAL'
+        ? pocketApi.findCategoryUsage(selectedType, currentMonth.value)
+        : Promise.resolve(null),
     ])
     summary.value = monthly.pockets.find((pocket) => pocket.pocketType === selectedType) ?? null
     if (!summary.value) throw new Error('POCKET_NOT_FOUND')
     transactions.value = allTransactions
+    categoryUsage.value = actualCategoryUsage
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : '포켓 정보를 불러오지 못했습니다.'
   } finally {
@@ -116,15 +137,18 @@ function openBudgetReadjust() {
       <section v-else-if="!isEmergency" class="section">
         <header class="section__header">
           <h2>카테고리별 사용 현황</h2>
-          <small>데이터 연동 예정</small>
+          <small v-if="categoryUsage">총 {{ formatWon(categoryUsage.totalUsedAmount) }}</small>
         </header>
-        <ul class="category-card" aria-label="화면 확인용 카테고리 사용 현황 예시">
+        <ul v-if="essentialCategories.length" class="category-card">
           <PocketCategoryUsageItem
-            v-for="category in ESSENTIAL_CATEGORY_USAGE_MOCK"
-            :key="category.id"
-            v-bind="category"
+            v-for="category in essentialCategories"
+            :key="category.categoryId"
+            :name="category.categoryName"
+            :category-code="category.categoryCode"
+            :used-amount="category.usedAmount"
           />
         </ul>
+        <p v-else class="empty">표시할 카테고리가 없습니다.</p>
       </section>
       <section class="section section--transactions">
         <header class="section__header">

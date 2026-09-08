@@ -68,6 +68,21 @@ export interface PageResponse<T> {
   last: boolean
 }
 
+export interface PocketCategoryUsageItem {
+  categoryId: number
+  categoryCode: string
+  categoryName: string
+  usedAmount: number
+}
+
+export interface PocketCategoryUsageResponse {
+  month: string
+  pocketType: PocketType
+  totalUsedAmount: number
+  categories: PocketCategoryUsageItem[]
+  unclassifiedUsedAmount: number
+}
+
 export const pocketApi = {
   initialize: () => api.post<PocketInitializeResponse>('/api/pockets/initialize'),
   findAll: () => api.get<Pocket[]>('/api/pockets'),
@@ -77,5 +92,9 @@ export const pocketApi = {
   findTransactions: (pocketType: PocketType, month: string, page = 0, size = 3) =>
     api.get<PageResponse<PocketTransaction>>(
       `/api/pockets/${pocketType}/transactions?month=${encodeURIComponent(month)}&page=${page}&size=${size}`,
+    ),
+  findCategoryUsage: (pocketType: PocketType, month: string) =>
+    api.get<PocketCategoryUsageResponse>(
+      `/api/pockets/${pocketType}/category-usage?month=${encodeURIComponent(month)}`,
     ),
 }

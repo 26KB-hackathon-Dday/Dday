@@ -2,6 +2,7 @@ package com.dday.domain.pocket.controller;
 
 import com.dday.domain.pocket.dto.response.CategoryListResponse;
 import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
+import com.dday.domain.pocket.dto.response.PocketCategoryUsageResponse;
 import com.dday.domain.pocket.dto.response.PocketResponse;
 import com.dday.domain.pocket.dto.response.TransactionDetailResponse;
 import com.dday.domain.pocket.dto.response.AutoClassificationResponse;
@@ -9,6 +10,7 @@ import com.dday.domain.pocket.dto.response.PocketInitializeResponse;
 import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.pocket.service.CategoryService;
 import com.dday.domain.pocket.service.PocketService;
+import com.dday.domain.pocket.service.PocketCategoryUsageService;
 import com.dday.domain.pocket.service.TransactionQueryService;
 import com.dday.domain.pocket.service.TransactionClassificationService;
 import com.dday.global.exception.GlobalExceptionHandler;
@@ -40,6 +42,8 @@ class PocketQueryControllerTest {
     @Mock
     private PocketService pocketService;
     @Mock
+    private PocketCategoryUsageService pocketCategoryUsageService;
+    @Mock
     private TransactionQueryService transactionQueryService;
     @Mock
     private CategoryService categoryService;
@@ -51,7 +55,8 @@ class PocketQueryControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
-                        new PocketController(pocketService, transactionQueryService),
+                        new PocketController(
+                                pocketService, pocketCategoryUsageService, transactionQueryService),
                         new TransactionController(transactionQueryService, transactionClassificationService),
                         new CategoryController(categoryService))
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -73,6 +78,25 @@ class PocketQueryControllerTest {
                 .andExpect(jsonPath("$.code").value("MONTHLY_POCKETS_FOUND"))
                 .andExpect(jsonPath("$.data.month").value("2026-09"))
                 .andExpect(jsonPath("$.data.totalBudgetAmount").value(1_000_000));
+    }
+
+    @Test
+    void 카테고리별_사용_현황을_인증_사용자와_포켓_유형으로_조회한다() throws Exception {
+        given(pocketCategoryUsageService.findMonthly(1L, PocketType.ESSENTIAL, "2026-09"))
+                .willReturn(PocketCategoryUsageResponse.builder()
+                        .month("2026-09")
+                        .pocketType(PocketType.ESSENTIAL)
+                        .totalUsedAmount(450_000L)
+                        .categories(List.of())
+                        .unclassifiedUsedAmount(0L)
+                        .build());
+
+        mockMvc.perform(get("/api/pockets/ESSENTIAL/category-usage")
+                        .param("month", "2026-09"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("POCKET_CATEGORY_USAGE_FOUND"))
+                .andExpect(jsonPath("$.data.month").value("2026-09"))
+                .andExpect(jsonPath("$.data.totalUsedAmount").value(450_000));
     }
 
     @Test

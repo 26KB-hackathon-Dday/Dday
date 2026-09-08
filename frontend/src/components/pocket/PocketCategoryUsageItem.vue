@@ -1,14 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { formatWon } from '@/utils/format'
 
-defineProps<{
+const props = defineProps<{
   name: string
-  description: string
+  categoryCode: string
   usedAmount: number
-  budgetAmount: number
-  icon: string
 }>()
+
+const icon = computed(() => {
+  if (props.categoryCode === 'HOUSING') return 'home'
+  if (props.categoryCode === 'TELECOM') return 'globe'
+  if (props.categoryCode === 'TRANSPORT') return 'arrow-right-long'
+  if (props.categoryCode === 'MEDICAL') return 'benefit'
+  return 'doc'
+})
 </script>
 
 <template>
@@ -18,11 +25,9 @@ defineProps<{
     </span>
     <span class="category-item__copy">
       <strong>{{ name }}</strong>
-      <small>{{ description }}</small>
     </span>
     <span class="category-item__amount">
       <strong>{{ formatWon(usedAmount) }}</strong>
-      <small>예산 {{ formatWon(budgetAmount) }}</small>
     </span>
   </li>
 </template>
@@ -63,12 +68,6 @@ defineProps<{
   font-size: 13px;
   font-weight: 600;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.category-item__copy small,
-.category-item__amount small {
-  color: var(--c-text-3);
-  font-size: 10px;
   white-space: nowrap;
 }
 .category-item__amount {

@@ -5,10 +5,12 @@ import com.dday.domain.pocket.dto.response.PocketResponse;
 import com.dday.domain.pocket.dto.request.PocketUpdateRequest;
 import com.dday.domain.pocket.dto.response.PocketInitializeResponse;
 import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
+import com.dday.domain.pocket.dto.response.PocketCategoryUsageResponse;
 import com.dday.domain.pocket.dto.response.TransactionListItemResponse;
 import com.dday.domain.mydata.entity.ClassificationStatus;
 import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.pocket.service.PocketService;
+import com.dday.domain.pocket.service.PocketCategoryUsageService;
 import com.dday.domain.pocket.service.TransactionQueryService;
 import com.dday.global.common.dto.ApiResponse;
 import com.dday.global.common.dto.PageResponse;
@@ -32,6 +34,7 @@ import jakarta.validation.Valid;
 public class PocketController {
 
     private final PocketService pocketService;
+    private final PocketCategoryUsageService pocketCategoryUsageService;
     private final TransactionQueryService transactionQueryService;
 
     @Operation(summary = "기본 포켓 초기화", description = """
@@ -74,6 +77,19 @@ public class PocketController {
         return ApiResponse.of(PocketSuccessCode.POCKET_TRANSACTIONS_FOUND,
                 transactionQueryService.findAll(userId, pocketType, month, categoryId,
                         classificationStatus, page, size));
+    }
+
+    @Operation(summary = "포켓 카테고리별 월 사용 현황 조회", description = """
+            필수 또는 자유 포켓의 활성 카테고리와 해당 월 정상 소비 합계를 반환한다.
+            거래가 없는 활성 카테고리도 0원으로 포함하고, 미분류 소비는 별도 합계로 제공한다.
+            """)
+    @GetMapping("/{pocketType}/category-usage")
+    public ResponseEntity<ApiResponse<PocketCategoryUsageResponse>> findCategoryUsage(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable PocketType pocketType,
+            @RequestParam String month) {
+        return ApiResponse.of(PocketSuccessCode.POCKET_CATEGORY_USAGE_FOUND,
+                pocketCategoryUsageService.findMonthly(userId, pocketType, month));
     }
 
     @Operation(summary = "내 포켓 목록 조회", description = """
