@@ -1,6 +1,7 @@
 package com.dday.domain.mydata.repository;
 
 import com.dday.domain.mydata.entity.FinancialTransaction;
+import com.dday.domain.mydata.entity.ClassificationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.List;
 
 /**
  * 거래내역 조회.
@@ -114,4 +116,87 @@ public interface FinancialTransactionRepository extends JpaRepository<FinancialT
             where t.financialTransactionId = :id
             """)
     Optional<FinancialTransaction> findDetailById(@Param("id") Long id);
+
+    /**
+     * 포켓 소비 화면의 필터형 목록 조회다.
+     *
+     * <p>포켓 ID와 포켓 소유자를 함께 검사하고, 카테고리와 분류 상태는 값이 전달됐을 때만
+     * 조건에 포함한다. 목록 쿼리의 fetch join과 별도로 단순한 count 쿼리를 제공해 페이징 총합을
+     * 계산할 때 불필요한 연관 로딩을 피한다.
+     */
+    @Query(value = """
+            select t
+            from FinancialTransaction t
+            left join fetch t.account a
+            left join fetch t.card c
+            left join fetch t.category category
+            join fetch t.pocket pocket
+            where pocket.pocketId = :pocketId
+              and pocket.user.userId = :userId
+              and t.transactionAt >= :from
+              and t.transactionAt < :to
+              and (:categoryId is null or category.categoryId = :categoryId)
+              and (:classificationStatus is null
+                   or t.classificationStatus = :classificationStatus)
+            """,
+            countQuery = """
+            select count(t)
+            from FinancialTransaction t
+            left join t.category category
+            join t.pocket pocket
+            where pocket.pocketId = :pocketId
+              and pocket.user.userId = :userId
+              and t.transactionAt >= :from
+              and t.transactionAt < :to
+              and (:categoryId is null or category.categoryId = :categoryId)
+              and (:classificationStatus is null
+                   or t.classificationStatus = :classificationStatus)
+            """)
+    Page<FinancialTransaction> findPocketPage(
+            @Param("userId") Long userId,
+            @Param("pocketId") Long pocketId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("categoryId") Long categoryId,
+            @Param("classificationStatus") ClassificationStatus classificationStatus,
+            Pageable pageable);
+
+    /**
+     * 로그인 사용자가 소유한 거래 상세만 모든 표시용 연관과 함께 조회한다.
+     * 계좌 거래와 카드 거래 중 하나만 존재할 수 있으므로 소유권 조건은 OR로 결합한다.
+     */
+    @Query("""
+            select t
+            from FinancialTransaction t
+            left join fetch t.account a
+            left join fetch t.card c
+            left join fetch t.category
+            left join fetch t.pocket
+            left join fetch t.counterpartyAccount
+            left join fetch t.originalTransaction
+            where t.financialTransactionId = :id
+              and (a.user.userId = :userId or c.user.userId = :userId)
+            """)
+    Optional<FinancialTransaction> findDetailByIdAndUserId(@Param("id") Long id,
+                                                            @Param("userId") Long userId);
+
+    /**
+     * 월간 현황 계산에 사용할 포켓별 소비 합계를 DB에서 집계한다.
+     *
+     * <p>수입은 제외하고 {@code EXPENSE}만 합산하며, 취소 거래가 사용액을 부풀리지 않도록
+     * {@code NORMAL} 상태만 포함한다. 결과 행은 {@code [pocketId, sum(amount)]} 형태다.
+     */
+    @Query("""
+            select t.pocket.pocketId, coalesce(sum(t.amount), 0)
+            from FinancialTransaction t
+            where t.pocket.user.userId = :userId
+              and t.transactionAt >= :from
+              and t.transactionAt < :to
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.EXPENSE
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+            group by t.pocket.pocketId
+            """)
+    List<Object[]> sumSpendingByPocket(@Param("userId") Long userId,
+                                       @Param("from") LocalDateTime from,
+                                       @Param("to") LocalDateTime to);
 }

@@ -2,8 +2,14 @@ package com.dday.domain.pocket.controller;
 
 import com.dday.domain.pocket.dto.PocketSuccessCode;
 import com.dday.domain.pocket.dto.response.PocketResponse;
+import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
+import com.dday.domain.pocket.dto.response.TransactionListItemResponse;
+import com.dday.domain.mydata.entity.ClassificationStatus;
+import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.pocket.service.PocketService;
+import com.dday.domain.pocket.service.TransactionQueryService;
 import com.dday.global.common.dto.ApiResponse;
+import com.dday.global.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,6 +29,49 @@ import java.util.List;
 public class PocketController {
 
     private final PocketService pocketService;
+    private final TransactionQueryService transactionQueryService;
+
+    @Operation(summary = "기본 포켓 초기화", description = """
+            로그인한 회원에게 없는 기본 포켓만 생성한다.
+            이미 생성된 포켓은 유지되므로 여러 번 호출해도 중복 행이 생기지 않는다.
+            """)
+    @PostMapping("/initialize")
+    public ResponseEntity<ApiResponse<Void>> initialize(
+            @AuthenticationPrincipal Long userId) {
+        pocketService.initialize(userId);
+        return ApiResponse.of(PocketSuccessCode.POCKETS_INITIALIZED);
+    }
+
+    @Operation(summary = "월별 포켓 현황 조회", description = """
+            month는 yyyy-MM 형식이다.
+            포켓별 목표액과 해당 월의 정상 소비 거래를 집계해 사용액·잔액·초과액·사용률을 반환한다.
+            """)
+    @GetMapping("/monthly")
+    public ResponseEntity<ApiResponse<PocketMonthlyResponse>> findMonthly(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam String month) {
+        return ApiResponse.of(PocketSuccessCode.MONTHLY_POCKETS_FOUND,
+                pocketService.findMonthly(userId, month));
+    }
+
+    @Operation(summary = "포켓별 거래 목록 조회", description = """
+            필수 또는 자유 포켓의 거래를 월 단위로 조회한다.
+            categoryId와 classificationStatus는 선택 필터이며, page는 0부터 시작하고 size는 최대 100이다.
+            결과는 거래 시각과 거래 ID의 내림차순으로 정렬된다.
+            """)
+    @GetMapping("/{pocketType}/transactions")
+    public ResponseEntity<ApiResponse<PageResponse<TransactionListItemResponse>>> findTransactions(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable PocketType pocketType,
+            @RequestParam String month,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) ClassificationStatus classificationStatus,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.of(PocketSuccessCode.POCKET_TRANSACTIONS_FOUND,
+                transactionQueryService.findAll(userId, pocketType, month, categoryId,
+                        classificationStatus, page, size));
+    }
 
     @Operation(summary = "내 포켓 목록 조회", description = """
             로그인한 회원의 포켓 네 개를 돌려준다.
