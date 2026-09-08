@@ -85,9 +85,14 @@ const isActive = (to: string) => route.path === to
   max-width: 26px;
   width: auto;
   object-fit: contain;
+  transition: transform 0.15s ease;
 }
 .bottomnav__tab.is-active {
   color: #000;
+}
+/* 활성 탭 아이콘은 살짝 키운다. */
+.bottomnav__tab.is-active .bottomnav__icon {
+  transform: scale(1.18);
 }
 
 /*
