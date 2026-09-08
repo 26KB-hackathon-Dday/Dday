@@ -76,7 +76,7 @@ class UserServiceTest {
         // 온보딩 전 회원이라 프로필 값은 전부 비어 있다. 여기 없는 필드가 null이면 실패한다.
         assertThat(response).hasNoNullFieldsOrPropertiesExcept(
                 "protectionEndDate", "regionCode", "housingType", "initialAsset",
-                "housingDeposit", "settlementReceived", "createdAt");
+                "settlementReceived", "createdAt");
     }
 
     @Test

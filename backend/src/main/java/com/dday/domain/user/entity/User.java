@@ -103,10 +103,6 @@ public class User {
     @Column(name = "initial_asset")
     private Long initialAsset;
 
-    /** 주거 보증금(원). 자산이지만 당장 쓸 수 없는 돈이라 초기자산과 따로 받는다. */
-    @Column(name = "housing_deposit")
-    private Long housingDeposit;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "settlement_received", length = 20)
     private SettlementReceived settlementReceived;
@@ -180,13 +176,11 @@ public class User {
      */
     public void completeOnboarding(LocalDate protectionEndDate, String regionCode,
                                    HousingType housingType, Long initialAsset,
-                                   Long housingDeposit,
                                    SettlementReceived settlementReceived) {
         this.protectionEndDate = protectionEndDate;
         this.regionCode = regionCode;
         this.housingType = housingType;
         this.initialAsset = initialAsset;
-        this.housingDeposit = housingDeposit;
         this.settlementReceived = settlementReceived;
         this.onboardingCompleted = true;
     }
