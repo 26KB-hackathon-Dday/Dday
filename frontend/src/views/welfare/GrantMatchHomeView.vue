@@ -327,6 +327,7 @@ function onReviewAnswer(item: GrantReviewItem, receiving: boolean) {
   max-width: 100%;
   height: 56px;
   margin-top: 24px;
+  border-radius: 8px; /* /grants 주 액션 버튼과 동일 (상세·목록 버튼도 8px) */
   background: #000;
   color: #fff;
   font-size: 14px;
