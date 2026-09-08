@@ -11,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,79 +21,70 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class PocketServiceTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private PocketRepository pocketRepository;
 
     @InjectMocks
     private PocketService pocketService;
 
-    private Pocket pocket(PocketType type, String budget, String spent) {
+    /** 소유자는 이 테스트의 관심사가 아니라 비워둔다 — 조회 범위는 레포지토리 메서드가 건다. */
+    private Pocket pocket(PocketType type, String name) {
         return Pocket.builder()
-                .type(type)
-                .monthlyBudget(new BigDecimal(budget))
-                .spentThisMonth(new BigDecimal(spent))
+                .pocketType(type)
+                .pocketName(name)
                 .build();
     }
 
     @Test
-    void 포켓_목록은_주거_생활_비상_자산형성_순서로_정렬된다() {
+    void 포켓_목록은_필수_자유_비상금_미래자산_순서로_정렬된다() {
         // DB가 돌려주는 순서를 일부러 뒤섞어 둔다. 정렬이 서비스 책임임을 확인하기 위해서다.
-        given(pocketRepository.findAll()).willReturn(List.of(
-                pocket(PocketType.ASSET, "100000", "0"),
-                pocket(PocketType.LIVING, "600000", "300000"),
-                pocket(PocketType.HOUSING, "500000", "500000"),
-                pocket(PocketType.EMERGENCY, "200000", "50000")
+        given(pocketRepository.findAllByUserUserId(USER_ID)).willReturn(List.of(
+                pocket(PocketType.FUTURE_ASSET, "미래자산"),
+                pocket(PocketType.FREE, "자유"),
+                pocket(PocketType.ESSENTIAL, "필수"),
+                pocket(PocketType.EMERGENCY, "비상금")
         ));
 
-        List<PocketResponse> result = pocketService.findAll();
+        List<PocketResponse> result = pocketService.findAll(USER_ID);
 
-        assertThat(result).extracting(PocketResponse::getType)
-                .containsExactly(PocketType.HOUSING, PocketType.LIVING,
-                        PocketType.EMERGENCY, PocketType.ASSET);
+        assertThat(result).extracting(PocketResponse::getPocketType)
+                .containsExactly(PocketType.ESSENTIAL, PocketType.FREE,
+                        PocketType.EMERGENCY, PocketType.FUTURE_ASSET);
     }
 
     @Test
-    void 소진율은_소수점_한자리로_계산된다() {
-        given(pocketRepository.findAll()).willReturn(List.of(
-                pocket(PocketType.LIVING, "600000", "300000")
+    void 포켓_이름은_enum이_아니라_행에_저장된_값을_내려준다() {
+        // 사용자가 포켓 이름을 바꿀 수 있어서 enum에 박지 않았다. 바뀐 이름이 그대로 나가야 한다.
+        given(pocketRepository.findAllByUserUserId(USER_ID)).willReturn(List.of(
+                pocket(PocketType.FREE, "용돈")
         ));
 
-        PocketResponse result = pocketService.findAll().get(0);
+        PocketResponse result = pocketService.findAll(USER_ID).get(0);
 
-        assertThat(result.getUsageRate()).isEqualByComparingTo("50.0");
-        assertThat(result.getRemaining()).isEqualByComparingTo("300000");
-    }
-
-    @Test
-    void 배분액이_0인_포켓도_0으로_나누지_않고_소진율_0을_준다() {
-        // 아직 예산을 확정하지 않은 포켓이 이 경우다. 막지 않으면 ArithmeticException으로 목록 전체가 죽는다.
-        given(pocketRepository.findAll()).willReturn(List.of(
-                pocket(PocketType.ASSET, "0", "0")
-        ));
-
-        PocketResponse result = pocketService.findAll().get(0);
-
-        assertThat(result.getUsageRate()).isEqualByComparingTo("0");
-    }
-
-    @Test
-    void 예산을_초과하면_남은_금액이_음수로_나온다() {
-        // 잘라서 0으로 만들지 않는다. 화면이 초과 사실을 경고로 보여줘야 하기 때문이다.
-        given(pocketRepository.findAll()).willReturn(List.of(
-                pocket(PocketType.EMERGENCY, "200000", "250000")
-        ));
-
-        PocketResponse result = pocketService.findAll().get(0);
-
-        assertThat(result.getRemaining()).isEqualByComparingTo("-50000");
-        assertThat(result.getUsageRate()).isEqualByComparingTo("125.0");
+        assertThat(result.getPocketName()).isEqualTo("용돈");
+        assertThat(result.getPocketType()).isEqualTo(PocketType.FREE);
     }
 
     @Test
     void 없는_포켓을_조회하면_예외를_던진다() {
-        given(pocketRepository.findById(999L)).willReturn(Optional.empty());
+        given(pocketRepository.findByPocketIdAndUserUserId(999L, USER_ID))
+                .willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> pocketService.findById(999L))
+        assertThatThrownBy(() -> pocketService.findById(USER_ID, 999L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("포켓을 찾을 수 없습니다.");
+    }
+
+    @Test
+    void 남의_포켓을_id로_찍어도_찾을_수_없다() {
+        // 소유자를 함께 걸어 조회하므로 빈 결과가 오고, 서비스는 그걸 404로 바꾼다.
+        // 403으로 답하면 그 id의 포켓이 존재한다는 사실이 새어나간다.
+        given(pocketRepository.findByPocketIdAndUserUserId(10L, USER_ID))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> pocketService.findById(USER_ID, 10L))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("포켓을 찾을 수 없습니다.");
     }

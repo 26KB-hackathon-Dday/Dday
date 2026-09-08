@@ -37,18 +37,11 @@
 SELECT 1;
 
 -- ── 포켓 ──────────────────────────────────────────────────────────────────
--- 기획서의 네 포켓. 금액은 시연용 예시값이다.
--- id를 고정하고 ON DUPLICATE KEY UPDATE를 써서, 몇 번을 재기동해도 결과가 같다.
--- 여기 값을 고쳐서 다시 띄우면 그 값으로 갱신된다.
-INSERT INTO pocket (id, type, monthly_budget, spent_this_month) VALUES
-    (1, 'HOUSING',   650000.00, 650000.00),
-    (2, 'LIVING',    600000.00, 412000.00),
-    (3, 'EMERGENCY', 200000.00,  35000.00),
-    (4, 'ASSET',     100000.00,      0.00)
-ON DUPLICATE KEY UPDATE
-    type             = VALUES(type),
-    monthly_budget   = VALUES(monthly_budget),
-    spent_this_month = VALUES(spent_this_month);
+-- 시드를 두지 않는다. 포켓은 이제 사용자별로 4개씩 생기고 user_id가 NOT NULL이라,
+-- 시드를 넣으려면 회원 한 명을 먼저 만들어야 한다. 가짜 회원(비밀번호 해시까지)을
+-- 시드로 박아두면 그게 운영 DB에도 그대로 들어가므로 넣지 않는다.
+--
+-- 포켓 4개는 회원가입·온보딩 흐름이 만든다. 로컬에서 화면을 보려면 가입을 한 번 하면 된다.
 
 -- ── 지원제도 (welfare_program) ────────────────────────────────────────────
 -- 시드를 두지 않는다. welfare_program은 수집 배치(POST /internal/welfare/collect)가
