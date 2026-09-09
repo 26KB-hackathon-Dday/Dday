@@ -11,12 +11,17 @@ import PrimaryButton from '@/components/common/PrimaryButton.vue'
 const router = useRouter()
 const onboarding = useOnboardingStore()
 
-/** 자유 입력 대신 자주 쓰는 수입 항목을 버튼으로 고르게 한다. '기타'만 이름을 직접 적는다. */
-const PRESETS: { key: string; name: string; incomeType: IncomeType }[] = [
-  { key: 'JOB', name: '직장', incomeType: 'SALARY' },
-  { key: 'PARTTIME', name: '아르바이트', incomeType: 'SALARY' },
+/** 자유 입력 대신 자주 쓰는 수입 항목을 버튼으로 고르게 한다. '직장'·'아르바이트'·'기타'는 어느 곳인지 이름을 직접 적는다. */
+const PRESETS: {
+  key: string
+  name: string
+  incomeType: IncomeType
+  namePlaceholder?: string
+}[] = [
+  { key: 'JOB', name: '직장', incomeType: 'SALARY', namePlaceholder: '예: OO회사' },
+  { key: 'PARTTIME', name: '아르바이트', incomeType: 'SALARY', namePlaceholder: '예: 편의점, 치킨집' },
   { key: 'ALLOWANCE', name: '자립수당', incomeType: 'ALLOWANCE' },
-  { key: 'ETC', name: '기타', incomeType: 'ETC' },
+  { key: 'ETC', name: '기타', incomeType: 'ETC', namePlaceholder: '예: 후원금' },
 ]
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
@@ -28,9 +33,13 @@ const selectedDay = ref<number | null>(null)
 const errorMessage = ref('')
 const submitting = ref(false)
 
-const isEtc = computed(() => selectedPreset.value?.key === 'ETC')
+const needsCustomName = computed(() => !!selectedPreset.value?.namePlaceholder)
 
-const name = computed(() => (isEtc.value ? customName.value.trim() : (selectedPreset.value?.name ?? '')))
+const name = computed(() => {
+  if (!selectedPreset.value) return ''
+  if (!needsCustomName.value) return selectedPreset.value.name
+  return customName.value.trim()
+})
 
 const canSubmit = computed(
   () => !!selectedPreset.value && !!name.value && amountManwon.value > 0 && !!selectedDay.value,
@@ -96,9 +105,9 @@ async function save() {
         </div>
       </div>
 
-      <div v-if="isEtc" class="field">
-        <label class="label">수입 이름</label>
-        <TextField v-model="customName" placeholder="예: 후원금" />
+      <div v-if="needsCustomName" class="field">
+        <label class="label">{{ selectedPreset?.key === 'ETC' ? '수입 이름' : '어디에서 일하나요?' }}</label>
+        <TextField v-model="customName" :placeholder="selectedPreset?.namePlaceholder" />
       </div>
 
       <div class="field">
