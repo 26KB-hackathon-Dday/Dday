@@ -70,54 +70,58 @@ async function submit() {
       </button>
     </header>
 
-    <h1 class="title">다시 만나서 반가워요</h1>
+    <!-- 카카오·네이버 로그인 화면처럼, 입력 폼이 화면 맨 위에 붙지 않고 정중앙보다
+         살짝 위에 온다. .center가 flex:1로 남는 공간을 먹고 그 안에서 세로 중앙 정렬하되,
+         padding-bottom을 더 줘서 무게중심을 위로 살짝 밀어올린다(LandingView와 같은 기법). -->
+    <div class="center">
+      <h1 class="title">다시 만나서<br />반가워요</h1>
 
-    <form class="form" novalidate @submit.prevent="submit">
-      <!-- 입력 묶음을 연한 회색 박스로 감싼다. 입력창은 흰색이라 대비로 떠 보인다 -->
-      <div class="form-card">
-        <TextField
-          v-model="email"
-          type="email"
-          icon="mail"
-          placeholder="이메일"
-          inputmode="email"
-          autocomplete="email"
-        />
-        <TextField
-          v-model="password"
-          type="password"
-          icon="lock"
-          placeholder="비밀번호"
-          autocomplete="current-password"
-          toggle-password
-          @enter="submit"
-        />
+      <form class="form" novalidate @submit.prevent="submit">
+        <!-- 입력 묶음을 연한 회색 박스로 감싼다. 입력창은 흰색이라 대비로 떠 보인다 -->
+        <div class="form-card">
+          <TextField
+            v-model="email"
+            type="email"
+            icon="mail"
+            placeholder="이메일"
+            inputmode="email"
+            autocomplete="email"
+          />
+          <TextField
+            v-model="password"
+            type="password"
+            icon="lock"
+            placeholder="비밀번호"
+            autocomplete="current-password"
+            toggle-password
+            @enter="submit"
+          />
 
-        <div class="options">
-          <label class="keep">
-            <input v-model="keepLoggedIn" type="checkbox" />
-            <span class="box" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <path d="m5 12.5 4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </span>
-            로그인 상태 유지
-          </label>
+          <div class="options">
+            <label class="keep">
+              <input v-model="keepLoggedIn" type="checkbox" />
+              <span class="box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <path d="m5 12.5 4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              로그인 상태 유지
+            </label>
 
-          <!-- 비밀번호 찾기 화면은 아직 없다. 라우트가 생기면 RouterLink로 바꾼다 -->
-          <button class="find" type="button" @click="findPassword">비밀번호 찾기</button>
+            <!-- 비밀번호 찾기 화면은 아직 없다. 라우트가 생기면 RouterLink로 바꾼다 -->
+            <button class="find" type="button" @click="findPassword">비밀번호 찾기</button>
+          </div>
         </div>
-      </div>
 
-      <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
 
-      <!-- 버튼은 카드 밖 화면 하단에 두지만 form 안에 있어야 엔터 제출이 먹는다 -->
-      <div class="actions">
-        <PrimaryButton type="submit" :disabled="!canSubmit" :loading="submitting">
-          로그인
-        </PrimaryButton>
-      </div>
-    </form>
+        <div class="actions">
+          <PrimaryButton type="submit" :disabled="!canSubmit" :loading="submitting">
+            로그인
+          </PrimaryButton>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -148,19 +152,27 @@ async function submit() {
   height: 24px;
 }
 
+/* header 아래 남는 공간을 전부 먹고, 그 안에서 title+form 묶음을 세로 중앙보다
+   살짝 위로 올린다(LandingView와 같은 기법: 아래쪽 padding을 더 줘서 무게중심을 끌어올린다). */
+.center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: 10%;
+}
+
 .title {
-  margin: var(--space-sm) 0 var(--space-lg);
-  font-size: 24px;
-  font-weight: 700;
+  margin-bottom: var(--space-lg);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.3;
   letter-spacing: -0.02em;
   color: var(--color-primary);
   text-align: left;
 }
 
-/* form이 남는 높이를 전부 먹고, 그 안에서 .actions가 margin-top:auto로
-   바닥에 붙는다. position:fixed를 안 써서 430px 래퍼를 벗어날 일이 없다. */
 .form {
-  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -244,8 +256,18 @@ async function submit() {
 }
 
 .actions {
-  margin-top: auto;
-  padding: var(--space-md) 0;
-  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  margin-top: var(--space-lg);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 세로가 짧은 기기(SE 등)에서는 위로 밀어올리는 여백을 줄여 폼이 화면 밖으로 밀리지 않게 한다 */
+@media (max-height: 640px) {
+  .center {
+    padding-bottom: 2%;
+  }
+
+  .title {
+    font-size: 24px;
+  }
 }
 </style>
