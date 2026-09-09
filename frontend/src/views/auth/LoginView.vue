@@ -70,8 +70,6 @@ async function submit() {
       </button>
     </header>
 
-    <!-- 폼을 지금 제목이 있는 자리까지 끌어올린다. 제목은 헤더 바로 아래로,
-         입력 폼은 예전 제목 자리로 옮겨온다. -->
     <div class="center">
       <h1 class="title">다시 만나서<br />반가워요</h1>
 
@@ -151,12 +149,14 @@ async function submit() {
   height: 24px;
 }
 
-/* 세로 중앙 정렬을 쓰지 않고 header 바로 아래에서 시작한다 — 입력 폼이
-   예전 제목 자리까지 올라오려면 이 블록 전체가 위쪽에 붙어야 한다. */
+/* 핵심 변경 부분: 남은 화면을 꽉 채운 뒤(flex: 1), 
+   중앙 정렬하고 하단에 패딩을 주어 전체적으로 살짝 위로 밀어 올립니다. */
 .center {
   display: flex;
   flex-direction: column;
-  padding-top: var(--space-sm);
+  flex: 1;
+  justify-content: center;
+  padding-bottom: 34vh; 
 }
 
 .title {
