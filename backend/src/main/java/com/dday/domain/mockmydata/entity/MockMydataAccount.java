@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -68,6 +69,15 @@ public class MockMydataAccount {
     @Column(nullable = false)
     private Long balance;
 
+    /**
+     * 연 이자율(%). 대출 계좌만 값이 있고 예금·적금은 {@code null}이다.
+     *
+     * <p>이율이라 {@link BigDecimal}이다 — 5.4%를 {@code double}로 두면 표시할 때
+     * 5.3999…가 튀어나온다 (AGENTS.md §4).
+     */
+    @Column(name = "interest_rate", precision = 5, scale = 2)
+    private BigDecimal interestRate;
+
     @Column(name = "available_balance")
     private Long availableBalance;
 
@@ -85,7 +95,8 @@ public class MockMydataAccount {
     @Builder
     private MockMydataAccount(MockMydataUser mockUser, String externalAccountId, String orgCode,
                               String accountNum, String accountName, String productName,
-                              MockAccountType accountType, Long balance, Long availableBalance) {
+                              MockAccountType accountType, Long balance, Long availableBalance,
+                              BigDecimal interestRate) {
         this.mockUser = mockUser;
         this.externalAccountId = externalAccountId;
         this.orgCode = orgCode;
@@ -95,6 +106,7 @@ public class MockMydataAccount {
         this.accountType = accountType;
         this.balance = balance != null ? balance : 0L;
         this.availableBalance = availableBalance;
+        this.interestRate = interestRate;
         this.active = true;
     }
 

@@ -104,6 +104,7 @@ public class MockMydataProvisioner {
                     .accountType(source.getAccountType())
                     .balance(source.getBalance())
                     .availableBalance(source.getAvailableBalance())
+                    .interestRate(source.getInterestRate())
                     .build());
 
             copyAccountTransactions(source, copy, serviceUserId);

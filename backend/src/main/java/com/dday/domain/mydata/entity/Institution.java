@@ -22,19 +22,43 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public enum Institution {
 
-    KOOKMIN("004", "국민은행"),
-    SHINHAN("088", "신한은행"),
-    WOORI("020", "우리은행"),
-    HANA("081", "하나은행"),
-    NONGHYUP("011", "농협은행"),
-    KAKAO("090", "카카오뱅크"),
-    TOSS("092", "토스뱅크"),
+    KOOKMIN("004", "국민은행", FinancialSector.BANK),
+    SHINHAN("088", "신한은행", FinancialSector.BANK),
+    WOORI("020", "우리은행", FinancialSector.BANK),
+    HANA("081", "하나은행", FinancialSector.BANK),
+    NONGHYUP("011", "농협은행", FinancialSector.BANK),
+    KAKAO("090", "카카오뱅크", FinancialSector.BANK),
+    TOSS("092", "토스뱅크", FinancialSector.BANK),
 
-    HYUNDAI_CARD("0302", "현대카드"),
-    SAMSUNG_CARD("0303", "삼성카드");
+    HYUNDAI_CARD("0302", "현대카드", FinancialSector.NON_BANK),
+    SAMSUNG_CARD("0303", "삼성카드", FinancialSector.NON_BANK),
+    KB_CARD("0301", "KB국민카드", FinancialSector.NON_BANK),
+    SHINHAN_CARD("0306", "신한카드", FinancialSector.NON_BANK),
+    WOORI_CARD("0313", "우리카드", FinancialSector.NON_BANK),
+
+    HYUNDAI_CAPITAL("0602", "현대캐피탈", FinancialSector.NON_BANK),
+    SBI_SAVINGS("0720", "SBI저축은행", FinancialSector.NON_BANK);
 
     private final String code;
     private final String institutionName;
+
+    /** 이 기관이 속한 권역. 대출을 어디서 받았는지 구분하는 데 쓴다. */
+    private final FinancialSector sector;
+
+    /**
+     * 코드에 해당하는 권역. <b>모르는 코드면 {@code null}이다.</b>
+     * 권역을 모르는 채 제1금융권으로 넘겨짚으면 점수 안내가 실제보다 후하게 나간다.
+     */
+    public static FinancialSector sectorOf(String code) {
+        if (code == null) {
+            return null;
+        }
+        return Arrays.stream(values())
+                .filter(institution -> institution.code.equals(code))
+                .map(Institution::getSector)
+                .findFirst()
+                .orElse(null);
+    }
 
     /**
      * 코드에 해당하는 기관 이름. <b>모르는 코드면 코드를 그대로 돌려준다.</b>

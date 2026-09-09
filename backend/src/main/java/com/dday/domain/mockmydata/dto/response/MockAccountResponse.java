@@ -2,6 +2,8 @@ package com.dday.domain.mockmydata.dto.response;
 
 import com.dday.domain.mockmydata.entity.MockAccountType;
 import com.dday.domain.mockmydata.entity.MockMydataAccount;
+import java.math.BigDecimal;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +22,9 @@ public class MockAccountResponse {
     private Long balance;
     private Long availableBalance;
 
+    /** 연 이자율(%). 대출 계좌만 값이 있다. */
+    private BigDecimal interestRate;
+
     public static MockAccountResponse from(MockMydataAccount account) {
         return MockAccountResponse.builder()
                 .accountId(account.getExternalAccountId())
@@ -30,6 +35,7 @@ public class MockAccountResponse {
                 .accountType(account.getAccountType())
                 .balance(account.getBalance())
                 .availableBalance(account.getAvailableBalance())
+                .interestRate(account.getInterestRate())
                 .build();
     }
 }

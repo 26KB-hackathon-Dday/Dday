@@ -75,9 +75,11 @@ public class MydataSyncWriter {
                             .accountType(source.getAccountType())
                             .balance(source.getBalance())
                             .availableBalance(source.getAvailableBalance())
+                            .interestRate(source.getInterestRate())
                             .build());
             account.sync(source.getAccountName(), source.getProductName(), source.getAccountType(),
-                    source.getBalance(), source.getAvailableBalance(), syncedAt);
+                    source.getBalance(), source.getAvailableBalance(), source.getInterestRate(),
+                    syncedAt);
             accountsByExternalId.put(source.getExternalAccountId(), accountRepository.save(account));
         }
 

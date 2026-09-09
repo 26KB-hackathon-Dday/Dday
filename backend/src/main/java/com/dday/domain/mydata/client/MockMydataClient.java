@@ -78,6 +78,7 @@ public class MockMydataClient implements MydataClient {
                 .accountType(AccountType.valueOf(source.getAccountType().name()))
                 .balance(source.getBalance())
                 .availableBalance(source.getAvailableBalance())
+                .interestRate(source.getInterestRate())
                 .build();
     }
 
