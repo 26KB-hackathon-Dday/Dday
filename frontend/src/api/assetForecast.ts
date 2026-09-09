@@ -8,10 +8,10 @@ export interface AssetForecastResponse {
    * 선택 계좌가 없으면 온보딩 initialAsset.
    */
   currentAsset: number
-
-  /**
-   * 지원 종료까지 남은 개월 수
-   */
+  monthlyFutureAmount: number
+  achievedAmount: number
+  remainingAmount: number
+  achievementRate: number
   remainingMonths: number
 }
 

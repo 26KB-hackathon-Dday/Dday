@@ -5,10 +5,15 @@ import com.dday.domain.mydata.dto.response.UserAccountListResponse;
 import com.dday.domain.mydata.dto.response.UserAccountResponse;
 import com.dday.domain.mydata.entity.UserAccount;
 import com.dday.domain.mydata.repository.UserAccountRepository;
+import com.dday.domain.mydata.repository.FinancialTransactionRepository;
 import com.dday.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.YearMonth;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 마이페이지의 금융정보 관리 화면. 연동된 계좌 목록을 보여주고, 예산 계산에 넣을지를
@@ -22,11 +27,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserAccountService {
 
     private final UserAccountRepository userAccountRepository;
+    private final FinancialTransactionRepository financialTransactionRepository;
 
     @Transactional(readOnly = true)
     public UserAccountListResponse getAccounts(Long userId) {
+        YearMonth currentMonth = YearMonth.now();
+        Map<Long, Long> monthlyContributions = financialTransactionRepository
+                .sumMonthlyFutureAssetContributionByAccount(
+                        userId,
+                        currentMonth.atDay(1).atStartOfDay(),
+                        currentMonth.plusMonths(1).atDay(1).atStartOfDay())
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]));
         return UserAccountListResponse.of(
-                userAccountRepository.findAllByUserUserIdOrderByAccountIdAsc(userId));
+                userAccountRepository.findAllByUserUserIdOrderByAccountIdAsc(userId),
+                monthlyContributions);
     }
 
     /**

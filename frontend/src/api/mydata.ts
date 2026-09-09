@@ -80,6 +80,7 @@ export interface UserAccount {
   accountType: AccountType
   balance: number
   availableBalance: number | null
+  monthlyContribution: number
   selected: boolean
   active: boolean
   lastSyncedAt: string | null
@@ -111,7 +112,13 @@ const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
  */
 const MOCK_INSTITUTIONS: Institution[] = [
   { institutionId: '004', name: '국민은행', category: 'BANK', logoUrl: logoKookmin, popular: true },
-  { institutionId: '090', name: '카카오뱅크', category: 'BANK', logoUrl: logoKakaobank, popular: true },
+  {
+    institutionId: '090',
+    name: '카카오뱅크',
+    category: 'BANK',
+    logoUrl: logoKakaobank,
+    popular: true,
+  },
   { institutionId: '088', name: '신한은행', category: 'BANK', logoUrl: logoShinhan, popular: true },
   { institutionId: '020', name: '우리은행', category: 'BANK', logoUrl: logoWoori },
   { institutionId: '081', name: '하나은행', category: 'BANK', logoUrl: logoHana },
