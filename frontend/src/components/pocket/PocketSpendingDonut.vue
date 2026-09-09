@@ -2,18 +2,31 @@
 import { computed } from 'vue'
 
 export interface SpendingCategory {
+  categoryId: number
+  categoryCode: string
   name: string
   amount: number
 }
 const props = defineProps<{ categories: SpendingCategory[] }>()
-const DONUT_COLORS = ['#ff914d', '#222222', '#858585', '#c9c9c9', '#f5b487', '#626262']
+const emit = defineEmits<{ select: [category: SpendingCategory] }>()
+const DONUT_COLORS = [
+  '#be123c',
+  '#3b82f6',
+  '#16a085',
+  '#8b5cf6',
+  '#ec4899',
+  '#0891b2',
+  '#4f46e5',
+  '#64748b',
+]
 const total = computed(() => props.categories.reduce((sum, category) => sum + category.amount, 0))
 const segments = computed(() =>
   [...props.categories]
     .sort((a, b) => b.amount - a.amount)
     .map((category, index) => ({
       ...category,
-      color: DONUT_COLORS[index % DONUT_COLORS.length],
+      color:
+        category.categoryCode === 'FOOD' ? '#e85d5d' : DONUT_COLORS[index % DONUT_COLORS.length],
       ratio: total.value === 0 ? 0 : (category.amount / total.value) * 100,
     })),
 )
@@ -50,11 +63,17 @@ const roundedRatio = (ratio: number) => Math.round(ratio)
         </div>
       </div>
       <ul class="legend">
-        <li v-for="segment in segments" :key="segment.name">
-          <span class="legend__dot" :style="{ backgroundColor: segment.color }" /><span>{{
-            segment.name
-          }}</span
-          ><strong>{{ roundedRatio(segment.ratio) }}%</strong>
+        <li v-for="segment in segments" :key="segment.categoryId">
+          <button
+            type="button"
+            :aria-label="`${segment.name} 지출 내역 보기`"
+            @click="emit('select', segment)"
+          >
+            <span class="legend__dot" :style="{ backgroundColor: segment.color }" />
+            <span class="legend__name">{{ segment.name }}</span>
+            <strong>{{ roundedRatio(segment.ratio) }}%</strong>
+            <span class="legend__chevron" aria-hidden="true">›</span>
+          </button>
         </li>
       </ul>
     </template>
@@ -104,17 +123,32 @@ const roundedRatio = (ratio: number) => Math.round(ratio)
 .legend {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 18px;
+  gap: 10px;
   list-style: none;
 }
-.legend li {
+.legend button {
   display: flex;
+  width: 100%;
+  min-height: 48px;
   align-items: center;
   min-width: 0;
-  gap: 6px;
+  gap: 7px;
+  padding: 10px 9px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  background: var(--c-bg);
   font-size: 12px;
+  text-align: left;
 }
-.legend li > span:nth-child(2) {
+.legend button:hover {
+  border-color: #ffb88d;
+  background: #fff9f5;
+}
+.legend button:focus-visible {
+  outline: 2px solid #ff914d;
+  outline-offset: 2px;
+}
+.legend__name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -122,6 +156,11 @@ const roundedRatio = (ratio: number) => Math.round(ratio)
 .legend strong {
   margin-left: auto;
   font-family: var(--font-num);
+}
+.legend__chevron {
+  color: var(--c-text-3);
+  font-size: 18px;
+  line-height: 1;
 }
 .legend__dot {
   flex: 0 0 8px;
@@ -140,7 +179,7 @@ const roundedRatio = (ratio: number) => Math.round(ratio)
     padding-inline: 16px;
   }
   .legend {
-    gap-inline: 10px;
+    grid-template-columns: 1fr;
   }
 }
 </style>
