@@ -23,6 +23,11 @@ import java.util.List;
  * 잘못된 토큰을 달고 와도 정상 동작한다.
  *
  * <p>컨트롤러에서는 {@code @AuthenticationPrincipal Long userId}로 꺼내 쓰면 된다.
+ *
+ * <p><b>SSE 구독 경로만 예외로 쿼리 파라미터 토큰도 받는다.</b> 브라우저 네이티브
+ * {@code EventSource}는 커스텀 헤더를 못 실어 보내서, 헤더 인증만 있으면 알림 구독을
+ * 열 방법이 없다. 그렇다고 전체 API에 쿼리 파라미터 토큰을 허용하면 URL에 토큰이 남아
+ * 접근 로그·프록시·브라우저 히스토리에 노출된다 — 그래서 이 경로 하나로 좁힌다.
  */
 @Component
 @RequiredArgsConstructor
@@ -30,6 +35,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String HEADER = "Authorization";
     private static final String PREFIX = "Bearer ";
+    private static final String TOKEN_QUERY_PARAM = "token";
+
+    /** 쿼리 파라미터 토큰을 예외적으로 허용하는 경로. 늘어나면 배열로 바꾼다. */
+    private static final String SSE_SUBSCRIBE_PATH = "/api/notifications/subscribe";
 
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -59,8 +68,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String header = request.getHeader(HEADER);
         if (header != null && header.startsWith(PREFIX)) {
             String token = header.substring(PREFIX.length()).trim();
-            return token.isEmpty() ? null : token;
+            if (!token.isEmpty()) return token;
         }
+
+        if (SSE_SUBSCRIBE_PATH.equals(request.getRequestURI())) {
+            String queryToken = request.getParameter(TOKEN_QUERY_PARAM);
+            if (queryToken != null && !queryToken.isBlank()) return queryToken;
+        }
+
         return null;
     }
 }
