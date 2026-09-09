@@ -23,6 +23,10 @@ spring:
     init:
       # 기본값은 embedded(H2 등)뿐이라 MySQL에는 안 돈다. 명시해야 실행된다.
       mode: always
+      # ⚠️ 지정하지 않으면 플랫폼 기본 인코딩으로 읽는다. 윈도우(MS949)에서 띄우면
+      #    data.sql의 한글이 U+FFFD로 깨진 채 DB에 들어간다 — DB·컬럼이 utf8mb4여도
+      #    저장 전에 이미 망가져서 나중에 고칠 수 없다.
+      encoding: UTF-8
       # 실패하면 앱이 안 뜬다(기본값 false). 시드가 깨진 걸 모르고 서비스되는 것보다 낫다.
       continue-on-error: false
 

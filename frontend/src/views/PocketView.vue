@@ -1,185 +1,194 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { pocketApi, type Pocket } from '@/api/pocket'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppIcon from '@/components/AppIcon.vue'
+import PocketStatusCard from '@/components/pocket/PocketStatusCard.vue'
+import FutureAssetPocketCard from '@/components/pocket/FutureAssetPocketCard.vue'
+import { POCKET_LABEL, POCKET_ORDER, pocketApi, type PocketMonthlyResponse } from '@/api/pocket'
 import { ApiError } from '@/api/types'
+import { formatWon } from '@/utils/format'
 
-const pockets = ref<Pocket[]>([])
+const route = useRoute()
+const router = useRouter()
+const response = ref<PocketMonthlyResponse | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
-
-/** 금액은 원 단위 정수로 보여준다. 소수점은 화면에서 의미가 없다. */
-const won = (value: number) => `${Math.round(value).toLocaleString('ko-KR')}원`
+const errorCode = ref<string | null>(null)
+const needsBudgetConfirmation = computed(() =>
+  ['MONTHLY_BUDGET_NOT_FOUND', 'MONTHLY_POCKET_BUDGET_NOT_FOUND'].includes(errorCode.value ?? ''),
+)
+const currentMonth = computed(() => {
+  const queryMonth = typeof route.query.month === 'string' ? route.query.month : ''
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(queryMonth)) return queryMonth
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+})
+const monthNumber = computed(() => Number(currentMonth.value.slice(5)))
+const nextMonthNumber = computed(() => (monthNumber.value % 12) + 1)
+const orderedPockets = computed(() =>
+  [...(response.value?.pockets ?? [])].sort(
+    (a, b) => POCKET_ORDER.indexOf(a.pocketType) - POCKET_ORDER.indexOf(b.pocketType),
+  ),
+)
 
 async function load() {
   loading.value = true
   error.value = null
+  errorCode.value = null
   try {
-    pockets.value = await pocketApi.findAll()
+    response.value = await pocketApi.findMonthly(currentMonth.value)
   } catch (e) {
-    // 백엔드 ErrorCode의 message가 문구의 정본이라 그대로 띄운다 (AGENTS.md §2).
     error.value = e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다.'
+    errorCode.value = e instanceof ApiError ? e.code : null
   } finally {
     loading.value = false
   }
 }
-
+function openNextBudget() {
+  router.push({ name: 'pocket-budget-initial' })
+}
+function openPocketDetail(pocketType: 'ESSENTIAL' | 'FREE' | 'EMERGENCY') {
+  if (!['ESSENTIAL', 'FREE', 'EMERGENCY'].includes(pocketType)) return
+  router.push({
+    name: 'pocket-detail',
+    params: { pocketType },
+    query: { month: currentMonth.value },
+  })
+}
 onMounted(load)
 </script>
 
 <template>
   <main class="page">
-    <header class="head">
-      <h1>내 포켓</h1>
-      <p>정착금과 지원금을 용도별로 나눠 관리합니다.</p>
-    </header>
-
-    <p v-if="loading" class="state">불러오는 중…</p>
-
-    <div v-else-if="error" class="state error">
+    <h1>{{ monthNumber }}월 포켓</h1>
+    <button type="button" class="notice" @click="openNextBudget">
+      <span>{{ nextMonthNumber }}월 최적화 포켓 예산이 만들어졌어요!</span
+      ><AppIcon name="chevron-right" :size="18" aria-hidden="true" />
+    </button>
+    <p v-if="loading" class="state" role="status">포켓 현황을 불러오는 중…</p>
+    <div v-else-if="error" class="state error" role="alert">
       <p>{{ error }}</p>
-      <button type="button" @click="load">다시 시도</button>
+      <button
+        v-if="needsBudgetConfirmation"
+        type="button"
+        class="budget-button"
+        @click="openNextBudget"
+      >
+        예산 확정하러 가기
+      </button>
+      <button v-else type="button" @click="load">다시 시도</button>
     </div>
-
-    <ul v-else class="list">
-      <li v-for="pocket in pockets" :key="pocket.pocketId" class="card">
-        <div class="card-head">
-          <div>
-            <h2>{{ pocket.label }}</h2>
-            <p class="desc">{{ pocket.description }}</p>
-          </div>
-          <!-- 예산을 넘긴 포켓은 눈에 띄어야 한다. 서버가 remaining을 음수로 주는 이유다. -->
-          <span class="rate" :class="{ over: pocket.remaining < 0 }">
-            {{ pocket.usageRate }}%
-          </span>
-        </div>
-
-        <div class="bar">
-          <div
-            class="fill"
-            :class="{ over: pocket.remaining < 0 }"
-            :style="{ width: `${Math.min(pocket.usageRate, 100)}%` }"
+    <template v-else-if="response">
+      <section class="total" aria-label="이번 달 총 예산">
+        <span>{{ monthNumber }}월 총 예산</span
+        ><strong>{{ formatWon(response.totalBudgetAmount) }}</strong>
+      </section>
+      <section class="list" aria-label="포켓별 현황">
+        <template v-for="pocket in orderedPockets" :key="pocket.pocketId">
+          <FutureAssetPocketCard
+            v-if="pocket.pocketType === 'FUTURE_ASSET'"
+            :title="POCKET_LABEL.FUTURE_ASSET"
+            :budget="pocket.targetAmount"
           />
-        </div>
-
-        <dl class="figures">
-          <div>
-            <dt>배분액</dt>
-            <dd>{{ won(pocket.monthlyBudget) }}</dd>
-          </div>
-          <div>
-            <dt>사용</dt>
-            <dd>{{ won(pocket.spentThisMonth) }}</dd>
-          </div>
-          <div>
-            <dt>{{ pocket.remaining < 0 ? '초과' : '남음' }}</dt>
-            <dd :class="{ over: pocket.remaining < 0 }">
-              {{ won(Math.abs(pocket.remaining)) }}
-            </dd>
-          </div>
-        </dl>
-      </li>
-    </ul>
+          <PocketStatusCard
+            v-else
+            :pocket-type="pocket.pocketType"
+            :title="POCKET_LABEL[pocket.pocketType]"
+            :budget="pocket.targetAmount"
+            :used="pocket.usedAmount"
+            :remaining="pocket.remainingAmount"
+            :usage-rate="pocket.usageRate"
+            :over-amount="pocket.overAmount"
+            @select="openPocketDetail"
+          />
+        </template>
+      </section>
+    </template>
   </main>
 </template>
 
 <style scoped>
 .page {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
+  width: 100%;
+  padding: 4px 16px 28px;
+  background: var(--c-bg);
 }
-.head h1 {
-  font-size: 1.5rem;
+h1 {
+  font-size: 24px;
+  line-height: 1.3;
   font-weight: 700;
+  letter-spacing: -0.5px;
 }
-.head p {
-  margin-top: 0.25rem;
-  color: var(--color-text-light, #888);
-  font-size: 0.9rem;
+.notice {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  text-align: left;
+  font-size: 12px;
+}
+.notice:hover {
+  filter: brightness(0.98);
+}
+.notice .app-icon {
+  color: #b9b9b9;
 }
 .state {
-  margin-top: 2rem;
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  color: var(--c-text-3);
   text-align: center;
-  color: var(--color-text-light, #888);
 }
 .state.error {
-  color: #c0392b;
+  gap: 10px;
+  color: var(--c-danger);
 }
-.state button {
-  margin-top: 0.75rem;
-  padding: 0.4rem 1rem;
-  cursor: pointer;
+.error button {
+  padding: 8px 16px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  color: var(--c-text);
 }
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 1.5rem 0 0;
-  display: grid;
-  gap: 0.75rem;
+.error .budget-button {
+  border-color: var(--c-primary);
+  background: var(--c-primary);
+  color: var(--c-bg);
 }
-.card {
-  border: 1px solid var(--color-border, #e0e0e0);
-  border-radius: 12px;
-  padding: 1rem;
-}
-.card-head {
+.total {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
+  gap: 16px;
+  margin-top: 28px;
+  padding: 18px 16px;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  font-size: 13px;
 }
-.card-head h2 {
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-.desc {
-  margin-top: 0.15rem;
-  font-size: 0.8rem;
-  color: var(--color-text-light, #888);
-}
-.rate {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
+.total strong {
+  flex: none;
+  font-family: var(--font-num);
+  font-size: 20px;
   white-space: nowrap;
 }
-.rate.over {
-  color: #c0392b;
+.list {
+  display: grid;
+  gap: 24px;
+  margin-top: 18px;
 }
-.bar {
-  margin-top: 0.75rem;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-background-mute, #f1f1f1);
-  overflow: hidden;
-}
-.fill {
-  height: 100%;
-  background: #00857a;
-  transition: width 0.3s;
-}
-.fill.over {
-  background: #c0392b;
-}
-.figures {
-  display: flex;
-  justify-content: space-between;
-  margin: 0.75rem 0 0;
-}
-.figures div {
-  text-align: center;
-  flex: 1;
-}
-.figures dt {
-  font-size: 0.75rem;
-  color: var(--color-text-light, #888);
-}
-.figures dd {
-  margin: 0.15rem 0 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.figures dd.over {
-  color: #c0392b;
+@media (max-width: 340px) {
+  .page {
+    padding-inline: 12px;
+  }
+  .total strong {
+    font-size: 17px;
+  }
 }
 </style>

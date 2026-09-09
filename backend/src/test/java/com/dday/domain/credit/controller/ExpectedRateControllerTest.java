@@ -51,6 +51,7 @@ class ExpectedRateControllerTest {
                 .scoreGap(47)
                 .lenders(List.of(LenderRateResponse.builder()
                         .lenderType(LenderType.BANK)
+                        .label("은행")
                         .institutionCount(17)
                         .currentRate(new BigDecimal("7.04"))
                         .currentAnnualInterest(704_000L)
@@ -67,6 +68,7 @@ class ExpectedRateControllerTest {
                 .andExpect(jsonPath("$.data.targetScore").value(751))
                 .andExpect(jsonPath("$.data.scoreGap").value(47))
                 .andExpect(jsonPath("$.data.lenders[0].lenderType").value("BANK"))
+                .andExpect(jsonPath("$.data.lenders[0].label").value("은행"))
                 .andExpect(jsonPath("$.data.lenders[0].currentRate").value(7.04))
                 .andExpect(jsonPath("$.data.lenders[0].annualSaving").value(46000));
     }

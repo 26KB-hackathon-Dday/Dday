@@ -122,6 +122,17 @@ class ExpectedRateServiceTest {
     }
 
     @Test
+    void 업권_라벨을_함께_내려준다() {
+        // 화면 문구의 정본은 서버다 (frontend/AGENTS.md — 라벨을 프론트에서 새로 만들지 않는다).
+        givenLatestScore(704);
+
+        ExpectedRateResponse result = expectedRateService.findExpected(USER_ID);
+
+        assertThat(result.getLenders()).extracting(LenderRateResponse::getLabel)
+                .containsExactly("은행", "캐피탈", "카드사");
+    }
+
+    @Test
     void 평균에_들어간_회사_수를_함께_내려준다() {
         givenLatestScore(704);
 

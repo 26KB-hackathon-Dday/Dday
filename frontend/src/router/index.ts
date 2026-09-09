@@ -306,8 +306,27 @@ const router = createRouter({
     {
       path: '/credit-manage',
       name: 'credit-manage',
-      component: () => import('@/views/PlaceholderView.vue'),
+      component: () => import('@/views/credit/CreditHomeView.vue'),
       meta: { title: '신용 관리', requiresAuth: true },
+    },
+    {
+      path: '/credit-manage/rates',
+      name: 'credit-expected-rates',
+      component: () => import('@/views/credit/ExpectedRateView.vue'),
+      meta: { title: '예상 금리', requiresAuth: true },
+    },
+    {
+      path: '/credit-manage/learn',
+      name: 'credit-learn',
+      component: () => import('@/views/credit/CreditLearnView.vue'),
+      meta: { title: '신용관리 하기', requiresAuth: true },
+    },
+    {
+      // 하단 탭엔 없고 상단바 계정 아이콘으로만 들어온다.
+      path: '/mypage',
+      name: 'mypage',
+      component: () => import('@/views/MyPageView.vue'),
+      meta: { title: '마이페이지', requiresAuth: true },
     },
 
     {
@@ -350,8 +369,6 @@ const router = createRouter({
         title: '내 포켓',
       },
     },
-    // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
-    { path: '/:pathMatch(.*)*', redirect: '/' },
     {
       path: '/pockets/unexpected-income/amount',
       name: 'pocket-unexpected-income-amount',
@@ -360,6 +377,26 @@ const router = createRouter({
         title: '추가할 금액 지정',
       },
     },
+    {
+      // 모든 정적 /pockets/* 경로 뒤에 둬 budget-* 화면을 pocketType으로 오인하지 않게 한다.
+      path: '/pockets/:pocketType',
+      name: 'pocket-detail',
+      component: () => import('@/views/pocket/PocketDetailView.vue'),
+      meta: { title: '필수 포켓', requiresAuth: true },
+      beforeEnter: (to) => {
+        const titles: Record<string, string> = {
+          ESSENTIAL: '필수 포켓',
+          FREE: '자유 포켓',
+          EMERGENCY: '비상금 포켓',
+        }
+        const pocketType = typeof to.params.pocketType === 'string' ? to.params.pocketType : ''
+        if (!titles[pocketType]) return { name: 'pockets', query: { month: to.query.month } }
+        // 공용 AppTopBar가 화면 렌더링 전부터 올바른 포켓 제목을 표시하도록 한다.
+        to.meta.title = titles[pocketType]
+      },
+    },
+    // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
+    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
 

@@ -1,9 +1,13 @@
 /**
  * 마이데이터(금융기관 연동) API + 도메인 타입.
  *
- * ⚠️ 해커톤용 Mock 구현이다. auth.ts와 같은 방식으로 `// TODO(real)` 줄을
- * 살리면 실제 호출로 바뀐다.
+ * `connect`는 실제 백엔드를 부른다. 서버가 동의 기록 → 데모 목데이터 준비 → 첫 동기화를
+ * 한 번에 끝내므로, 응답이 오면 소비 내역 화면을 바로 열 수 있다.
+ *
+ * ⚠️ 기관 목록(`findInstitutions`)은 아직 서버 API가 없어 Mock이다.
+ *    화면에서 고른 기관과 무관하게 서버는 데모 계좌 전부를 붙인다.
  */
+import { api } from '@/api/client'
 
 export type InstitutionCategory = 'BANK' | 'CARD' | 'SECURITIES'
 
@@ -23,7 +27,10 @@ export interface ConnectRequest {
 }
 
 export interface ConnectedAccount {
+  /** 기관 코드(예: 004). 식별용이고 화면에 띄우지 않는다 */
   institutionId: string
+  /** 화면에 그대로 띄우는 기관 이름(예: 국민은행). 서버가 만들어 준다 */
+  institutionName: string
   /** 마스킹된 계좌번호 (예: 110-***-4567) */
   accountNumber: string
   balance: number
@@ -57,18 +64,13 @@ export const mydataApi = {
     // TODO(real): return api.get<Institution[]>('/mydata/institutions')
   },
 
-  /** 선택한 기관 연동 요청 */
-  async connect(body: ConnectRequest): Promise<ConnectResponse> {
-    console.log('[mock] POST /mydata/connect', body)
-    await delay(1200) // 실제 연동은 오래 걸린다 — 로딩 화면 확인용
-    return {
-      connectedCount: body.institutionIds.length,
-      accounts: body.institutionIds.map((institutionId, i) => ({
-        institutionId,
-        accountNumber: `110-***-${1000 + i}`,
-        balance: 1_000_000 + i * 250_000,
-      })),
-    }
-    // TODO(real): return api.post<ConnectResponse>('/mydata/connect', body)
+  /**
+   * 선택한 기관 연동 요청.
+   *
+   * 서버는 어떤 기관을 골랐는지 보지 않는다 — 데모 계정의 계좌·카드를 통째로 붙인다.
+   * 기관별 선택을 실제로 반영하려면 서버에 기관 필터가 생겨야 한다.
+   */
+  async connect(_body: ConnectRequest): Promise<ConnectResponse> {
+    return api.post<ConnectResponse>('/api/mydata/connect')
   },
 }

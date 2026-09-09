@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError } from '@/api/types'
+import { pocketApi } from '@/api/pocket'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { useAuthStore } from '@/stores/auth'
 
@@ -38,8 +39,13 @@ function playChecklist() {
 
 onMounted(async () => {
   try {
-    const [result] = await Promise.all([onboarding.complete(), playChecklist()])
-    void result
+    const completePlan = async () => {
+      await onboarding.complete()
+      // 기본 포켓 생성은 멱등 API에 맡긴다. 재시도해도 이미 존재하는 포켓은 유지된다.
+      await pocketApi.initialize()
+    }
+
+    await Promise.all([completePlan(), playChecklist()])
     auth.setOnboardingCompleted(true)
     router.replace('/onboarding/done')
   } catch (e) {

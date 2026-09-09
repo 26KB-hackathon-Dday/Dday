@@ -35,7 +35,14 @@ public class UserResponse {
     private final LocalDate protectionEndDate;
 
     /** 거주지 법정동 코드. */
+    /** 법정동 코드. 식별용이고 화면에 그대로 띄우는 값이 아니다. */
     private final String regionCode;
+
+    /** 시·도 이름(예: 서울특별시). 화면이 코드표를 들지 않도록 이름을 함께 내려준다. */
+    private final String regionName;
+
+    /** 시·군·구 이름(예: 강남구). */
+    private final String districtName;
 
     private final HousingType housingType;
 
@@ -59,6 +66,8 @@ public class UserResponse {
                 .onboardingCompleted(user.isOnboardingCompleted())
                 .protectionEndDate(user.getProtectionEndDate())
                 .regionCode(user.getRegionCode())
+                .regionName(user.getRegionName())
+                .districtName(user.getDistrictName())
                 .housingType(user.getHousingType())
                 .initialAsset(user.getInitialAsset())
                 .settlementReceived(user.getSettlementReceived())

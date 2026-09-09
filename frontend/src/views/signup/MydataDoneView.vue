@@ -14,10 +14,11 @@ onMounted(async () => {
   institutions.value = await mydataApi.findInstitutions()
 })
 
-const connectedNames = computed(() => {
-  const ids = signup.connectResult?.accounts.map((a) => a.institutionId) ?? []
-  return ids.map((id) => institutions.value.find((i) => i.institutionId === id)?.name ?? id)
-})
+// 서버가 기관 이름을 내려주므로 코드→이름 매핑이 필요 없다.
+// 같은 은행 계좌가 여럿이면 이름이 중복되므로 한 번씩만 보여준다.
+const connectedNames = computed(() =>
+  [...new Set(signup.connectResult?.accounts.map((a) => a.institutionName) ?? [])],
+)
 
 const connectedCount = computed(() => signup.connectResult?.connectedCount ?? 0)
 
