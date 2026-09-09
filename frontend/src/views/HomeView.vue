@@ -11,6 +11,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { userApi, type Me } from '@/api/user'
 import AppIcon from '@/components/AppIcon.vue'
+import HomeActionCards from '@/components/home/HomeActionCards.vue'
 
 /** 자립 지원 기간(년). 백엔드 OnboardingCalculator.SUPPORT_YEARS와 맞춘다. */
 const SUPPORT_YEARS = 5
@@ -115,6 +116,8 @@ const assetText = computed(() => {
         </div>
       </div>
     </section>
+
+    <HomeActionCards />
   </div>
 </template>
 
