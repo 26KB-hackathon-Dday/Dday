@@ -1,6 +1,8 @@
 package com.dday.domain.mydata.controller;
 
+import com.dday.domain.mydata.dto.response.MydataConnectResponse;
 import com.dday.domain.mydata.dto.response.MydataSyncResponse;
+import com.dday.domain.mydata.service.MydataConnectService;
 import com.dday.domain.mydata.service.MydataService;
 import com.dday.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +20,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -29,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MydataControllerTest {
 
     @Mock private MydataService mydataService;
+    @Mock private MydataConnectService mydataConnectService;
     @InjectMocks private MydataController mydataController;
     private MockMvc mockMvc;
 
@@ -55,6 +59,22 @@ class MydataControllerTest {
                 .andExpect(jsonPath("$.code").value("MYDATA_SYNCED"))
                 .andExpect(jsonPath("$.data.accountCount").value(2))
                 .andExpect(jsonPath("$.data.insertedTransactionCount").value(5));
+    }
+
+    @Test
+    void 연결하면_첫_동기화_결과를_ApiResponse의_data로_반환한다() throws Exception {
+        given(mydataConnectService.connect(1L))
+                .willReturn(MydataConnectResponse.builder()
+                        .connectedCount(2)
+                        .accounts(List.of())
+                        .insertedTransactionCount(14)
+                        .build());
+
+        mockMvc.perform(post("/api/mydata/connect"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("MYDATA_CONNECTED"))
+                .andExpect(jsonPath("$.data.connectedCount").value(2))
+                .andExpect(jsonPath("$.data.insertedTransactionCount").value(14));
     }
 
     private HandlerMethodArgumentResolver authenticatedUser(Long userId) {

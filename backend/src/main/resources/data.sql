@@ -490,6 +490,176 @@ ON DUPLICATE KEY UPDATE
     category_id = VALUES(category_id),
     pocket_id = VALUES(pocket_id);
 
+-- ── 데모 계정 MyData 동기화 결과 (user_account / user_card / financial_transaction) ──
+--
+-- mock_mydata_*는 외부 제공기관 역할의 원본이고, 포켓 거래 화면은 이 테이블들을 직접
+-- 조회하지 않는다. user1은 이미 온보딩·MyData 동의가 끝난 시연 계정이므로 애플리케이션을
+-- 처음 띄운 직후에도 거래 화면을 볼 수 있도록 실제 동기화 결과까지 함께 심는다.
+--
+-- 고정 PK를 쓰지 않고 이메일과 외부 복합키로 연결한다. 모든 INSERT는 서비스의 upsert 키와
+-- 같은 유니크 키를 사용하므로 POST /api/mydata/connect를 다시 호출해도 중복되지 않는다.
+INSERT INTO user_account (
+    user_id, org_code, account_num, account_name, product_name, account_type,
+    balance, available_balance, is_active, is_selected, last_synced_at, created_at, updated_at
+)
+SELECT u.user_id, ma.org_code, ma.account_num, ma.account_name, ma.product_name, ma.account_type,
+       ma.balance, ma.available_balance, ma.is_active, 1, ma.updated_at, ma.created_at, ma.updated_at
+FROM users u
+JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
+JOIN mock_mydata_account ma ON ma.mock_user_id = mu.mock_user_id
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    account_name = VALUES(account_name),
+    product_name = VALUES(product_name),
+    account_type = VALUES(account_type),
+    balance = VALUES(balance),
+    available_balance = VALUES(available_balance),
+    is_active = VALUES(is_active),
+    last_synced_at = VALUES(last_synced_at),
+    updated_at = VALUES(updated_at);
+
+INSERT INTO user_card (
+    user_id, org_code, card_identifier, card_name, card_type,
+    is_active, is_selected, last_synced_at, created_at, updated_at
+)
+SELECT u.user_id, mc.org_code, mc.external_card_id, mc.card_name, mc.card_type,
+       mc.is_active, 1, mc.updated_at, mc.created_at, mc.updated_at
+FROM users u
+JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
+JOIN mock_mydata_card mc ON mc.mock_user_id = mu.mock_user_id
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    card_name = VALUES(card_name),
+    card_type = VALUES(card_type),
+    is_active = VALUES(is_active),
+    last_synced_at = VALUES(last_synced_at),
+    updated_at = VALUES(updated_at);
+
+-- 계좌 거래. 정상 지출만 자동분류하고 수입·이체·취소는 서비스 동작과 같이 미분류로 둔다.
+INSERT INTO financial_transaction (
+    source_type, account_id, card_id, source_transaction_id,
+    transaction_at, synced_at, transaction_type, transaction_status, amount,
+    merchant_name, merchant_regno, trans_memo,
+    category_id, pocket_id, classification_status, classification_source,
+    counterparty_account_id, original_transaction_id, new_fund_checked,
+    created_at, updated_at
+)
+SELECT
+    'ACCOUNT', ua.account_id, NULL, mt.external_transaction_id,
+    mt.transaction_at, mt.updated_at,
+    CASE
+        WHEN mt.transaction_type = 'TRANSFER' AND counterparty.account_id IS NOT NULL THEN 'SELF_TRANSFER'
+        WHEN mt.transaction_type = 'TRANSFER' THEN 'OTHER'
+        ELSE mt.transaction_type
+    END,
+    mt.transaction_status, mt.amount, mt.merchant_name, mt.merchant_regno, mt.trans_memo,
+    CASE WHEN mt.transaction_type = 'EXPENSE' AND mt.transaction_status = 'NORMAL'
+         THEN rule.category_id ELSE NULL END,
+    CASE WHEN mt.transaction_type = 'EXPENSE' AND mt.transaction_status = 'NORMAL'
+         THEN COALESCE(rule.pocket_id, free_pocket.pocket_id) ELSE NULL END,
+    CASE WHEN mt.transaction_type = 'EXPENSE' AND mt.transaction_status = 'NORMAL'
+         THEN 'AUTO_CLASSIFIED' ELSE 'UNCLASSIFIED' END,
+    CASE WHEN mt.transaction_type = 'EXPENSE' AND mt.transaction_status = 'NORMAL'
+         THEN CASE WHEN rule.merchant_rule_id IS NULL THEN 'DEFAULT_FREE' ELSE 'USER_RULE' END
+         ELSE NULL END,
+    counterparty.account_id, NULL, 0, mt.created_at, mt.updated_at
+FROM users u
+JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
+JOIN mock_mydata_account ma ON ma.mock_user_id = mu.mock_user_id
+JOIN mock_mydata_account_transaction mt ON mt.mock_account_id = ma.mock_account_id
+JOIN user_account ua
+  ON ua.user_id = u.user_id AND ua.org_code = ma.org_code AND ua.account_num = ma.account_num
+JOIN pocket free_pocket ON free_pocket.user_id = u.user_id AND free_pocket.pocket_type = 'FREE'
+LEFT JOIN user_account counterparty
+  ON counterparty.user_id = u.user_id AND counterparty.account_num = mt.counterparty_account_num
+LEFT JOIN user_merchant_rule rule
+  ON rule.user_id = u.user_id
+ AND rule.merchant_key = CASE
+       WHEN mt.merchant_regno IS NOT NULL
+         THEN CONCAT('REGNO:', REGEXP_REPLACE(mt.merchant_regno, '[^0-9]', ''))
+       WHEN mt.merchant_name IS NOT NULL
+         THEN CONCAT('NAME:', UPPER(TRIM(mt.merchant_name)))
+       ELSE NULL
+     END
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    -- 사용자가 나중에 바꾼 포켓·카테고리 분류를 앱 재기동 시 시드가 덮어쓰지 않는다.
+    source_transaction_id = VALUES(source_transaction_id);
+
+-- 카드 거래는 MyData 동기화 서비스가 모두 EXPENSE로 저장한다.
+INSERT INTO financial_transaction (
+    source_type, account_id, card_id, source_transaction_id,
+    transaction_at, synced_at, transaction_type, transaction_status, amount,
+    merchant_name, merchant_regno, trans_memo,
+    category_id, pocket_id, classification_status, classification_source,
+    counterparty_account_id, original_transaction_id, new_fund_checked,
+    created_at, updated_at
+)
+SELECT
+    'CARD', NULL, uc.card_id, mt.external_transaction_id,
+    mt.transaction_at, mt.updated_at, 'EXPENSE', mt.transaction_status, mt.amount,
+    mt.merchant_name, mt.merchant_regno, NULL,
+    CASE WHEN mt.transaction_status = 'NORMAL' THEN rule.category_id ELSE NULL END,
+    CASE WHEN mt.transaction_status = 'NORMAL'
+         THEN COALESCE(rule.pocket_id, free_pocket.pocket_id) ELSE NULL END,
+    CASE WHEN mt.transaction_status = 'NORMAL' THEN 'AUTO_CLASSIFIED' ELSE 'UNCLASSIFIED' END,
+    CASE WHEN mt.transaction_status = 'NORMAL'
+         THEN CASE WHEN rule.merchant_rule_id IS NULL THEN 'DEFAULT_FREE' ELSE 'USER_RULE' END
+         ELSE NULL END,
+    NULL, NULL, 0, mt.created_at, mt.updated_at
+FROM users u
+JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
+JOIN mock_mydata_card mc ON mc.mock_user_id = mu.mock_user_id
+JOIN mock_mydata_card_transaction mt ON mt.mock_card_id = mc.mock_card_id
+JOIN user_card uc
+  ON uc.user_id = u.user_id AND uc.org_code = mc.org_code
+ AND uc.card_identifier = mc.external_card_id
+JOIN pocket free_pocket ON free_pocket.user_id = u.user_id AND free_pocket.pocket_type = 'FREE'
+LEFT JOIN user_merchant_rule rule
+  ON rule.user_id = u.user_id
+ AND rule.merchant_key = CASE
+       WHEN mt.merchant_regno IS NOT NULL
+         THEN CONCAT('REGNO:', REGEXP_REPLACE(mt.merchant_regno, '[^0-9]', ''))
+       WHEN mt.merchant_name IS NOT NULL
+         THEN CONCAT('NAME:', UPPER(TRIM(mt.merchant_name)))
+       ELSE NULL
+     END
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    -- 거래는 불변 원본으로 취급하고, 수동 분류·새 자금 확인 상태를 그대로 보존한다.
+    source_transaction_id = VALUES(source_transaction_id);
+
+-- 취소·환불 행의 원거래 FK는 양쪽 행이 모두 생긴 다음 외부 거래 ID로 연결한다.
+UPDATE financial_transaction canceled
+JOIN user_account ua ON ua.account_id = canceled.account_id
+JOIN users u ON u.user_id = ua.user_id AND u.email = 'user1@test.com'
+JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
+JOIN mock_mydata_account ma
+  ON ma.mock_user_id = mu.mock_user_id AND ma.account_num = ua.account_num
+JOIN mock_mydata_account_transaction mt
+  ON mt.mock_account_id = ma.mock_account_id
+ AND mt.external_transaction_id = canceled.source_transaction_id
+JOIN financial_transaction original
+  ON original.account_id = canceled.account_id
+ AND original.source_transaction_id = mt.original_transaction_id
+SET canceled.original_transaction_id = original.financial_transaction_id
+WHERE mt.original_transaction_id IS NOT NULL;
+
+UPDATE financial_transaction canceled
+JOIN user_card uc ON uc.card_id = canceled.card_id
+JOIN users u ON u.user_id = uc.user_id AND u.email = 'user1@test.com'
+JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
+JOIN mock_mydata_card mc
+  ON mc.mock_user_id = mu.mock_user_id AND mc.external_card_id = uc.card_identifier
+JOIN mock_mydata_card_transaction mt
+  ON mt.mock_card_id = mc.mock_card_id
+ AND mt.external_transaction_id = canceled.source_transaction_id
+JOIN financial_transaction original
+  ON original.card_id = canceled.card_id
+ AND original.source_transaction_id = mt.original_transaction_id
+SET canceled.original_transaction_id = original.financial_transaction_id
+WHERE mt.original_transaction_id IS NOT NULL;
+
 -- ── 월 예산 (monthly_budget / monthly_pocket_budget / budget_draft_factor) ─
 --
 -- 데모 계정의 2026년 9월 예산이다. 온보딩 완료 시 예산 초안을 만드는 로직
