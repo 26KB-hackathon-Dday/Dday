@@ -138,6 +138,13 @@ function isRisky(sector: FinancialSector | null): boolean {
               </span>
             </div>
 
+            <!--
+              상품명만으로는 어디서 빌렸는지 알 수 없다 — "청년전용 버팀목전세자금대출"이
+              어느 은행인지는 상품명에 없다. 기관명은 서버가 org_code로 만들어 준다.
+            -->
+            <p v-if="loan.institutionName" class="loan__institution">
+              {{ loan.institutionName }}
+            </p>
             <p class="loan__name">{{ loan.productName }}</p>
             <p class="loan__meta">
               잔액 <strong>{{ toManwon(loan.balance) }}만원</strong>
@@ -345,10 +352,22 @@ function isRisky(sector: FinancialSector | null): boolean {
   height: 14px;
 }
 
+.loan__institution {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+
 .loan__name {
   margin-top: 12px;
   font-size: 16px;
   font-weight: 700;
+}
+
+/* 기관명 바로 아래에 붙어 한 덩어리로 읽혀야 한다. */
+.loan__institution + .loan__name {
+  margin-top: 2px;
 }
 
 .loan__meta {

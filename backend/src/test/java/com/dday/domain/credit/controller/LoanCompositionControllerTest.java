@@ -61,7 +61,7 @@ class LoanCompositionControllerTest {
                                 .institutionName("현대캐피탈")
                                 .sector(FinancialSector.NON_BANK)
                                 .sectorLabel("제2금융권")
-                                .productName("현대캐피탈 다이렉트론")
+                                .productName("다이렉트론")
                                 .balance(3_000_000L)
                                 .interestRate(new BigDecimal("15.40"))
                                 .build()))

@@ -302,11 +302,21 @@ INSERT INTO mock_mydata_account (
      '신한 비상금통장',   '신한 쏠편한통장', 'DEPOSIT', 1500000, 1500000, NULL, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
     -- 제1금융권 대출 한 건, 제2금융권 대출 한 건. 같은 금액이라도 어디서 빌렸는지가
     -- 점수를 가르므로 두 권역이 다 있어야 화면이 의미를 가진다.
-    (99001, 9001, 'SH-LOAN-0001', '088', '110-9876-500001',
-     '신한 신용대출',     '쏠편한 직장인대출', 'LOAN', 8000000, NULL, 5.40, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+    --
+    -- 상품은 자립준비청년이 실제로 쓰는 것으로 둔다. 직장인 대상 신용대출은
+    -- 이 서비스의 사용자상과 맞지 않는다.
+    --   · 청년전용 버팀목전세자금대출 — 주택도시기금 상품이고 KB국민은행이 취급한다.
+    --     금리는 2026-08-31 기준 연 1.0~4.3%이며, 소득이 낮을수록 하단에 붙는다.
+    --   · 다이렉트론 — 현대캐피탈 무서류 신용대출. 연 5.75~29.9%.
+    --
+    -- product_name에는 회사명을 넣지 않는다. 기관 이름은 org_code에서 나오므로
+    -- 화면에서 "현대캐피탈 현대캐피탈 다이렉트론"처럼 두 번 나오게 된다.
+    (99001, 9001, 'KB-LOAN-0001', '004', '110-2345-500001',
+     'KB국민 전세자금대출', '청년전용 버팀목전세자금대출', 'LOAN', 30000000, NULL, 2.10, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
     (99002, 9001, 'HC-LOAN-0001', '0602', '620-1234-500002',
-     '현대캐피탈 신용대출', '현대캐피탈 다이렉트론', 'LOAN', 3000000, NULL, 15.40, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00')
+     '현대캐피탈 생활비대출', '다이렉트론', 'LOAN', 3000000, NULL, 15.40, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00')
 ON DUPLICATE KEY UPDATE
+    external_account_id = VALUES(external_account_id),
     org_code = VALUES(org_code),
     account_num = VALUES(account_num),
     account_name = VALUES(account_name),
@@ -551,6 +561,16 @@ ON DUPLICATE KEY UPDATE
 --
 -- 고정 PK를 쓰지 않고 이메일과 외부 복합키로 연결한다. 모든 INSERT는 서비스의 upsert 키와
 -- 같은 유니크 키를 사용하므로 POST /api/mydata/connect를 다시 호출해도 중복되지 않는다.
+-- 대출 계좌를 신한(088)에서 KB국민(004)으로 옮기기 전에 옛 행을 지운다.
+-- user_account의 유니크 키가 (user_id, org_code, account_num)이라 아래 upsert는
+-- 옛 행을 갱신하지 못하고 새 행을 하나 더 만든다 — 그대로 두면 대출이 3건으로 보인다.
+-- 이 계좌에는 거래가 달려 있지 않아 지워도 지난 결산이 바뀌지 않는다.
+DELETE ua FROM user_account ua
+JOIN users u ON u.user_id = ua.user_id
+WHERE u.email = 'user1@test.com'
+  AND ua.org_code = '088'
+  AND ua.account_num = '110-9876-500001';
+
 INSERT INTO user_account (
     user_id, org_code, account_num, account_name, product_name, account_type,
     balance, available_balance, interest_rate,
