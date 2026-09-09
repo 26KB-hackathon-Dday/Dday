@@ -28,6 +28,7 @@ const TOPICS: Topic[] = [
     icon: 'alert',
     title: '한도를 많이 쓰면 점수가 내려가요.',
     description: '카드 한도 대비 사용 비율 확인',
+    to: '/credit-manage/card-usage',
   },
   {
     icon: 'card',
