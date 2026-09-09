@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PocketMonthlySummary } from '@/api/pocket'
-import { formatWon } from '@/utils/format'
+import { formatPercent, formatWon } from '@/utils/format'
 
 const props = withDefaults(
   defineProps<{
@@ -40,7 +40,9 @@ const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
       >
         <span :style="{ width: fillWidth }" />
       </div>
-      <small>{{ summary.usageRate == null ? '사용률 집계 전' : `${rate}% 사용` }}</small>
+      <small>
+        {{ summary.usageRate == null ? '사용률 집계 전' : `${formatPercent(rate)}% 사용` }}
+      </small>
     </div>
   </section>
 </template>
