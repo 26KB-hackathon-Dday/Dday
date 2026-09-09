@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+
 import { useRoute, useRouter } from 'vue-router'
 
 import PocketStatusCard from '@/components/pocket/PocketStatusCard.vue'
+
 import FutureAssetPocketCard from '@/components/pocket/FutureAssetPocketCard.vue'
+
 import EmergencyPocketCard from '@/components/pocket/EmergencyPocketCard.vue'
+
 import MydataRefreshStatus from '@/components/pocket/MydataRefreshStatus.vue'
 
 import UnexpectedIncomeModal from '@/components/pocket/UnexpectedIncomeModal.vue'
+
 import RecurringIncomeMatchModal from '@/components/pocket/RecurringIncomeMatchModal.vue'
+
 import PendingIncomeListModal from '@/components/pocket/PendingIncomeListModal.vue'
 
 import { POCKET_LABEL, POCKET_ORDER, pocketApi, type PocketMonthlyResponse } from '@/api/pocket'
@@ -18,12 +24,15 @@ import { assetForecastApi, type AssetForecastResponse } from '@/api/assetForecas
 import { unexpectedIncomeApi } from '@/api/unexpectedIncome'
 
 import { ApiError } from '@/api/types'
+
 import { formatWon } from '@/utils/format'
 
 import { useUnexpectedIncomeStore } from '@/stores/unexpectedIncome'
+
 import { useMydataRefresh } from '@/composables/useMydataRefresh'
 
 const route = useRoute()
+
 const router = useRouter()
 
 const unexpectedIncomeStore = useUnexpectedIncomeStore()
@@ -76,9 +85,11 @@ const loadPockets = async () => {
   loading.value = true
 
   response.value = null
+
   futureAssetForecast.value = null
 
   error.value = null
+
   errorCode.value = null
 
   try {
@@ -129,23 +140,28 @@ const loadPockets = async () => {
 /*
  * 현재 queue에서 처리 중인 입금.
  */
+
 const currentIncome = computed(() => {
   return unexpectedIncomeStore.currentIncome
 })
 
 /*
- * 여러 건 발견 시 처음 보여줄 목록 모달.
+ * 여러 건 발견 시
+ * 처음 보여줄 목록 모달.
  */
+
 const showPendingIncomeListModal = ref(false)
 
 /*
  * 일반 예상 밖 입금 모달.
  */
+
 const showUnexpectedIncomeModal = ref(false)
 
 /*
  * 정기수입 추정 / 초과 모달.
  */
+
 const showRecurringIncomeModal = ref(false)
 
 const checkingIncome = ref(false)
@@ -159,9 +175,11 @@ const closeIncomeModals = () => {
 }
 
 /*
- * 현재 queue의 입금을 실제 처리 대상으로 세팅하고
+ * 현재 queue의 입금을
+ * 실제 처리 대상으로 세팅하고
  * 타입에 맞는 모달을 연다.
  */
+
 const openCurrentIncomeModal = () => {
   closeIncomeModals()
 
@@ -178,11 +196,14 @@ const openCurrentIncomeModal = () => {
   switch (income.type) {
     case 'NEW_INCOME':
       showUnexpectedIncomeModal.value = true
+
       break
 
     case 'RECURRING_LIKELY':
+
     case 'RECURRING_OVER':
       showRecurringIncomeModal.value = true
+
       break
   }
 }
@@ -190,16 +211,20 @@ const openCurrentIncomeModal = () => {
 /*
  * 포켓 진입 시 신규 입금 조회.
  *
- * 이미 store에 처리 중인 queue가 남아있다면
- * 서버를 다시 조회하지 않고 다음 거래부터 이어간다.
+ * 이미 store에 처리 중인
+ * queue가 남아있다면
+ * 서버를 다시 조회하지 않고
+ * 다음 거래부터 이어간다.
  */
+
 const checkNewIncome = async () => {
   if (checkingIncome.value) {
     return
   }
 
   /*
-   * 포켓 추가 화면에서 한 건을 처리하고
+   * 포켓 추가 화면에서
+   * 한 건을 처리하고
    * 다시 PocketView로 돌아온 경우.
    *
    * 기존 queue가 남아있으므로
@@ -230,7 +255,9 @@ const checkNewIncome = async () => {
 
     /*
      * 2건 이상이면
-     * 먼저 "새로 들어온 돈 N건" 모달 표시.
+     * 먼저
+     * "새로 들어온 돈 N건"
+     * 모달 표시.
      */
     if (incomes.length >= 2) {
       showPendingIncomeListModal.value = true
@@ -239,8 +266,9 @@ const checkNewIncome = async () => {
     }
 
     /*
-     * 1건뿐이면 기존처럼
-     * 바로 개별 모달을 보여준다.
+     * 1건뿐이면
+     * 기존처럼 바로
+     * 개별 모달을 보여준다.
      */
     openCurrentIncomeModal()
   } catch (e) {
@@ -258,30 +286,37 @@ const checkNewIncome = async () => {
  * 여러 건 목록 모달에서
  * "하나씩 확인하기" 클릭.
  */
+
 const handleStartPendingIncome = () => {
   openCurrentIncomeModal()
 }
 
 /*
  * 현재 거래를 처리 완료한 뒤
- * queue에서 제거하고 다음 거래를 연다.
+ * queue에서 제거하고
+ * 다음 거래를 연다.
  */
+
 const moveToNextIncome = () => {
   closeIncomeModals()
 
   /*
-   * 방금 처리 완료한 거래 제거.
+   * 방금 처리 완료한
+   * 거래 제거.
    */
   unexpectedIncomeStore.removeCurrentIncome()
 
   /*
-   * 현재 거래용 입력값만 초기화.
-   * pending queue 자체는 유지한다.
+   * 현재 거래용 입력값만
+   * 초기화.
+   *
+   * pending queue 자체는 유지.
    */
   unexpectedIncomeStore.resetDetectedIncome()
 
   /*
-   * 더 이상 처리할 거래가 없으면 종료.
+   * 더 이상 처리할 거래가
+   * 없으면 종료.
    */
   if (!unexpectedIncomeStore.hasPendingIncomes) {
     return
@@ -297,6 +332,7 @@ const moveToNextIncome = () => {
  * 일반 예상 밖 수입
  * → 이번 달 예산에 추가하기.
  */
+
 const handleUnexpectedAdd = async () => {
   if (!currentIncome.value) {
     return
@@ -312,8 +348,10 @@ const handleUnexpectedAdd = async () => {
 }
 
 /*
- * 이번 달 예산에 포함하지 않기.
+ * 이번 달 예산에
+ * 포함하지 않기.
  */
+
 const handleExclude = async () => {
   if (!currentIncome.value) {
     return
@@ -324,7 +362,8 @@ const handleExclude = async () => {
 
     /*
      * 서버 재조회 X.
-     * 현재 queue에서 바로 다음 거래로 이동.
+     * 현재 queue에서
+     * 바로 다음 거래로 이동.
      */
     moveToNextIncome()
   } catch (e) {
@@ -336,19 +375,21 @@ const handleExclude = async () => {
  * 정기수입 추정 모달에서
  * "고정수입이 아니에요" 선택.
  */
+
 const handleNotRecurring = () => {
   if (!currentIncome.value) {
     return
   }
 
   /*
-   * 현재 처리용 store 데이터 변경.
+   * 현재 처리용
+   * store 데이터 변경.
    */
   unexpectedIncomeStore.convertToNewIncome()
 
   /*
    * queue 속 현재 거래도
-   * NEW_INCOME으로 바꿔준다.
+   * NEW_INCOME으로 변경.
    */
   currentIncome.value.type = 'NEW_INCOME'
 
@@ -368,9 +409,10 @@ const handleNotRecurring = () => {
 }
 
 /*
- * 고정수입보다 초과 입금된 금액만
- * 포켓 예산에 추가.
+ * 고정수입보다 초과 입금된
+ * 금액만 포켓 예산에 추가.
  */
+
 const handleAddExcess = async () => {
   if (!currentIncome.value || currentIncome.value.type !== 'RECURRING_OVER') {
     return
@@ -444,6 +486,14 @@ watch(currentMonth, load)
 
 <template>
   <main class="page">
+    <!--
+      =========================
+      월 + 마이데이터 동기화
+      =========================
+
+      지원금 첫 화면의 intro와 동일하게
+      헤더 아래 32px 간격을 확보한다.
+    -->
     <div v-if="response" class="page-heading">
       <h1>{{ monthNumber }}월 포켓</h1>
 
@@ -466,6 +516,7 @@ watch(currentMonth, load)
     </div>
 
     <template v-else-if="response">
+      <!-- 총 예산 -->
       <section class="total" aria-label="이번 달 총 예산">
         <span> {{ monthNumber }}월 총 예산 </span>
 
@@ -474,8 +525,10 @@ watch(currentMonth, load)
         </strong>
       </section>
 
+      <!-- 포켓 리스트 -->
       <section class="list" aria-label="포켓별 현황">
         <template v-for="pocket in orderedPockets" :key="pocket.pocketId">
+          <!-- 미래자산 -->
           <FutureAssetPocketCard
             v-if="pocket.pocketType === 'FUTURE_ASSET'"
             :title="POCKET_LABEL.FUTURE_ASSET"
@@ -486,6 +539,7 @@ watch(currentMonth, load)
             @select="openPocketDetail('FUTURE_ASSET')"
           />
 
+          <!-- 비상금 -->
           <EmergencyPocketCard
             v-else-if="pocket.pocketType === 'EMERGENCY'"
             :title="POCKET_LABEL.EMERGENCY"
@@ -493,6 +547,7 @@ watch(currentMonth, load)
             @adjust="openBudgetReadjust"
           />
 
+          <!-- 필수 / 자유 -->
           <PocketStatusCard
             v-else
             :pocket-type="pocket.pocketType"
@@ -566,12 +621,22 @@ watch(currentMonth, load)
 
   min-height: calc(100dvh - 120px);
 
-  padding: 4px 16px 28px;
+  /*
+   * 기존:
+   * padding: 4px 16px 28px;
+   *
+   * 지원금 매칭 화면의
+   * .intro padding-top이 32px이므로
+   * 같은 간격으로 변경.
+   */
+  padding: 32px 16px 28px;
 
   background: var(--c-bg);
 }
 
 h1 {
+  margin: 0;
+
   font-size: 24px;
 
   line-height: 1.3;
@@ -581,6 +646,9 @@ h1 {
   letter-spacing: -0.5px;
 }
 
+/*
+ * 9월 포켓 + 동기화
+ */
 .page-heading {
   display: flex;
 
@@ -591,6 +659,9 @@ h1 {
   gap: 12px;
 }
 
+/*
+ * 로딩 / 오류
+ */
 .state {
   display: grid;
 
@@ -623,6 +694,9 @@ h1 {
   cursor: pointer;
 }
 
+/*
+ * 총 예산
+ */
 .total {
   display: flex;
 
@@ -653,6 +727,9 @@ h1 {
   white-space: nowrap;
 }
 
+/*
+ * 포켓 리스트
+ */
 .list {
   display: grid;
 
@@ -663,7 +740,9 @@ h1 {
 
 @media (max-width: 340px) {
   .page {
-    padding-inline: 12px;
+    padding-right: 12px;
+
+    padding-left: 12px;
   }
 
   .total strong {
