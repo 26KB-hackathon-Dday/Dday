@@ -4,6 +4,9 @@
  *
  * D-day 계산식(지원기간 5년)은 백엔드 `OnboardingCalculator`와 같다 — 온보딩 저장 응답에도
  * 같은 값이 실려오지만, 그 스토어는 온보딩 플로우용이라 홈에서는 `/api/users/me`로 새로 받는다.
+ *
+ * 보호종료일(`users.protection_end_date`)이 아직 없으면(온보딩 전) D-day만 지원기간
+ * 전체(1825일)로 고정해서 보여주고, 진행률 바·경과 개월수 등 나머지는 숨긴다.
  */
 import { computed, onMounted, ref } from 'vue'
 import { userApi, type Me } from '@/api/user'
@@ -11,6 +14,9 @@ import AppIcon from '@/components/AppIcon.vue'
 
 /** 자립 지원 기간(년). 백엔드 OnboardingCalculator.SUPPORT_YEARS와 맞춘다. */
 const SUPPORT_YEARS = 5
+
+/** 보호종료일 미입력 시 쓰는 남은 일수. 지원기간 5년(365×5)을 일 단위 고정값으로 둔다. */
+const FALLBACK_DAYS_LEFT = 1825
 
 const me = ref<Me | null>(null)
 
@@ -31,6 +37,21 @@ function monthsBetween(from: Date, to: Date): number {
   return months
 }
 
+/** `2030년 03월 01일` 꼴. */
+function formatDate(d: Date): string {
+  return `${d.getFullYear()}년 ${String(d.getMonth() + 1).padStart(2, '0')}월 ${String(
+    d.getDate(),
+  ).padStart(2, '0')}일`
+}
+
+const DAY_MS = 86_400_000
+
+/**
+ * 보호종료일이 있을 때만 계산되는 자립 진행 정보.
+ *
+ * 보호종료일이 없으면(온보딩에서 "모르겠다"로 넘긴 경우) `null`이다 — 시작일을 몰라
+ * 진행률·경과 개월수를 낼 수 없어, 화면은 D-day(고정 1825일)만 보여준다.
+ */
 const plan = computed(() => {
   const ped = me.value?.protectionEndDate
   if (!ped) return null
@@ -40,10 +61,9 @@ const plan = computed(() => {
   end.setFullYear(end.getFullYear() + SUPPORT_YEARS)
   const today = startOfToday()
 
-  const dayMs = 86_400_000
-  const daysLeft = Math.round((end.getTime() - today.getTime()) / dayMs)
-  const totalDays = (end.getTime() - start.getTime()) / dayMs
-  const elapsedDays = (today.getTime() - start.getTime()) / dayMs
+  const daysLeft = Math.round((end.getTime() - today.getTime()) / DAY_MS)
+  const totalDays = (end.getTime() - start.getTime()) / DAY_MS
+  const elapsedDays = (today.getTime() - start.getTime()) / DAY_MS
   const progress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)))
 
   return {
@@ -51,15 +71,12 @@ const plan = computed(() => {
     monthsLeft: Math.max(0, monthsBetween(today, end)),
     daysLeft,
     progress,
-    endLabel: `${end.getFullYear()}년 ${String(end.getMonth() + 1).padStart(2, '0')}월 ${String(
-      end.getDate(),
-    ).padStart(2, '0')}일`,
+    endLabel: formatDate(end),
   }
 })
 
 const ddayText = computed(() => {
-  const d = plan.value?.daysLeft
-  if (d == null) return 'D-day'
+  const d = plan.value?.daysLeft ?? FALLBACK_DAYS_LEFT
   return d >= 0 ? `D-${d}` : `D+${Math.abs(d)}`
 })
 
@@ -74,15 +91,17 @@ const assetText = computed(() => {
 <template>
   <div v-if="me" class="page">
     <section class="hero">
-      <p class="hero__phase">자립 {{ plan?.monthsSince ?? 0 }}개월 차</p>
+      <p v-if="plan" class="hero__phase">자립 {{ plan.monthsSince }}개월 차</p>
       <p class="hero__dday">{{ ddayText }}</p>
 
-      <p class="hero__note">지원 종료까지 {{ plan?.monthsLeft ?? 0 }}개월 남았어요</p>
-      <div class="hero__progress">
-        <span class="bar"><span class="bar__fill" :style="{ width: `${plan?.progress ?? 0}%` }" /></span>
-        <span class="hero__pct">{{ plan?.progress ?? 0 }}%</span>
-      </div>
-      <p class="hero__end">{{ plan?.endLabel ?? '' }}</p>
+      <template v-if="plan">
+        <p class="hero__note">지원 종료까지 {{ plan.monthsLeft }}개월 남았어요</p>
+        <div class="hero__progress">
+          <span class="bar"><span class="bar__fill" :style="{ width: `${plan.progress}%` }" /></span>
+          <span class="hero__pct">{{ plan.progress }}%</span>
+        </div>
+        <p class="hero__end">{{ plan.endLabel }}</p>
+      </template>
     </section>
 
     <section class="proj">
