@@ -98,8 +98,10 @@ const assetText = computed(() => {
       <template v-if="plan">
         <p class="hero__note">지원 종료까지 {{ plan.monthsLeft }}개월 남았어요</p>
         <div class="hero__progress">
-          <span class="bar"><span class="bar__fill" :style="{ width: `${plan.progress}%` }" /></span>
-          <span class="hero__pct">{{ plan.progress }}%</span>
+          <div class="bar">
+            <div class="bar__fill" :style="{ width: `${plan.progress}%` }" />
+            <span class="bar__pct">{{ plan.progress }}%</span>
+          </div>
         </div>
         <p class="hero__end">{{ plan.endLabel }}</p>
       </template>
@@ -158,30 +160,42 @@ const assetText = computed(() => {
   color: #000;
 }
 .hero__progress {
-  margin-top: 12px;
+  margin-top: 16px;
+}
+/* 알약형 트랙 — 검정 테두리 안에서 검정 막대가 차고, 오른쪽에 % 를 얹는다. */
+.bar {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-.bar {
-  flex: 1;
-  height: 8px;
+  justify-content: flex-end;
+  height: 40px;
+  padding-right: 18px;
+  border: 1.5px solid #000;
   border-radius: 9999px;
-  background: #d4cfcf;
+  background: var(--c-bg);
   overflow: hidden;
 }
 .bar__fill {
-  display: block;
-  height: 100%;
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  bottom: 4px;
+  min-width: 32px;
+  max-width: calc(100% - 8px);
   border-radius: 9999px;
-  background: #727272;
+  background: #000;
+  transition: width 0.4s ease;
 }
-.hero__pct {
+.bar__pct {
+  position: relative;
   font-family: var(--font-num);
   font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.22px;
-  color: #000;
+  font-size: 13px;
+  letter-spacing: 0.26px;
+  /* 빈 트랙(흰색) 위에선 검정, 채워진 막대(검정) 위에선 흰색으로 자동 반전. */
+  color: #fff;
+  mix-blend-mode: difference;
 }
 .hero__end {
   margin-top: 8px;
