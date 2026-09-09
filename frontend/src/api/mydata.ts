@@ -41,6 +41,36 @@ export interface ConnectResponse {
   accounts: ConnectedAccount[]
 }
 
+export type AccountType = 'DEPOSIT' | 'SAVINGS' | 'LOAN'
+
+/** 연동 계좌 한 건. 기관 이름은 안 내려온다 — orgCode만으로 표시해야 하면 서버에 필드 추가가 필요하다 */
+export interface UserAccount {
+  accountId: number
+  orgCode: string
+  accountName: string | null
+  productName: string | null
+  accountType: AccountType
+  balance: number
+  availableBalance: number | null
+  selected: boolean
+  active: boolean
+  lastSyncedAt: string | null
+}
+
+export type CardType = 'CREDIT' | 'CHECK' | 'PREPAID' | 'ETC'
+
+/** 연동 카드 한 건. */
+export interface UserCard {
+  cardId: number
+  orgCode: string
+  cardName: string | null
+  cardType: CardType
+  creditLimit: number | null
+  selected: boolean
+  active: boolean
+  lastSyncedAt: string | null
+}
+
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const MOCK_INSTITUTIONS: Institution[] = [
@@ -73,4 +103,14 @@ export const mydataApi = {
   async connect(_body: ConnectRequest): Promise<ConnectResponse> {
     return api.post<ConnectResponse>('/api/mydata/connect')
   },
+
+  /** 기관 하나의 연결 해제. orgCode는 화면 표시용이 아니라 서버 식별값(예: "004")이다 */
+  disconnectInstitution: (orgCode: string) =>
+    api.delete<void>(`/api/mydata/institutions/${orgCode}`),
+
+  /** 연동된 계좌 목록. 마이페이지 금융정보 관리 화면이 쓴다 */
+  fetchAccounts: () => api.get<{ accounts: UserAccount[] }>('/api/mydata/accounts'),
+
+  /** 연동된 카드 목록. 마이페이지 금융정보 관리 화면이 쓴다 */
+  fetchCards: () => api.get<{ cards: UserCard[] }>('/api/mydata/cards'),
 }

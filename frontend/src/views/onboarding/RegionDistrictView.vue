@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { REGIONS } from '@/data/regions'
 import StepProgress from '@/components/signup/StepProgress.vue'
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
 
+const route = useRoute()
 const router = useRouter()
 const onboarding = useOnboardingStore()
 
@@ -25,7 +26,7 @@ function select(district: string) {
 
 function next() {
   if (!onboarding.districtName) return
-  router.push('/onboarding/region/confirm')
+  router.push({ path: '/onboarding/region/confirm', query: route.query })
 }
 </script>
 

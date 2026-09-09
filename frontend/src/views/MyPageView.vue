@@ -1,72 +1,77 @@
 <script setup lang="ts">
 /**
  * 마이페이지(MYPAGE-01). 계정·금융정보·서비스 가이드 메뉴와 로그아웃.
- *
- * 대부분의 하위 화면(기본 정보 수정·약관 등)은 아직 없어 탭하면 "준비 중" 토스트만 띄운다.
- * 실제로 도는 건 로그아웃과 '연결된 금융기관'(마이데이터 화면)뿐이다.
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showConfirmDialog, showToast } from 'vant'
 import { userApi, type Me } from '@/api/user'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import AppIcon from '@/components/AppIcon.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 
 const me = ref<Me | null>(null)
+const showLogoutConfirm = ref(false)
 
 onMounted(async () => {
   me.value = await userApi.fetchMe()
 })
 
-function notReady() {
-  showToast('준비 중이에요')
+interface MenuItem {
+  text: string
+  badge?: string
+  badgeTone?: 'on' | 'off'
+  onClick: () => unknown
 }
 
-const sections = computed(() => [
+const sections = computed<{ label: string; items: MenuItem[] }[]>(() => [
   {
     label: '내 정보 관리',
     items: [
-      { text: '기본 정보 수정', onClick: notReady },
-      { text: '보안 및 비밀번호', onClick: notReady },
+      { text: '기본 정보 수정', onClick: () => router.push('/mypage/edit') },
+      { text: '보안 및 비밀번호', onClick: () => router.push('/mypage/password') },
+      {
+        text: '거주지역 변경',
+        onClick: () => router.push({ path: '/onboarding/region', query: { from: 'mypage' } }),
+      },
+      {
+        text: '주거 정보 수정',
+        onClick: () => router.push({ path: '/onboarding/housing-type', query: { from: 'mypage' } }),
+      },
     ],
   },
   {
     label: '금융정보 관리',
     items: [
       {
-        text: '연결된 금융기관',
+        text: '금융기관 연결',
         badge: me.value?.mydataConnected ? '연결됨' : '미연결',
         badgeTone: me.value?.mydataConnected ? 'on' : 'off',
-        // MYPAGE-02(금융정보 연결 관리) 화면 미구현. /mydata는 온보딩 플로우 전용이라 안 보낸다.
-        onClick: notReady,
+        onClick: () => router.push({ path: '/mydata/select', query: { from: 'mypage' } }),
       },
-      { text: '정기 수입 작성', onClick: notReady },
+      {
+        text: '연결된 금융기관',
+        onClick: () => router.push('/mypage/mydata'),
+      },
+      {
+        text: '정기 수입 작성',
+        onClick: () => router.push({ path: '/onboarding/income', query: { from: 'mypage' } }),
+      },
     ],
   },
   {
     label: '서비스 가이드',
     items: [
-      { text: '이용약관', onClick: notReady },
-      { text: '개인정보처리방침', onClick: notReady },
+      { text: '이용약관', onClick: () => router.push('/mypage/terms') },
+      { text: '개인정보처리방침', onClick: () => router.push('/mypage/privacy') },
     ],
   },
 ])
 
 async function logout() {
-  try {
-    await showConfirmDialog({
-      title: '로그아웃',
-      message: '로그아웃하시겠어요?',
-      confirmButtonText: '로그아웃',
-      cancelButtonText: '취소',
-    })
-  } catch {
-    return // 취소
-  }
   await authApi.logout().catch(() => {}) // 서버는 무상태 — 실패해도 클라에서 지우면 끝
   auth.logout()
   router.replace('/landing')
@@ -82,7 +87,12 @@ async function logout() {
         <p class="profile__name">{{ me.name }}</p>
         <p class="profile__email">{{ me.email }}</p>
       </div>
-      <button type="button" class="profile__edit" aria-label="기본 정보 수정" @click="notReady">
+      <button
+        type="button"
+        class="profile__edit"
+        aria-label="기본 정보 수정"
+        @click="router.push('/mypage/edit')"
+      >
         <AppIcon name="pencil" :size="18" />
       </button>
     </section>
@@ -110,7 +120,7 @@ async function logout() {
       <p class="group__label">계정 관리</p>
       <ul class="group__list">
         <li>
-          <button type="button" class="row" @click="logout">
+          <button type="button" class="row" @click="showLogoutConfirm = true">
             <span class="row__text">로그아웃</span>
             <AppIcon name="logout" :size="18" class="row__logout" />
           </button>
@@ -118,7 +128,16 @@ async function logout() {
       </ul>
     </section>
 
-    <button type="button" class="withdraw" @click="notReady">회원탈퇴</button>
+    <button type="button" class="withdraw" @click="router.push('/mypage/withdraw')">회원탈퇴</button>
+
+    <ConfirmDialog
+      v-model="showLogoutConfirm"
+      title="로그아웃 하시겠습니까?"
+      description="언제든 다시 로그인할 수 있어요"
+      confirm-text="로그아웃"
+      cancel-text="취소"
+      @confirm="logout"
+    />
   </div>
 </template>
 

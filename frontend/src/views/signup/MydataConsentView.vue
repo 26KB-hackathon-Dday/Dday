@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useSignupStore } from '@/stores/signup'
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
 import AgreementItem from '@/components/signup/AgreementItem.vue'
 
+const route = useRoute()
 const router = useRouter()
 const signup = useSignupStore()
+
+const closeTarget = computed(() => (route.query.from === 'mypage' ? '/mypage' : '/signup/done'))
 
 const agreedTransfer = ref(false)
 const agreedCollection = ref(false)
@@ -30,7 +33,7 @@ async function submit() {
   errorMessage.value = ''
   try {
     await signup.connectMydata()
-    router.push('/mydata/done')
+    router.push({ path: '/mydata/done', query: route.query })
   } catch {
     errorMessage.value = '연동에 실패했습니다. 다시 시도해주세요.'
   } finally {
@@ -47,7 +50,7 @@ async function submit() {
           <path d="m15 5-7 7 7 7" />
         </svg>
       </button>
-      <button class="close" type="button" aria-label="닫기" @click="router.push('/signup/done')">
+      <button class="close" type="button" aria-label="닫기" @click="router.push(closeTarget)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 6l12 12M18 6L6 18" />
         </svg>

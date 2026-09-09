@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '@/api/types'
 import { useOnboardingStore } from '@/stores/onboarding'
 import StepProgress from '@/components/signup/StepProgress.vue'
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
 
+const route = useRoute()
 const router = useRouter()
 const onboarding = useOnboardingStore()
 
@@ -18,7 +19,7 @@ async function next() {
   errorMessage.value = ''
   try {
     await onboarding.submitRegion()
-    router.push('/onboarding/housing-type')
+    router.push(route.query.from === 'mypage' ? '/mypage' : '/onboarding/housing-type')
   } catch (e) {
     errorMessage.value = e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다.'
   } finally {

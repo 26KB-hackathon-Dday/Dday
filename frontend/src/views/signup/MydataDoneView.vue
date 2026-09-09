@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { mydataApi, type Institution } from '@/api/mydata'
 import { useSignupStore } from '@/stores/signup'
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
 
+const route = useRoute()
 const router = useRouter()
 const signup = useSignupStore()
 
@@ -23,7 +24,7 @@ const connectedNames = computed(() =>
 const connectedCount = computed(() => signup.connectResult?.connectedCount ?? 0)
 
 function next() {
-  router.push('/signup/done')
+  router.push(route.query.from === 'mypage' ? '/mypage' : '/signup/done')
 }
 </script>
 

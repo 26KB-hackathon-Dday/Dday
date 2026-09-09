@@ -39,6 +39,10 @@ async function remove(incomeId: number) {
 }
 
 function next() {
+  if (route.query.from === 'mypage') {
+    router.push('/mypage')
+    return
+  }
   router.push(route.query.from === 'review' ? '/onboarding/review' : '/onboarding/assets/settlement')
 }
 </script>

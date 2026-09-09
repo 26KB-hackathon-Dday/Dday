@@ -93,7 +93,11 @@ async function next() {
   errorMessage.value = ''
   try {
     await onboarding.submitHousingCost()
-    router.push(route.query.from === 'review' ? '/onboarding/review' : '/onboarding/housing-checkpoint')
+    if (route.query.from === 'mypage') {
+      router.push('/mypage')
+    } else {
+      router.push(route.query.from === 'review' ? '/onboarding/review' : '/onboarding/housing-checkpoint')
+    }
   } catch (e) {
     errorMessage.value = e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다.'
   } finally {
