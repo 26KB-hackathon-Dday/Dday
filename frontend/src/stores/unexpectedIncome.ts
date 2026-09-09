@@ -1,60 +1,70 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
+import type { UnexpectedIncome, UnexpectedIncomeType } from '@/api/unexpectedIncome'
+
 export type IncomePocketType = 'essential' | 'free' | 'future' | 'emergency'
 
 export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
   /*
-   * 새로 감지된 입금액
-   *
-   * TODO:
-   * 실제로는 백엔드 / MyData 응답값 사용
+   * 현재 처리 중인 입금 거래.
    */
-  const detectedAmount = ref(4_000_000)
+  const detectedTransactionId = ref<number | null>(null)
+
+  const detectedAmount = ref(0)
+
+  const senderName = ref<string | null>(null)
+
+  const transactionAt = ref<string | null>(null)
+
+  const incomeType = ref<UnexpectedIncomeType>('NEW_INCOME')
 
   /*
-   * 새 입금 거래 식별값
-   *
-   * TODO:
-   * 실제 transactionId 사용
+   * 정기수입 추정 정보.
    */
-  const detectedTransactionId = ref<string | null>(null)
+  const recurringIncomeId = ref<number | null>(null)
+
+  const recurringIncomeName = ref<string | null>(null)
+
+  const expectedAmount = ref<number | null>(null)
+
+  const depositTiming = ref<string | null>(null)
+
+  const excessAmount = ref(0)
 
   /*
-   * 이번 달 포켓 예산에
-   * 실제 포함할 금액
+   * 실제 입금액 중
+   * 이번 달 포켓 예산에 추가할 금액.
    */
-  const includedAmount = ref(500_000)
+  const includedAmount = ref(0)
 
   /*
-   * 포켓별 추가 배분
+   * 포켓별 추가 배분액.
    */
   const essentialAmount = ref(0)
+
   const freeAmount = ref(0)
-  const futureAmount = ref(100_000)
-  const emergencyAmount = ref(400_000)
+
+  const futureAmount = ref(0)
+
+  const emergencyAmount = ref(0)
 
   /*
-   * 이번 달 포켓 예산에
-   * 포함하지 않는 금액
+   * 이번 달 예산에 넣지 않는 금액.
    */
   const excludedAmount = computed(() => {
     return Math.max(detectedAmount.value - includedAmount.value, 0)
   })
 
   /*
-   * 현재 배분한 금액 합계
+   * 현재 네 포켓에 배분한 총액.
    */
   const allocatedAmount = computed(() => {
     return essentialAmount.value + freeAmount.value + futureAmount.value + emergencyAmount.value
   })
 
   /*
-   * 아직 배분해야 할 금액
-   *
-   * 양수 = 남음
-   * 0 = 배분 완료
-   * 음수 = 초과
+   * 아직 배분해야 할 금액.
    */
   const remainingAmount = computed(() => {
     return includedAmount.value - allocatedAmount.value
@@ -65,25 +75,58 @@ export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
   })
 
   /*
-   * 새로운 예상 밖 입금을
-   * 현재 플로우의 대상 거래로 등록
+   * 백엔드에서 조회한 입금 거래 저장.
    */
-  const setDetectedIncome = (amount: number, transactionId?: string) => {
-    detectedAmount.value = Math.max(0, amount)
+  const setDetectedIncome = (income: UnexpectedIncome) => {
+    detectedTransactionId.value = income.transactionId
 
-    detectedTransactionId.value = transactionId ?? null
+    detectedAmount.value = income.amount
 
-    /*
-     * 기본적으로 전체 금액을
-     * 이번 달에 포함시키지는 않는다.
-     */
+    senderName.value = income.senderName
+
+    transactionAt.value = income.transactionAt
+
+    incomeType.value = income.type
+
+    recurringIncomeId.value = income.recurringIncomeId
+
+    recurringIncomeName.value = income.recurringIncomeName
+
+    expectedAmount.value = income.expectedAmount
+
+    depositTiming.value = income.depositTiming
+
+    excessAmount.value = income.excessAmount ?? 0
+
     includedAmount.value = 0
 
     resetAllocation()
   }
 
   /*
-   * 이번 달 예산에 넣을 금액 지정
+   * RECURRING_LIKELY / RECURRING_OVER에서
+   * "고정수입이 아니에요" 선택 시
+   * 같은 거래를 일반 새 입금으로 전환.
+   *
+   * 백엔드 상태는 아직 바꾸지 않는다.
+   */
+  const convertToNewIncome = () => {
+    incomeType.value = 'NEW_INCOME'
+
+    recurringIncomeId.value = null
+    recurringIncomeName.value = null
+    expectedAmount.value = null
+    depositTiming.value = null
+    excessAmount.value = 0
+
+    includedAmount.value = 0
+
+    resetAllocation()
+  }
+
+  /*
+   * 실제 입금액 중
+   * 예산에 추가할 금액 지정.
    */
   const setIncludedAmount = (amount: number) => {
     const normalized = Math.max(0, Math.min(amount, detectedAmount.value))
@@ -139,21 +182,39 @@ export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
   }
 
   const resetAll = () => {
-    detectedAmount.value = 4_000_000
-
     detectedTransactionId.value = null
 
-    includedAmount.value = 500_000
+    detectedAmount.value = 0
 
-    essentialAmount.value = 0
-    freeAmount.value = 0
-    futureAmount.value = 100_000
-    emergencyAmount.value = 400_000
+    senderName.value = null
+
+    transactionAt.value = null
+
+    incomeType.value = 'NEW_INCOME'
+
+    recurringIncomeId.value = null
+    recurringIncomeName.value = null
+    expectedAmount.value = null
+    depositTiming.value = null
+    excessAmount.value = 0
+
+    includedAmount.value = 0
+
+    resetAllocation()
   }
 
   return {
-    detectedAmount,
     detectedTransactionId,
+    detectedAmount,
+    senderName,
+    transactionAt,
+    incomeType,
+
+    recurringIncomeId,
+    recurringIncomeName,
+    expectedAmount,
+    depositTiming,
+    excessAmount,
 
     includedAmount,
     excludedAmount,
@@ -168,6 +229,8 @@ export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
     isAllocationComplete,
 
     setDetectedIncome,
+    convertToNewIncome,
+
     setIncludedAmount,
 
     getPocketAmount,

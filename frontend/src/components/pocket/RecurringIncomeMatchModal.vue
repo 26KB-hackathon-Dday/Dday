@@ -1,75 +1,134 @@
 <template>
   <div v-if="open" class="modal-overlay">
     <!-- =========================
-         1단계
-         기존 정기수입과 같은지 확인
+         고정수입으로 추정
     ========================== -->
-    <section v-if="step === 'match'" class="income-modal" role="dialog" aria-modal="true">
-      <h2 class="income-modal__title">등록한 수입으로 보여요</h2>
+    <section
+      v-if="incomeType === 'RECURRING_LIKELY'"
+      class="income-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <h2 class="income-modal__title">고정수입으로 보여요</h2>
 
       <p class="income-modal__description">
-        <strong>
-          {{ matchStore.senderName }}
-        </strong>
-        에서
-        <strong>
-          {{ formatCurrency(matchStore.depositedAmount) }}
-        </strong>
+        <strong>{{ senderName }}</strong
+        >님에게
+        <strong>{{ formatCurrency(amount) }}</strong>
         이 들어왔어요.
       </p>
 
-      <p class="income-modal__question">
-        등록한
-        <strong> '{{ matchStore.expectedIncomeName }}' </strong>
-        월
-        {{ formatCurrency(matchStore.expectedMonthlyAmount) }}
-        수입과 같은 수입인가요?
-      </p>
+      <div class="income-modal__registered">
+        <span>등록한 고정수입</span>
 
-      <div class="income-modal__notice">
-        <p>'네, 맞아요'를 선택하면 정기 수입으로 처리되며, 전체 예산이 늘어나지 않아요.</p>
+        <strong>
+          {{ recurringIncomeName || '고정수입' }}
+          {{ formatCurrency(expectedAmount || 0) }}
+        </strong>
+
+        <small v-if="depositTiming">
+          {{ depositTiming }}
+        </small>
       </div>
 
-      <div class="income-modal__button-row">
-        <button class="income-modal__secondary" type="button" @click="handleNotMatch">
-          아니에요
+      <div class="income-modal__notice">
+        <p>이미 등록했던 고정 수입이라면 이번 달 예산에 포함하지 않아도 돼요.</p>
+      </div>
+
+      <p v-if="errorMessage" class="income-modal__error">
+        {{ errorMessage }}
+      </p>
+
+      <div class="income-modal__buttons">
+        <button
+          class="income-modal__primary"
+          type="button"
+          :disabled="processing"
+          @click="handleExclude"
+        >
+          {{ processing ? '처리 중...' : '이번 달 예산에 포함하지 않기' }}
         </button>
 
-        <button class="income-modal__primary" type="button" @click="handleMatch">네, 맞아요</button>
+        <button
+          class="income-modal__secondary"
+          type="button"
+          :disabled="processing"
+          @click="handleNotRecurring"
+        >
+          고정수입이 아니에요
+        </button>
       </div>
     </section>
 
     <!-- =========================
-         2단계
-         앞으로 자동 매칭할지 확인
+         고정수입보다 초과 입금
     ========================== -->
-    <section v-else class="income-modal" role="dialog" aria-modal="true">
-      <h2 class="income-modal__title">앞으로도 자동으로 인식할까요?</h2>
+    <section
+      v-else-if="incomeType === 'RECURRING_OVER'"
+      class="income-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <h2 class="income-modal__title">고정수입보다 돈이 더 들어왔어요</h2>
 
-      <p class="income-modal__question">
-        앞으로
-        <strong>
-          {{ matchStore.senderName }}
-        </strong>
-        에서 들어오는 돈을
-        <strong> '{{ matchStore.expectedIncomeName }}' </strong>
-        수입으로 등록하시겠어요?
+      <p class="income-modal__description">
+        <strong>{{ senderName }}</strong
+        >님에게
+        <strong>{{ formatCurrency(amount) }}</strong>
+        이 들어왔어요.
       </p>
+
+      <div class="income-modal__registered">
+        <span>
+          {{ recurringIncomeName || '등록한 고정수입' }}
+        </span>
+
+        <strong> 예상 {{ formatCurrency(expectedAmount || 0) }} </strong>
+
+        <small v-if="depositTiming">
+          {{ depositTiming }}
+        </small>
+      </div>
 
       <div class="income-modal__notice">
         <p>
-          등록하면 다음부터 같은 출처에서 들어오는 돈은 자동으로
-          {{ matchStore.expectedIncomeName }}
-          수입으로 처리해요.
+          고정수입으로 추정되지만,
+          <strong>{{ formatCurrency(excessAmount) }}</strong>
+          이 더 들어온 것으로 보여요.
         </p>
       </div>
 
-      <div class="income-modal__button-row">
-        <button class="income-modal__secondary" type="button" @click="handleSkipRegister">
-          아니요
+      <p v-if="errorMessage" class="income-modal__error">
+        {{ errorMessage }}
+      </p>
+
+      <div class="income-modal__buttons">
+        <button
+          class="income-modal__primary"
+          type="button"
+          :disabled="processing"
+          @click="handleAddExcess"
+        >
+          {{ formatCurrency(excessAmount) }}만 포켓에 추가하기
         </button>
 
-        <button class="income-modal__primary" type="button" @click="handleRegister">네</button>
+        <button
+          class="income-modal__secondary"
+          type="button"
+          :disabled="processing"
+          @click="handleExclude"
+        >
+          이번 달 예산에 포함하지 않기
+        </button>
+
+        <button
+          class="income-modal__text-button"
+          type="button"
+          :disabled="processing"
+          @click="handleNotRecurring"
+        >
+          고정수입이 아니에요
+        </button>
       </div>
     </section>
   </div>
@@ -77,167 +136,76 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 
-import { useIncomeMatchStore } from '@/stores/incomeMatch'
-import { useUnexpectedIncomeStore } from '@/stores/unexpectedIncome'
+import type { UnexpectedIncomeType } from '@/api/unexpectedIncome'
 
 interface Props {
   open: boolean
+
+  incomeType: UnexpectedIncomeType
+
+  senderName: string
+
+  amount: number
+
+  recurringIncomeName: string | null
+
+  expectedAmount: number | null
+
+  depositTiming: string | null
+
+  excessAmount: number
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  close: []
-  matched: []
-  registered: []
+  exclude: []
+  notRecurring: []
+  addExcess: []
 }>()
 
-const router = useRouter()
+const processing = ref(false)
 
-const matchStore = useIncomeMatchStore()
+const errorMessage = ref('')
 
-const unexpectedIncomeStore = useUnexpectedIncomeStore()
-
-type ModalStep = 'match' | 'register'
-
-const step = ref<ModalStep>('match')
-
-/*
- * 모달이 다시 열릴 때
- * 항상 첫 질문부터 시작
- */
 watch(
   () => props.open,
-  (isOpen) => {
-    if (isOpen) {
-      step.value = 'match'
+  (open) => {
+    if (open) {
+      processing.value = false
+
+      errorMessage.value = ''
     }
   },
 )
 
-/*
- * "네, 맞아요"
- *
- * 이미 온보딩에서 월 예상수입에
- * 포함된 돈이므로
- * 총예산은 절대 증가시키지 않는다.
- */
-const handleMatch = () => {
-  matchStore.confirmMatch()
+const handleExclude = () => {
+  if (processing.value) {
+    return
+  }
 
-  /*
-   * 중요:
-   *
-   * 여기서 pocketBudget.totalBudget
-   * 값을 절대 변경하면 안 된다.
-   */
-
-  step.value = 'register'
+  emit('exclude')
 }
 
-/*
- * "아니에요"
- *
- * 정기수입이 아니라
- * 예상 밖에 새로 들어온 돈으로 처리.
- *
- * 다음:
- * 이번 달 예산에 얼마를 추가할까요?
- */
-const handleNotMatch = async () => {
-  matchStore.rejectMatch()
+const handleNotRecurring = () => {
+  if (processing.value) {
+    return
+  }
 
-  unexpectedIncomeStore.setDetectedIncome(matchStore.depositedAmount, matchStore.transactionId)
-
-  emit('close')
-
-  await router.push({
-    name: 'pocket-unexpected-income-amount',
-  })
+  emit('notRecurring')
 }
 
-/*
- * 같은 수입은 맞지만
- * 앞으로 자동등록은 하지 않음.
- *
- * 이번 거래만 정기수입으로 처리하고 종료.
- */
-const handleSkipRegister = () => {
-  /*
-   * TODO:
-   * 백엔드 API
-   *
-   * transactionId에 대해
-   * expectedIncomeId 수입으로
-   * 확정 처리
-   *
-   * source mapping은 생성하지 않음
-   */
+const handleAddExcess = () => {
+  if (processing.value) {
+    return
+  }
 
-  console.log('정기수입 일치 처리', {
-    transactionId: matchStore.transactionId,
-
-    expectedIncomeId: matchStore.expectedIncomeId,
-
-    registerSource: false,
-  })
-
-  emit('matched')
-  emit('close')
-
-  step.value = 'match'
-}
-
-/*
- * 같은 수입 + 앞으로 자동등록
- */
-const handleRegister = () => {
-  matchStore.registerSource()
-
-  /*
-   * TODO:
-   * 백엔드 API 호출
-   *
-   * 예:
-   *
-   * POST /api/income-source-mappings
-   *
-   * {
-   *   expectedIncomeId: 1,
-   *   sourceKey: "source-cu-gangnam",
-   *   senderName: "CU 강남점"
-   * }
-   *
-   * 백엔드에서 이 식별값을 저장하고
-   * 이후 해당 출처 입금은
-   * 자동으로 편의점 아르바이트
-   * 수입으로 처리
-   */
-
-  console.log('정기수입 출처 자동등록', {
-    transactionId: matchStore.transactionId,
-
-    expectedIncomeId: matchStore.expectedIncomeId,
-
-    expectedIncomeName: matchStore.expectedIncomeName,
-
-    senderName: matchStore.senderName,
-
-    incomeSourceKey: matchStore.incomeSourceKey,
-
-    registerSource: true,
-  })
-
-  emit('registered')
-  emit('close')
-
-  step.value = 'match'
+  emit('addExcess')
 }
 
 const formatCurrency = (value: number) => {
-  return `${value.toLocaleString('ko-KR')}원`
+  return `${Math.max(value, 0).toLocaleString('ko-KR')}원`
 }
 </script>
 
@@ -291,26 +259,46 @@ const formatCurrency = (value: number) => {
 }
 
 .income-modal__description strong {
-  color: #555555;
-  font-weight: 600;
+  color: #444444;
+
+  font-weight: 700;
 }
 
-.income-modal__question {
-  margin: 4px 0 0;
+.income-modal__registered {
+  display: flex;
+  flex-direction: column;
 
-  color: #777777;
+  gap: 4px;
 
-  font-size: 13px;
-  line-height: 1.65;
+  margin-top: 18px;
+  padding: 14px;
+
+  border-radius: 9px;
+
+  background: #fafafa;
 }
 
-.income-modal__question strong {
-  color: #555555;
-  font-weight: 600;
+.income-modal__registered span {
+  color: #888888;
+
+  font-size: 11px;
+}
+
+.income-modal__registered strong {
+  color: #333333;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.income-modal__registered small {
+  color: #888888;
+
+  font-size: 11px;
 }
 
 .income-modal__notice {
-  margin-top: 18px;
+  margin-top: 14px;
 
   padding: 13px 14px;
 
@@ -328,22 +316,36 @@ const formatCurrency = (value: number) => {
   line-height: 1.6;
 }
 
-.income-modal__button-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.income-modal__notice strong {
+  color: #444444;
+}
+
+.income-modal__error {
+  margin: 12px 0 0;
+
+  color: #e05252;
+
+  font-size: 12px;
+}
+
+.income-modal__buttons {
+  display: flex;
+  flex-direction: column;
 
   gap: 10px;
 
-  margin-top: 20px;
+  margin-top: 22px;
 }
 
 .income-modal__primary,
 .income-modal__secondary {
   width: 100%;
-  height: 52px;
+  min-height: 54px;
+
+  padding: 0 14px;
 
   border: 0;
-  border-radius: 9px;
+  border-radius: 10px;
 
   font-size: 14px;
   font-weight: 700;
@@ -353,16 +355,37 @@ const formatCurrency = (value: number) => {
 
 .income-modal__primary {
   color: #ffffff;
+
   background: #111111;
 }
 
 .income-modal__secondary {
   color: #555555;
-  background: #eeeeef;
+
+  background: #f3f3f5;
 }
 
-.income-modal__primary:active,
-.income-modal__secondary:active {
-  opacity: 0.85;
+.income-modal__text-button {
+  width: 100%;
+
+  padding: 10px 0;
+
+  border: 0;
+
+  color: #888888;
+  background: transparent;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.income-modal__primary:disabled,
+.income-modal__secondary:disabled,
+.income-modal__text-button:disabled {
+  opacity: 0.55;
+
+  cursor: default;
 }
 </style>

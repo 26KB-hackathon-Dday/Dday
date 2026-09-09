@@ -141,11 +141,14 @@
       </section>
 
       <BudgetForecastCard
-        :expected-asset="budgetStore.expectedAsset"
-        :previous-asset="budgetStore.previousAsset"
-        :difference="budgetStore.difference"
+        v-if="forecastLoaded"
+        :current-asset="currentAsset"
+        :expected-asset="expectedAsset"
         :future-budget="budgetStore.futureBudget"
+        :remaining-months="remainingMonths"
       />
+
+      <p v-else-if="forecastError" class="forecast-error">예상 자산 정보를 불러오지 못했어요.</p>
 
       <button
         class="save-button"
@@ -163,11 +166,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+
 import { useRouter } from 'vue-router'
 
 import PocketBudgetSlider from '@/components/pocket/PocketBudgetSlider.vue'
 import BudgetForecastCard from '@/components/pocket/BudgetForecastCard.vue'
+
+import { assetForecastApi } from '@/api/assetForecast'
 
 import { usePocketBudgetStore, type PocketType } from '@/stores/pocketBudget'
 
@@ -180,6 +186,37 @@ const totalBudgetInput = ref(budgetStore.totalBudget.toLocaleString('ko-KR'))
 const totalBudgetError = ref('')
 
 const lastChangedPocket = ref<PocketType | null>(null)
+
+const currentAsset = ref(0)
+
+const remainingMonths = ref(0)
+
+const forecastLoaded = ref(false)
+
+const forecastError = ref('')
+
+const expectedAsset = computed(() => {
+  return currentAsset.value + budgetStore.futureBudget * remainingMonths.value
+})
+
+const loadForecast = async () => {
+  forecastError.value = ''
+
+  try {
+    const response = await assetForecastApi.find()
+
+    currentAsset.value = Number(response.currentAsset ?? 0)
+
+    remainingMonths.value = Number(response.remainingMonths ?? 0)
+
+    forecastLoaded.value = true
+  } catch (error) {
+    forecastLoaded.value = false
+
+    forecastError.value =
+      error instanceof Error ? error.message : '예상 자산 정보를 불러오지 못했어요.'
+  }
+}
 
 const statusClass = computed(() => {
   if (budgetStore.budgetGap > 0) {
@@ -200,6 +237,7 @@ const handleTotalInput = (event: Event) => {
 
   if (!onlyNumbers) {
     totalBudgetInput.value = ''
+
     return
   }
 
@@ -225,11 +263,6 @@ const applyTotalBudget = () => {
 
   totalBudgetInput.value = normalized.toLocaleString('ko-KR')
 
-  /*
-   * 총예산 자체를 바꿨으므로
-   * 특정 포켓을 마지막 변경 포켓으로
-   * 간주하지 않는다.
-   */
   lastChangedPocket.value = null
 }
 
@@ -248,7 +281,7 @@ const handleAutoBalance = () => {
 }
 
 const formatCurrency = (value: number) => {
-  return `${value.toLocaleString('ko-KR')}원`
+  return `${Number(value ?? 0).toLocaleString('ko-KR')}원`
 }
 
 const handleSave = () => {
@@ -270,6 +303,8 @@ const handleSave = () => {
 
   router.back()
 }
+
+onMounted(loadForecast)
 </script>
 
 <style scoped>
@@ -559,6 +594,22 @@ const handleSave = () => {
   font-weight: 700;
 
   cursor: pointer;
+}
+
+.forecast-error {
+  width: 100%;
+
+  margin-top: 4px;
+
+  padding: 16px;
+
+  border-radius: 12px;
+
+  color: #777777;
+  background: #f5f5f6;
+
+  font-size: 12px;
+  text-align: center;
 }
 
 /* =========================

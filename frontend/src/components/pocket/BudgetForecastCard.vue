@@ -19,14 +19,20 @@
       </span>
     </div>
 
-    <p class="forecast-card__previous">기존 계획 {{ formatCurrency(previousAsset) }}</p>
+    <p class="forecast-card__previous">
+      현재 미래자산
+      {{ formatCurrency(currentAsset) }}
+    </p>
 
     <div class="forecast-card__divider" />
 
     <p class="forecast-card__description">
       미래자산 포켓에 월
-      {{ formatCurrency(futureBudget) }}씩 꾸준히 모았을 때의 예상이에요.
+      {{ formatCurrency(futureBudget) }}씩 {{ remainingMonths }}개월 동안 꾸준히 모았을 때의
+      예상이에요.
     </p>
+
+    <p class="forecast-card__notice">투자 수익과 손실은 예상 금액에 반영하지 않았어요.</p>
   </section>
 </template>
 
@@ -34,28 +40,33 @@
 import { computed } from 'vue'
 
 interface Props {
+  currentAsset: number
   expectedAsset: number
-  previousAsset: number
-  difference: number
   futureBudget: number
+  remainingMonths: number
 }
 
 const props = defineProps<Props>()
 
-const differenceText = computed(() => {
-  const sign = props.difference >= 0 ? '+' : '-'
+const difference = computed(() => {
+  return props.expectedAsset - props.currentAsset
+})
 
-  return `${sign}${formatCurrency(Math.abs(props.difference))}`
+const differenceText = computed(() => {
+  const sign = difference.value >= 0 ? '+' : '-'
+
+  return `${sign}${formatCurrency(Math.abs(difference.value))}`
 })
 
 const formatCurrency = (value: number) => {
-  return `${value.toLocaleString('ko-KR')}원`
+  return `${Math.round(Number(value ?? 0)).toLocaleString('ko-KR')}원`
 }
 </script>
 
 <style scoped>
 .forecast-card {
   width: 100%;
+
   padding: 26px 22px 22px;
 
   border: 1px solid #e5e5e5;
@@ -86,7 +97,10 @@ const formatCurrency = (value: number) => {
 .forecast-card__result {
   display: flex;
   align-items: center;
+
   gap: 8px;
+
+  flex-wrap: wrap;
 }
 
 .forecast-card__amount {
@@ -117,6 +131,7 @@ const formatCurrency = (value: number) => {
 
 .forecast-card__difference--minus {
   color: #e05252;
+
   background: #fff0f0;
 }
 
@@ -145,6 +160,15 @@ const formatCurrency = (value: number) => {
 
   font-size: 12px;
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.7;
+}
+
+.forecast-card__notice {
+  margin: 8px 0 0;
+
+  color: #aaaaaa;
+
+  font-size: 10px;
+  line-height: 1.5;
 }
 </style>

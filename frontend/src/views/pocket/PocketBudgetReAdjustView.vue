@@ -1,7 +1,6 @@
 <template>
   <div class="budget-page">
     <main class="budget-content">
-      <!-- 페이지 설명 -->
       <section class="intro-section">
         <h2 class="intro-title">포켓 예산을 조정해 보세요</h2>
 
@@ -11,299 +10,305 @@
         </p>
       </section>
 
-      <!-- 안내 -->
       <section class="usage-guide">
         <strong class="usage-guide__title"> 이미 사용한 금액은 변경할 수 없어요. </strong>
 
         <p class="usage-guide__description">각 포켓은 현재 사용액 이상으로만 조정할 수 있어요.</p>
       </section>
 
-      <!-- 총 예산 -->
-      <section class="total-card">
-        <div class="total-card__text">
-          <span class="total-label"> 이번 달 총 예산 </span>
+      <p v-if="loadError" class="load-error">
+        {{ loadError }}
+      </p>
 
-          <span class="total-description">
-            이번 달 남은 기간에 사용할 총 예산을 수정할 수 있어요.
-          </span>
-        </div>
+      <template v-if="!isLoading">
+        <section class="total-card">
+          <div class="total-card__text">
+            <span class="total-label"> 이번 달 총 예산 </span>
 
-        <div class="total-input-wrap">
-          <input
-            v-model="totalBudgetInput"
-            class="total-input"
-            type="text"
-            inputmode="numeric"
-            @input="handleTotalInput"
-            @keyup.enter="applyTotalBudget"
-          />
+            <span class="total-description">
+              이번 달 남은 기간에 사용할 총 예산을 수정할 수 있어요.
+            </span>
+          </div>
 
-          <span class="total-unit"> 원 </span>
-        </div>
-
-        <button class="total-register-button" type="button" @click="applyTotalBudget">
-          총 예산 등록
-        </button>
-
-        <p v-if="totalBudgetError" class="total-error">
-          {{ totalBudgetError }}
-        </p>
-      </section>
-
-      <!-- 포켓 -->
-      <section class="pocket-section">
-        <div class="section-heading">
-          <h3 class="section-title">포켓별 예산</h3>
-
-          <p class="section-description">전체 합계가 총 예산과 같아야 저장할 수 있어요.</p>
-        </div>
-
-        <div class="pocket-list">
-          <!-- 필수 -->
-          <section class="pocket-card pocket-card--essential">
-            <div class="pocket-card__top">
-              <div>
-                <span class="pocket-badge pocket-badge--essential"> 필수 포켓 </span>
-
-                <p class="pocket-min pocket-min--essential">
-                  최소
-                  {{ formatCurrency(usedAmounts.essential) }}
-                  이상으로 조정 가능
-                </p>
-              </div>
-
-              <div class="pocket-value">
-                <strong>
-                  {{ formatCurrency(budgets.essential) }}
-                </strong>
-
-                <span> {{ getPercentage(budgets.essential) }}% </span>
-              </div>
-            </div>
-
+          <div class="total-input-wrap">
             <input
-              class="pocket-slider"
-              type="range"
-              :min="usedAmounts.essential"
-              :max="totalBudget"
-              :step="STEP"
-              :value="budgets.essential"
-              :style="getSliderStyle(budgets.essential, usedAmounts.essential)"
-              @input="handlePocketInput('essential', $event)"
+              v-model="totalBudgetInput"
+              class="total-input"
+              type="text"
+              inputmode="numeric"
+              @input="handleTotalInput"
+              @keyup.enter="applyTotalBudget"
             />
 
-            <p class="used-amount">
-              🔒 현재 사용액
-              {{ formatCurrency(usedAmounts.essential) }}
-            </p>
-          </section>
+            <span class="total-unit"> 원 </span>
+          </div>
 
-          <!-- 자유 -->
-          <section class="pocket-card pocket-card--free">
-            <div class="pocket-card__top">
-              <div>
-                <span class="pocket-badge pocket-badge--free"> 자유 포켓 </span>
+          <button class="total-register-button" type="button" @click="applyTotalBudget">
+            총 예산 등록
+          </button>
 
-                <p class="pocket-min pocket-min--free">
-                  최소
-                  {{ formatCurrency(usedAmounts.free) }}
-                  이상으로 조정 가능
-                </p>
+          <p v-if="totalBudgetError" class="total-error">
+            {{ totalBudgetError }}
+          </p>
+        </section>
+
+        <section class="pocket-section">
+          <div class="section-heading">
+            <h3 class="section-title">포켓별 예산</h3>
+
+            <p class="section-description">전체 합계가 총 예산과 같아야 저장할 수 있어요.</p>
+          </div>
+
+          <div class="pocket-list">
+            <section class="pocket-card pocket-card--essential">
+              <div class="pocket-card__top">
+                <div>
+                  <span class="pocket-badge pocket-badge--essential"> 필수 포켓 </span>
+
+                  <p class="pocket-min pocket-min--essential">
+                    최소
+                    {{ formatCurrency(usedAmounts.essential) }}
+                    이상으로 조정 가능
+                  </p>
+                </div>
+
+                <div class="pocket-value">
+                  <strong>
+                    {{ formatCurrency(budgets.essential) }}
+                  </strong>
+
+                  <span> {{ getPercentage(budgets.essential) }}% </span>
+                </div>
               </div>
 
-              <div class="pocket-value">
-                <strong>
-                  {{ formatCurrency(budgets.free) }}
-                </strong>
+              <input
+                class="pocket-slider"
+                type="range"
+                :min="usedAmounts.essential"
+                :max="totalBudget"
+                :step="STEP"
+                :value="budgets.essential"
+                :style="getSliderStyle(budgets.essential, usedAmounts.essential)"
+                @input="handlePocketInput('essential', $event)"
+              />
 
-                <span> {{ getPercentage(budgets.free) }}% </span>
-              </div>
-            </div>
+              <p class="used-amount">
+                🔒 현재 사용액
+                {{ formatCurrency(usedAmounts.essential) }}
+              </p>
+            </section>
 
-            <input
-              class="pocket-slider"
-              type="range"
-              :min="usedAmounts.free"
-              :max="totalBudget"
-              :step="STEP"
-              :value="budgets.free"
-              :style="getSliderStyle(budgets.free, usedAmounts.free)"
-              @input="handlePocketInput('free', $event)"
-            />
+            <section class="pocket-card pocket-card--free">
+              <div class="pocket-card__top">
+                <div>
+                  <span class="pocket-badge pocket-badge--free"> 자유 포켓 </span>
 
-            <p class="used-amount">
-              🔒 현재 사용액
-              {{ formatCurrency(usedAmounts.free) }}
-            </p>
-          </section>
+                  <p class="pocket-min pocket-min--free">
+                    최소
+                    {{ formatCurrency(usedAmounts.free) }}
+                    이상으로 조정 가능
+                  </p>
+                </div>
 
-          <!-- 미래자산 -->
-          <section class="pocket-card pocket-card--future">
-            <div class="pocket-card__top">
-              <div>
-                <span class="pocket-badge pocket-badge--future"> 미래자산 포켓 </span>
+                <div class="pocket-value">
+                  <strong>
+                    {{ formatCurrency(budgets.free) }}
+                  </strong>
 
-                <p class="pocket-min pocket-min--future">
-                  최소
-                  {{ formatCurrency(usedAmounts.future) }}
-                  이상으로 조정 가능
-                </p>
-              </div>
-
-              <div class="pocket-value">
-                <strong>
-                  {{ formatCurrency(budgets.future) }}
-                </strong>
-
-                <span> {{ getPercentage(budgets.future) }}% </span>
-              </div>
-            </div>
-
-            <input
-              class="pocket-slider"
-              type="range"
-              :min="usedAmounts.future"
-              :max="totalBudget"
-              :step="STEP"
-              :value="budgets.future"
-              :style="getSliderStyle(budgets.future, usedAmounts.future)"
-              @input="handlePocketInput('future', $event)"
-            />
-
-            <p class="used-amount">
-              🔒 현재 사용액
-              {{ formatCurrency(usedAmounts.future) }}
-            </p>
-          </section>
-
-          <!-- 비상금 -->
-          <section class="pocket-card pocket-card--emergency">
-            <div class="pocket-card__top">
-              <div>
-                <span class="pocket-badge pocket-badge--emergency"> 비상금 포켓 </span>
-
-                <p class="pocket-min pocket-min--emergency">
-                  최소
-                  {{ formatCurrency(usedAmounts.emergency) }}
-                  이상으로 조정 가능
-                </p>
+                  <span> {{ getPercentage(budgets.free) }}% </span>
+                </div>
               </div>
 
-              <div class="pocket-value">
-                <strong>
-                  {{ formatCurrency(budgets.emergency) }}
-                </strong>
+              <input
+                class="pocket-slider"
+                type="range"
+                :min="usedAmounts.free"
+                :max="totalBudget"
+                :step="STEP"
+                :value="budgets.free"
+                :style="getSliderStyle(budgets.free, usedAmounts.free)"
+                @input="handlePocketInput('free', $event)"
+              />
 
-                <span> {{ getPercentage(budgets.emergency) }}% </span>
+              <p class="used-amount">
+                🔒 현재 사용액
+                {{ formatCurrency(usedAmounts.free) }}
+              </p>
+            </section>
+
+            <section class="pocket-card pocket-card--future">
+              <div class="pocket-card__top">
+                <div>
+                  <span class="pocket-badge pocket-badge--future"> 미래자산 포켓 </span>
+
+                  <p class="pocket-min pocket-min--future">
+                    최소
+                    {{ formatCurrency(usedAmounts.future) }}
+                    이상으로 조정 가능
+                  </p>
+                </div>
+
+                <div class="pocket-value">
+                  <strong>
+                    {{ formatCurrency(budgets.future) }}
+                  </strong>
+
+                  <span> {{ getPercentage(budgets.future) }}% </span>
+                </div>
               </div>
-            </div>
 
-            <input
-              class="pocket-slider"
-              type="range"
-              :min="usedAmounts.emergency"
-              :max="totalBudget"
-              :step="STEP"
-              :value="budgets.emergency"
-              :style="getSliderStyle(budgets.emergency, usedAmounts.emergency)"
-              @input="handlePocketInput('emergency', $event)"
-            />
+              <input
+                class="pocket-slider"
+                type="range"
+                :min="usedAmounts.future"
+                :max="totalBudget"
+                :step="STEP"
+                :value="budgets.future"
+                :style="getSliderStyle(budgets.future, usedAmounts.future)"
+                @input="handlePocketInput('future', $event)"
+              />
 
-            <p class="used-amount">
-              🔒 현재 사용액
-              {{ formatCurrency(usedAmounts.emergency) }}
-            </p>
-          </section>
-        </div>
-      </section>
+              <p class="used-amount">
+                🔒 현재 사용액
+                {{ formatCurrency(usedAmounts.future) }}
+              </p>
+            </section>
 
-      <!-- 현재 배분 상태 -->
-      <section class="budget-status" :class="statusClass">
-        <div class="budget-status__row">
-          <span> 현재 배분 </span>
+            <section class="pocket-card pocket-card--emergency">
+              <div class="pocket-card__top">
+                <div>
+                  <span class="pocket-badge pocket-badge--emergency"> 비상금 포켓 </span>
 
-          <strong>
-            {{ formatCurrency(allocatedTotal) }}
-          </strong>
-        </div>
+                  <p class="pocket-min pocket-min--emergency">
+                    최소
+                    {{ formatCurrency(usedAmounts.emergency) }}
+                    이상으로 조정 가능
+                  </p>
+                </div>
 
-        <div class="budget-status__row">
-          <span> 총 예산 </span>
+                <div class="pocket-value">
+                  <strong>
+                    {{ formatCurrency(budgets.emergency) }}
+                  </strong>
 
-          <strong>
-            {{ formatCurrency(totalBudget) }}
-          </strong>
-        </div>
+                  <span> {{ getPercentage(budgets.emergency) }}% </span>
+                </div>
+              </div>
 
-        <div class="budget-status__divider" />
+              <input
+                class="pocket-slider"
+                type="range"
+                :min="usedAmounts.emergency"
+                :max="totalBudget"
+                :step="STEP"
+                :value="budgets.emergency"
+                :style="getSliderStyle(budgets.emergency, usedAmounts.emergency)"
+                @input="handlePocketInput('emergency', $event)"
+              />
 
-        <div v-if="budgetGap > 0" class="status-message status-message--error">
-          <strong>
-            총 예산보다
-            {{ formatCurrency(budgetGap) }}
-            많아요.
-          </strong>
+              <p class="used-amount">
+                🔒 현재 사용액
+                {{ formatCurrency(usedAmounts.emergency) }}
+              </p>
+            </section>
+          </div>
+        </section>
 
-          <span> 다른 포켓의 예산을 줄여주세요. </span>
-        </div>
+        <section class="budget-status" :class="statusClass">
+          <div class="budget-status__row">
+            <span>현재 배분</span>
 
-        <div v-else-if="budgetGap < 0" class="status-message">
-          <strong>
-            아직
-            {{ formatCurrency(Math.abs(budgetGap)) }}
-            남았어요.
-          </strong>
+            <strong>
+              {{ formatCurrency(allocatedTotal) }}
+            </strong>
+          </div>
 
-          <span> 원하는 포켓에 더 배분해 주세요. </span>
-        </div>
+          <div class="budget-status__row">
+            <span>총 예산</span>
 
-        <div v-else class="status-message status-message--success">
-          <strong> 총 예산에 맞게 배분됐어요. </strong>
-        </div>
+            <strong>
+              {{ formatCurrency(totalBudget) }}
+            </strong>
+          </div>
+
+          <div class="budget-status__divider" />
+
+          <div v-if="budgetGap > 0" class="status-message status-message--error">
+            <strong>
+              총 예산보다
+              {{ formatCurrency(budgetGap) }}
+              많아요.
+            </strong>
+
+            <span> 다른 포켓의 예산을 줄여주세요. </span>
+          </div>
+
+          <div v-else-if="budgetGap < 0" class="status-message">
+            <strong>
+              아직
+              {{ formatCurrency(Math.abs(budgetGap)) }}
+              남았어요.
+            </strong>
+
+            <span> 원하는 포켓에 더 배분해 주세요. </span>
+          </div>
+
+          <div v-else class="status-message status-message--success">
+            <strong> 총 예산에 맞게 배분됐어요. </strong>
+          </div>
+
+          <button
+            v-if="budgetGap !== 0 && lastChangedPocket"
+            class="auto-button"
+            type="button"
+            @click="autoBalance"
+          >
+            자동으로 맞추기
+          </button>
+
+          <p v-if="autoBalanceError" class="auto-error">
+            {{ autoBalanceError }}
+          </p>
+        </section>
+
+        <BudgetForecastCard
+          v-if="forecastLoaded"
+          :current-asset="currentAsset"
+          :expected-asset="expectedAsset"
+          :future-budget="budgets.future"
+          :remaining-months="remainingMonths"
+        />
+
+        <section v-else-if="forecastError" class="forecast-error">
+          예상 자산 정보를 불러오지 못했어요.
+        </section>
 
         <button
-          v-if="budgetGap !== 0 && lastChangedPocket"
-          class="auto-button"
+          class="save-button"
+          :class="{
+            'save-button--disabled': !isBalanced,
+          }"
           type="button"
-          @click="autoBalance"
+          :disabled="!isBalanced"
+          @click="handleSave"
         >
-          자동으로 맞추기
+          이 비율로 저장하기
         </button>
-
-        <p v-if="autoBalanceError" class="auto-error">
-          {{ autoBalanceError }}
-        </p>
-      </section>
-
-      <!-- 예상 자산 -->
-      <BudgetForecastCard
-        :expected-asset="expectedAsset"
-        :previous-asset="previousAsset"
-        :difference="assetDifference"
-        :future-budget="budgets.future"
-      />
-
-      <!-- 저장 -->
-      <button
-        class="save-button"
-        :class="{
-          'save-button--disabled': !isBalanced,
-        }"
-        type="button"
-        :disabled="!isBalanced"
-        @click="handleSave"
-      >
-        이 비율로 저장하기
-      </button>
+      </template>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+
 import { useRouter } from 'vue-router'
 
 import BudgetForecastCard from '@/components/pocket/BudgetForecastCard.vue'
+
+import { budgetAdjustmentApi, type BudgetAdjustmentPocketType } from '@/api/budgetAdjustment'
+
+import { assetForecastApi } from '@/api/assetForecast'
 
 type PocketType = 'essential' | 'free' | 'future' | 'emergency'
 
@@ -311,61 +316,54 @@ const router = useRouter()
 
 const STEP = 50_000
 
-/*
- * TODO:
- * 추후 백엔드에서 현재 진행 중인
- * 이번 달 포켓 예산 조회 API로 교체
- */
-const totalBudget = ref(3_000_000)
+const totalBudget = ref(0)
 
 const budgets = reactive<Record<PocketType, number>>({
-  essential: 1_000_000,
-  free: 700_000,
-  future: 500_000,
-  emergency: 800_000,
+  essential: 0,
+  free: 0,
+  future: 0,
+  emergency: 0,
 })
 
-/*
- * 이미 이번 달에 사용한 금액
- *
- * 이 값이 각 슬라이더의 최소값이 된다.
- *
- * TODO:
- * 백엔드 조회값으로 교체
- */
 const usedAmounts = reactive<Record<PocketType, number>>({
-  essential: 450_000,
-  free: 300_000,
-  future: 300_000,
-  emergency: 50_000,
+  essential: 0,
+  free: 0,
+  future: 0,
+  emergency: 0,
 })
 
-const totalBudgetInput = ref(totalBudget.value.toLocaleString('ko-KR'))
+const totalBudgetInput = ref('')
 
 const totalBudgetError = ref('')
 const autoBalanceError = ref('')
 
+const loadError = ref('')
+const forecastError = ref('')
+
+const isLoading = ref(true)
+
 const lastChangedPocket = ref<PocketType | null>(null)
 
 /*
- * 예상 자산 임시 데이터
+ * 예상 자산 API 데이터
  */
-const previousAsset = ref(24_000_000)
+const currentAsset = ref(0)
 
-const expectedAsset = computed(() => {
-  return Math.round(previousAsset.value + budgets.future * 14.4)
-})
+const remainingMonths = ref(0)
 
-const assetDifference = computed(() => {
-  return expectedAsset.value - previousAsset.value
-})
+const forecastLoaded = ref(false)
 
 /*
- * 지금까지 실제 사용한 총 금액.
+ * 변경 중인 미래자산 포켓 금액을 이용해
+ * 예상 자산을 실시간 미리보기 한다.
  *
- * 총예산은 절대로 이 값보다
- * 낮아질 수 없다.
+ * 실제 현재 자산과 남은 개월 수는
+ * 백엔드 계산값을 사용한다.
  */
+const expectedAsset = computed(() => {
+  return currentAsset.value + budgets.future * remainingMonths.value
+})
+
 const totalUsedAmount = computed(() => {
   return usedAmounts.essential + usedAmounts.free + usedAmounts.future + usedAmounts.emergency
 })
@@ -379,7 +377,7 @@ const budgetGap = computed(() => {
 })
 
 const isBalanced = computed(() => {
-  return budgetGap.value === 0
+  return budgetGap.value === 0 && totalBudget.value > 0 && !isLoading.value
 })
 
 const statusClass = computed(() => {
@@ -394,15 +392,75 @@ const statusClass = computed(() => {
   return 'budget-status--balanced'
 })
 
+const toLocalPocketType = (type: BudgetAdjustmentPocketType): PocketType => {
+  switch (type) {
+    case 'ESSENTIAL':
+      return 'essential'
+
+    case 'FREE':
+      return 'free'
+
+    case 'EMERGENCY':
+      return 'emergency'
+
+    case 'FUTURE_ASSET':
+      return 'future'
+  }
+}
+
+const loadCurrentBudget = async () => {
+  const response = await budgetAdjustmentApi.findCurrent()
+
+  totalBudget.value = response.totalBudgetAmount
+
+  totalBudgetInput.value = response.totalBudgetAmount.toLocaleString('ko-KR')
+
+  response.pockets.forEach((pocket) => {
+    const localType = toLocalPocketType(pocket.pocketType)
+
+    budgets[localType] = Number(pocket.targetAmount ?? 0)
+
+    usedAmounts[localType] = Number(pocket.usedAmount ?? 0)
+  })
+}
+
+const loadForecast = async () => {
+  forecastError.value = ''
+
+  try {
+    const response = await assetForecastApi.find()
+
+    currentAsset.value = Number(response.currentAsset ?? 0)
+
+    remainingMonths.value = Number(response.remainingMonths ?? 0)
+
+    forecastLoaded.value = true
+  } catch (error) {
+    forecastLoaded.value = false
+
+    forecastError.value =
+      error instanceof Error ? error.message : '예상 자산 정보를 불러오지 못했어요.'
+  }
+}
+
+const load = async () => {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    await Promise.all([loadCurrentBudget(), loadForecast()])
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '예산 정보를 불러오지 못했어요.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const handlePocketInput = (type: PocketType, event: Event) => {
   const target = event.target as HTMLInputElement
 
   const requestedValue = Number(target.value)
 
-  /*
-   * 핵심:
-   * 이미 사용한 금액보다 내려갈 수 없음
-   */
   budgets[type] = Math.max(requestedValue, usedAmounts[type])
 
   lastChangedPocket.value = type
@@ -438,10 +496,6 @@ const applyTotalBudget = () => {
 
   const normalized = Math.round(value / STEP) * STEP
 
-  /*
-   * 이미 쓴 총액보다
-   * 총예산을 낮출 수 없음
-   */
   if (normalized < totalUsedAmount.value) {
     totalBudgetError.value = `이미 ${formatCurrency(
       totalUsedAmount.value,
@@ -457,45 +511,22 @@ const applyTotalBudget = () => {
   lastChangedPocket.value = null
 }
 
-/*
- * 자동으로 맞추기
- *
- * 마지막으로 사용자가 만진 포켓은 유지.
- *
- * 나머지 세 포켓에서
- * 조정 가능한 범위만 사용한다.
- *
- * 어떤 경우에도
- * usedAmounts 아래로 내려가지 않는다.
- */
 const autoBalance = () => {
   autoBalanceError.value = ''
 
   const fixedType = lastChangedPocket.value
 
-  if (!fixedType) {
+  if (!fixedType || budgetGap.value === 0) {
     return
   }
 
-  if (budgetGap.value === 0) {
-    return
-  }
-
-  const otherTypes: PocketType[] = ['essential', 'free', 'future', 'emergency'].filter(
+  const otherTypes = (['essential', 'free', 'future', 'emergency'] as PocketType[]).filter(
     (type) => type !== fixedType,
-  ) as PocketType[]
+  )
 
-  /*
-   * 현재 총예산 초과
-   * → 나머지 포켓에서 줄여야 함
-   */
   if (budgetGap.value > 0) {
     const amountToReduce = budgetGap.value
 
-    /*
-     * 각 포켓에서 줄일 수 있는 금액
-     * = 현재 예산 - 이미 사용한 금액
-     */
     const reducibleTotal = otherTypes.reduce(
       (sum, type) => sum + Math.max(budgets[type] - usedAmounts[type], 0),
       0,
@@ -510,11 +541,17 @@ const autoBalance = () => {
 
     let remaining = amountToReduce
 
-    otherTypes.forEach((type, index) => {
+    for (let index = 0; index < otherTypes.length; index += 1) {
+      const type = otherTypes[index]
+
+      if (!type) {
+        continue
+      }
+
       const reducible = Math.max(budgets[type] - usedAmounts[type], 0)
 
-      if (reducible === 0) {
-        return
+      if (reducible <= 0) {
+        continue
       }
 
       let decrease = 0
@@ -532,11 +569,12 @@ const autoBalance = () => {
       budgets[type] -= decrease
 
       remaining -= decrease
-    })
 
-    /*
-     * 반올림 때문에 남은 금액 보정
-     */
+      if (remaining === 0) {
+        break
+      }
+    }
+
     if (remaining > 0) {
       for (const type of otherTypes) {
         const reducible = budgets[type] - usedAmounts[type]
@@ -560,10 +598,6 @@ const autoBalance = () => {
     return
   }
 
-  /*
-   * 총예산보다 덜 배분
-   * → 남는 돈을 다른 세 포켓에 비율대로 증가
-   */
   const amountToAdd = Math.abs(budgetGap.value)
 
   const otherTotal = otherTypes.reduce((sum, type) => sum + budgets[type], 0)
@@ -596,9 +630,6 @@ const autoBalance = () => {
     assigned += increase
   })
 
-  /*
-   * 반올림 보정
-   */
   const finalGap = totalBudget.value - allocatedTotal.value
 
   if (finalGap !== 0 && otherTypes[0]) {
@@ -631,7 +662,7 @@ const getSliderStyle = (value: number, min: number) => {
 }
 
 const formatCurrency = (value: number) => {
-  return `${Math.round(value).toLocaleString('ko-KR')}원`
+  return `${Math.round(Number(value ?? 0)).toLocaleString('ko-KR')}원`
 }
 
 const handleSave = () => {
@@ -657,6 +688,8 @@ const handleSave = () => {
     },
   })
 }
+
+onMounted(load)
 </script>
 
 <style scoped>
@@ -680,10 +713,6 @@ const handleSave = () => {
   padding: 28px 28px 42px;
 }
 
-/* =========================
-   INTRO
-========================= */
-
 .intro-section {
   margin-bottom: 18px;
 }
@@ -706,10 +735,6 @@ const handleSave = () => {
   font-size: 13px;
   line-height: 1.6;
 }
-
-/* =========================
-   사용액 안내
-========================= */
 
 .usage-guide {
   margin-bottom: 26px;
@@ -739,9 +764,13 @@ const handleSave = () => {
   line-height: 1.5;
 }
 
-/* =========================
-   총예산
-========================= */
+.load-error {
+  margin: 20px 0;
+
+  color: #d95050;
+
+  font-size: 13px;
+}
 
 .total-card {
   display: flex;
@@ -763,7 +792,9 @@ const handleSave = () => {
 }
 
 .total-label {
-  font-size: 17px;
+  color: #171717;
+
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -777,52 +808,52 @@ const handleSave = () => {
 .total-input-wrap {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 
-  padding: 0 14px;
+  padding: 0 2px 9px;
 
-  border: 1px solid #e1e1e1;
-  border-radius: 10px;
-
-  background: #f7f7f7;
+  border-bottom: 1px solid #dddddd;
 }
 
 .total-input {
   flex: 1;
 
   min-width: 0;
-  height: 54px;
-
-  padding: 0;
 
   border: 0;
-  outline: 0;
+  outline: none;
 
+  color: #111111;
   background: transparent;
 
   text-align: right;
 
-  font-size: 21px;
+  font-size: 25px;
   font-weight: 800;
+
+  letter-spacing: -0.5px;
 }
 
 .total-unit {
   margin-left: 5px;
 
-  font-size: 17px;
+  color: #171717;
+
+  font-size: 15px;
   font-weight: 700;
 }
 
 .total-register-button {
   width: 100%;
-  height: 48px;
+  height: 42px;
 
   border: 0;
-  border-radius: 9px;
+  border-radius: 8px;
 
   color: #ffffff;
   background: #111111;
 
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
 
   cursor: pointer;
@@ -837,22 +868,18 @@ const handleSave = () => {
   line-height: 1.5;
 }
 
-/* =========================
-   POCKET
-========================= */
-
 .pocket-section {
-  margin-top: 28px;
+  margin-top: 36px;
 }
 
 .section-heading {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .section-title {
   margin: 0;
 
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -862,18 +889,17 @@ const handleSave = () => {
   color: #888888;
 
   font-size: 11px;
-  line-height: 1.5;
 }
 
 .pocket-list {
   display: flex;
   flex-direction: column;
 
-  gap: 12px;
+  gap: 14px;
 }
 
 .pocket-card {
-  padding: 17px 16px 15px;
+  padding: 18px 16px 16px;
 
   border-radius: 14px;
 }
@@ -900,14 +926,13 @@ const handleSave = () => {
   justify-content: space-between;
 
   gap: 12px;
-
-  margin-bottom: 14px;
 }
 
 .pocket-badge {
   display: inline-flex;
+  align-items: center;
 
-  padding: 5px 9px;
+  padding: 6px 10px;
 
   border-radius: 999px;
 
@@ -942,19 +967,19 @@ const handleSave = () => {
 }
 
 .pocket-min--essential {
-  color: #6692c4;
+  color: #6994c2;
 }
 
 .pocket-min--free {
-  color: #ca8958;
+  color: #c98e5d;
 }
 
 .pocket-min--future {
-  color: #b281c7;
+  color: #ad82c4;
 }
 
 .pocket-min--emergency {
-  color: #58a4a4;
+  color: #69a6a8;
 }
 
 .pocket-value {
@@ -962,46 +987,42 @@ const handleSave = () => {
   flex-direction: column;
   align-items: flex-end;
 
-  gap: 5px;
+  gap: 3px;
 }
 
 .pocket-value strong {
-  font-size: 16px;
+  color: #171717;
+
+  font-size: 15px;
   font-weight: 800;
 }
 
 .pocket-value span {
-  padding: 2px 6px;
-
-  border-radius: 999px;
-
-  background: rgba(255, 255, 255, 0.7);
-
-  color: #888888;
+  color: #777777;
 
   font-size: 10px;
 }
 
 .pocket-slider {
   width: 100%;
-  height: 4px;
 
-  margin: 0;
+  margin-top: 22px;
 
   appearance: none;
-  -webkit-appearance: none;
+
+  height: 4px;
 
   border-radius: 999px;
 
+  outline: none;
+
   background: linear-gradient(
     to right,
-    #111111 0%,
-    #111111 var(--slider-progress),
-    #d5d5d5 var(--slider-progress),
-    #d5d5d5 100%
+    #171717 0%,
+    #171717 var(--slider-progress),
+    #dddddd var(--slider-progress),
+    #dddddd 100%
   );
-
-  cursor: pointer;
 }
 
 .pocket-slider::-webkit-slider-thumb {
@@ -1009,59 +1030,66 @@ const handleSave = () => {
   height: 18px;
 
   appearance: none;
-  -webkit-appearance: none;
 
-  border: 0;
+  border: 4px solid #ffffff;
   border-radius: 50%;
 
-  background: #111111;
+  background: #171717;
+
+  box-shadow: 0 0 0 1px #d0d0d0;
+
+  cursor: pointer;
 }
 
 .pocket-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
 
-  border: 0;
+  border: 4px solid #ffffff;
   border-radius: 50%;
 
-  background: #111111;
+  background: #171717;
+
+  box-shadow: 0 0 0 1px #d0d0d0;
+
+  cursor: pointer;
 }
 
 .used-amount {
-  margin: 9px 0 0;
+  margin: 10px 0 0;
 
-  color: #999999;
+  color: #888888;
 
-  font-size: 9px;
+  font-size: 10px;
 }
-
-/* =========================
-   STATUS
-========================= */
 
 .budget-status {
   display: flex;
   flex-direction: column;
 
-  gap: 11px;
+  gap: 9px;
 
-  margin-top: 24px;
-  margin-bottom: 18px;
+  margin-top: 26px;
+  margin-bottom: 22px;
 
-  padding: 18px 16px;
+  padding: 17px 16px;
 
-  border: 1px solid #e1e1e1;
-  border-radius: 14px;
+  border: 1px solid #e7e7e7;
+  border-radius: 12px;
+
+  background: #ffffff;
 }
 
 .budget-status--over {
-  border-color: #efd0d0;
-  background: #fffafa;
+  border-color: #f0c7c7;
+}
+
+.budget-status--under {
+  border-color: #e5e5e5;
 }
 
 .budget-status--balanced {
-  border-color: #c7e8da;
-  background: #f8fcfa;
+  border-color: #cde9de;
 }
 
 .budget-status__row {
@@ -1134,9 +1162,19 @@ const handleSave = () => {
   line-height: 1.5;
 }
 
-/* =========================
-   SAVE
-========================= */
+.forecast-error {
+  width: 100%;
+
+  padding: 18px;
+
+  border-radius: 12px;
+
+  color: #777777;
+  background: #f5f5f6;
+
+  font-size: 12px;
+  text-align: center;
+}
 
 .save-button {
   width: 100%;

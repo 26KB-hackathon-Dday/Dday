@@ -101,11 +101,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
 import { useRoute, useRouter } from 'vue-router'
+
+import { budgetAdjustmentApi } from '@/api/budgetAdjustment'
 
 const route = useRoute()
 const router = useRouter()
+
+const isSaving = ref(false)
+
+const saveError = ref('')
 
 const getQueryNumber = (value: unknown, fallback: number): number => {
   let rawValue: unknown = value
@@ -123,17 +130,17 @@ const getQueryNumber = (value: unknown, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-const totalBudget = computed(() => getQueryNumber(route.query.total, 3_000_000))
+const totalBudget = computed(() => getQueryNumber(route.query.total, 0))
 
-const essentialBudget = computed(() => getQueryNumber(route.query.essential, 1_000_000))
+const essentialBudget = computed(() => getQueryNumber(route.query.essential, 0))
 
-const freeBudget = computed(() => getQueryNumber(route.query.free, 700_000))
+const freeBudget = computed(() => getQueryNumber(route.query.free, 0))
 
-const futureBudget = computed(() => getQueryNumber(route.query.future, 500_000))
+const futureBudget = computed(() => getQueryNumber(route.query.future, 0))
 
-const emergencyBudget = computed(() => getQueryNumber(route.query.emergency, 800_000))
+const emergencyBudget = computed(() => getQueryNumber(route.query.emergency, 0))
 
-const expectedAsset = computed(() => getQueryNumber(route.query.expectedAsset, 31_200_000))
+const expectedAsset = computed(() => getQueryNumber(route.query.expectedAsset, 0))
 
 const getPercentage = (amount: number): number => {
   if (totalBudget.value <= 0) {
@@ -157,30 +164,50 @@ const formatShortCurrency = (value: number): string => {
   return formatCurrency(value)
 }
 
-const handleConfirm = () => {
-  console.log('진행 중 포켓 예산 변경 최종 확정', {
-    totalBudget: totalBudget.value,
+const handleConfirm = async () => {
+  if (isSaving.value) {
+    return
+  }
 
-    essentialBudget: essentialBudget.value,
+  saveError.value = ''
 
-    freeBudget: freeBudget.value,
+  isSaving.value = true
 
-    futureBudget: futureBudget.value,
+  try {
+    await budgetAdjustmentApi.adjustCurrent({
+      totalBudgetAmount: totalBudget.value,
 
-    emergencyBudget: emergencyBudget.value,
+      allocations: [
+        {
+          pocketType: 'ESSENTIAL',
+          amount: essentialBudget.value,
+        },
 
-    expectedAsset: expectedAsset.value,
-  })
+        {
+          pocketType: 'FREE',
+          amount: freeBudget.value,
+        },
 
-  /*
-   * TODO:
-   * 백엔드 API 호출
-   *
-   * 저장 성공 후
-   * 실제 포켓 진행중 화면으로 이동
-   */
+        {
+          pocketType: 'EMERGENCY',
+          amount: emergencyBudget.value,
+        },
 
-  router.back()
+        {
+          pocketType: 'FUTURE_ASSET',
+          amount: futureBudget.value,
+        },
+      ],
+    })
+
+    await router.push({
+      name: 'pockets',
+    })
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : '예산 변경에 실패했어요.'
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>
 

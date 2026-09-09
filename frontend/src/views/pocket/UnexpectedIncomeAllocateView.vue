@@ -58,26 +58,32 @@
         <p v-else class="allocation-message allocation-message--success">
           추가할 금액을 모두 배분했어요.
         </p>
+
+        <p v-if="errorMessage" class="allocation-message allocation-message--error">
+          {{ errorMessage }}
+        </p>
       </section>
 
       <button
         class="confirm-button"
         :class="{
-          'confirm-button--disabled': !store.isAllocationComplete,
+          'confirm-button--disabled': !store.isAllocationComplete || saving,
         }"
         type="button"
-        :disabled="!store.isAllocationComplete"
+        :disabled="!store.isAllocationComplete || saving"
         @click="handleConfirm"
       >
-        배분 확정
+        {{ saving ? '반영 중...' : '배분 확정' }}
       </button>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+
+import { unexpectedIncomeApi } from '@/api/unexpectedIncome'
 
 import { useUnexpectedIncomeStore, type IncomePocketType } from '@/stores/unexpectedIncome'
 
@@ -85,25 +91,40 @@ const router = useRouter()
 
 const store = useUnexpectedIncomeStore()
 
+const saving = ref(false)
+
+const errorMessage = ref('')
+
 const pockets = computed(() => [
   {
     type: 'essential' as IncomePocketType,
+
     label: '필수 포켓',
+
     amount: store.essentialAmount,
   },
+
   {
     type: 'free' as IncomePocketType,
+
     label: '자유 포켓',
+
     amount: store.freeAmount,
   },
+
   {
     type: 'future' as IncomePocketType,
+
     label: '미래자산 포켓',
+
     amount: store.futureAmount,
   },
+
   {
     type: 'emergency' as IncomePocketType,
+
     label: '비상금 포켓',
+
     amount: store.emergencyAmount,
   },
 ])
@@ -128,6 +149,13 @@ const handlePocketInput = (type: IncomePocketType, event: Event) => {
   const value = Number(onlyNumbers) || 0
 
   store.setPocketAmount(type, value)
+
+  /*
+   * 입력 직후 천 단위 콤마 표시.
+   */
+  target.value = formatInputValue(value)
+
+  errorMessage.value = ''
 }
 
 const formatInputValue = (value: number) => {
@@ -141,38 +169,80 @@ const formatInputValue = (value: number) => {
 const formatCurrency = (value: number) => {
   const prefix = value < 0 ? '-' : ''
 
-  return `${prefix}${Math.abs(value).toLocaleString('ko-KR')}원`
+  return `${prefix}${Math.abs(Number(value ?? 0)).toLocaleString('ko-KR')}원`
 }
 
-const handleConfirm = () => {
-  if (!store.isAllocationComplete) {
+const handleConfirm = async () => {
+  errorMessage.value = ''
+
+  if (!store.isAllocationComplete || saving.value) {
     return
   }
 
-  console.log('추가 수입 포켓 배분 확정', {
-    detectedAmount: store.detectedAmount,
+  if (store.detectedTransactionId == null) {
+    errorMessage.value = '처리할 입금 정보를 찾을 수 없어요.'
 
-    includedAmount: store.includedAmount,
-
-    excludedAmount: store.excludedAmount,
-
-    allocations: {
-      essential: store.essentialAmount,
-
-      free: store.freeAmount,
-
-      future: store.futureAmount,
-
-      emergency: store.emergencyAmount,
-    },
-  })
+    return
+  }
 
   /*
-   * TODO:
-   * 백엔드 저장 API 호출 후
-   * 실제 포켓 진행중 화면으로 이동
+   * 0원을 포함해도 백엔드에서
+   * 정상 처리 가능하지만,
+   * 총합은 반드시 includedAmount와
+   * 일치해야 한다.
    */
-  router.back()
+  const allocationTotal =
+    store.essentialAmount + store.freeAmount + store.futureAmount + store.emergencyAmount
+
+  if (allocationTotal !== store.includedAmount) {
+    errorMessage.value = '포켓 배분 금액과 추가할 금액이 일치하지 않아요.'
+
+    return
+  }
+
+  saving.value = true
+
+  try {
+    await unexpectedIncomeApi.addToBudget(store.detectedTransactionId, {
+      addAmount: store.includedAmount,
+
+      allocations: [
+        {
+          pocketType: 'ESSENTIAL',
+
+          amount: store.essentialAmount,
+        },
+
+        {
+          pocketType: 'FREE',
+
+          amount: store.freeAmount,
+        },
+
+        {
+          pocketType: 'FUTURE_ASSET',
+
+          amount: store.futureAmount,
+        },
+
+        {
+          pocketType: 'EMERGENCY',
+
+          amount: store.emergencyAmount,
+        },
+      ],
+    })
+
+    store.resetAll()
+
+    await router.push({
+      name: 'pockets',
+    })
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '포켓 예산에 반영하지 못했어요.'
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -182,6 +252,7 @@ const handleConfirm = () => {
   min-height: 100vh;
 
   background: #ffffff;
+
   color: #171717;
 }
 
@@ -314,6 +385,7 @@ const handleConfirm = () => {
   gap: 8px;
 
   margin-top: auto;
+
   padding-top: 32px;
 }
 
@@ -370,8 +442,13 @@ const handleConfirm = () => {
 
 .confirm-button--disabled {
   color: #999999;
+
   background: #e7e7e7;
 
   cursor: not-allowed;
+}
+
+.confirm-button:active:not(:disabled) {
+  opacity: 0.85;
 }
 </style>

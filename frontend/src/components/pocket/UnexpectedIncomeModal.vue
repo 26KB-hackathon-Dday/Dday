@@ -14,11 +14,24 @@
         </strong>
       </div>
 
+      <!-- 보낸 사람 -->
+      <p class="income-modal__sender">
+        <span>보낸 사람:</span>
+        <strong>{{ senderName }}</strong>
+      </p>
+
+      <!-- 안내 문구 -->
       <p class="income-modal__description">
         예상하지 않았던 입금이 있어요.<br />
         이 돈을 이번 달 포켓 예산에 추가할까요?
       </p>
 
+      <!-- 정기수입 안내 -->
+      <div class="income-modal__notice">
+        입금된 돈이 정기수입이라면 이번 달 예산에 포함하지 않아도 됩니다.
+      </div>
+
+      <!-- 버튼 -->
       <div class="income-modal__buttons">
         <button class="income-modal__primary" type="button" @click="handleAdd">
           포켓에 추가하기
@@ -36,6 +49,7 @@
 interface Props {
   open: boolean
   detectedAmount: number
+  senderName: string
 }
 
 defineProps<Props>()
@@ -59,7 +73,7 @@ const handleExclude = () => {
 }
 
 const formatCurrency = (value: number) => {
-  return `${value.toLocaleString('ko-KR')}원`
+  return `${Number(value ?? 0).toLocaleString('ko-KR')}원`
 }
 </script>
 
@@ -119,6 +133,30 @@ const formatCurrency = (value: number) => {
   letter-spacing: -0.5px;
 }
 
+/* 보낸 사람 */
+.income-modal__sender {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin: 18px 0 0;
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.income-modal__sender span {
+  color: #888888;
+}
+
+.income-modal__sender strong {
+  color: #222222;
+
+  font-weight: 700;
+}
+
+/* 설명 */
 .income-modal__description {
   margin: 14px 0 0;
 
@@ -128,6 +166,23 @@ const formatCurrency = (value: number) => {
   line-height: 1.7;
 }
 
+/* 정기수입 안내 */
+.income-modal__notice {
+  margin-top: 16px;
+
+  padding: 12px 14px;
+
+  border-radius: 8px;
+
+  background: #f6f6f7;
+
+  color: #777777;
+
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* 버튼 영역 */
 .income-modal__buttons {
   display: flex;
   flex-direction: column;
@@ -153,11 +208,13 @@ const formatCurrency = (value: number) => {
 
 .income-modal__primary {
   color: #ffffff;
+
   background: #111111;
 }
 
 .income-modal__secondary {
   color: #666666;
+
   background: #f5f5f7;
 }
 
