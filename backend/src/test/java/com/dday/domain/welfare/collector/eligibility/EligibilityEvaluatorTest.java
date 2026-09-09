@@ -57,9 +57,49 @@ class EligibilityEvaluatorTest {
         assertThat(result.matchedCriteria()).containsExactly("protectionEndDate");
     }
 
+    @Test
+    void 특정_시도_대상_제도는_거주_시도가_다르면_부적격() {
+        WelfareProgram seoulOnly = program(null);
+        ReflectionTestUtils.setField(seoulOnly, "regionCode", "11");
+        ReflectionTestUtils.setField(seoulOnly, "ctpvNm", "서울특별시");
+
+        var result = evaluator.evaluate(user(null, "경기도"), seoulOnly);
+
+        assertThat(result.eligible()).isFalse();
+        assertThat(result.ineligibleReason()).contains("서울특별시");
+    }
+
+    @Test
+    void 특정_시도_대상_제도는_거주_시도가_같으면_region을_근거로_남긴다() {
+        WelfareProgram seoulOnly = program(null);
+        ReflectionTestUtils.setField(seoulOnly, "regionCode", "11");
+        ReflectionTestUtils.setField(seoulOnly, "ctpvNm", "서울특별시");
+
+        var result = evaluator.evaluate(user(null, "서울특별시"), seoulOnly);
+
+        assertThat(result.eligible()).isTrue();
+        assertThat(result.matchedCriteria()).containsExactly("region");
+    }
+
+    @Test
+    void 거주지_미등록이면_특정_시도_대상_제도는_부적격() {
+        WelfareProgram seoulOnly = program(null);
+        ReflectionTestUtils.setField(seoulOnly, "regionCode", "11");
+        ReflectionTestUtils.setField(seoulOnly, "ctpvNm", "서울특별시");
+
+        var result = evaluator.evaluate(user(null), seoulOnly);
+
+        assertThat(result.eligible()).isFalse();
+    }
+
     private static User user(LocalDate protectionEndDate) {
+        return user(protectionEndDate, null);
+    }
+
+    private static User user(LocalDate protectionEndDate, String regionName) {
         User u = BeanUtils.instantiateClass(User.class);
         ReflectionTestUtils.setField(u, "protectionEndDate", protectionEndDate);
+        ReflectionTestUtils.setField(u, "regionName", regionName);
         return u;
     }
 
