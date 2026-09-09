@@ -70,9 +70,8 @@ async function submit() {
       </button>
     </header>
 
-    <!-- 카카오·네이버 로그인 화면처럼, 입력 폼이 화면 맨 위에 붙지 않고 정중앙보다
-         살짝 위에 온다. .center가 flex:1로 남는 공간을 먹고 그 안에서 세로 중앙 정렬하되,
-         padding-bottom을 더 줘서 무게중심을 위로 살짝 밀어올린다(LandingView와 같은 기법). -->
+    <!-- 폼을 지금 제목이 있는 자리까지 끌어올린다. 제목은 헤더 바로 아래로,
+         입력 폼은 예전 제목 자리로 옮겨온다. -->
     <div class="center">
       <h1 class="title">다시 만나서<br />반가워요</h1>
 
@@ -152,14 +151,12 @@ async function submit() {
   height: 24px;
 }
 
-/* header 아래 남는 공간을 전부 먹고, 그 안에서 title+form 묶음을 세로 중앙보다
-   살짝 위로 올린다(LandingView와 같은 기법: 아래쪽 padding을 더 줘서 무게중심을 끌어올린다). */
+/* 세로 중앙 정렬을 쓰지 않고 header 바로 아래에서 시작한다 — 입력 폼이
+   예전 제목 자리까지 올라오려면 이 블록 전체가 위쪽에 붙어야 한다. */
 .center {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding-bottom: 16%;
+  padding-top: var(--space-sm);
 }
 
 .title {
@@ -260,12 +257,8 @@ async function submit() {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* 세로가 짧은 기기(SE 등)에서는 위로 밀어올리는 여백을 줄여 폼이 화면 밖으로 밀리지 않게 한다 */
+/* 세로가 짧은 기기(SE 등)에서는 제목을 줄여 폼이 화면 밖으로 밀리지 않게 한다 */
 @media (max-height: 640px) {
-  .center {
-    padding-bottom: 4%;
-  }
-
   .title {
     font-size: 24px;
   }
