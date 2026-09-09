@@ -247,6 +247,51 @@ public interface FinancialTransactionRepository extends JpaRepository<FinancialT
                                        @Param("from") LocalDateTime from,
                                        @Param("to") LocalDateTime to);
 
+    /** 이번 달 본인 입출금 계좌에서 적금·투자 계좌로 옮긴 정상 이체 합계. */
+    @Query("""
+            select coalesce(sum(t.amount), 0)
+            from FinancialTransaction t
+            join t.account sourceAccount
+            join t.counterpartyAccount targetAccount
+            where sourceAccount.user.userId = :userId
+              and targetAccount.user.userId = :userId
+              and targetAccount.active = true
+              and targetAccount.accountType in (
+                  com.dday.domain.mydata.entity.AccountType.SAVINGS,
+                  com.dday.domain.mydata.entity.AccountType.INVESTMENT
+              )
+              and t.transactionAt >= :from
+              and t.transactionAt < :to
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.SELF_TRANSFER
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+            """)
+    Long sumMonthlyFutureAssetContribution(@Param("userId") Long userId,
+                                            @Param("from") LocalDateTime from,
+                                            @Param("to") LocalDateTime to);
+
+    /** 적금·투자 계좌별 이번 달 납입액. 결과 행은 {@code [계좌 ID, 합계]}다. */
+    @Query("""
+            select targetAccount.accountId, coalesce(sum(t.amount), 0)
+            from FinancialTransaction t
+            join t.account sourceAccount
+            join t.counterpartyAccount targetAccount
+            where sourceAccount.user.userId = :userId
+              and targetAccount.user.userId = :userId
+              and targetAccount.active = true
+              and targetAccount.accountType in (
+                  com.dday.domain.mydata.entity.AccountType.SAVINGS,
+                  com.dday.domain.mydata.entity.AccountType.INVESTMENT
+              )
+              and t.transactionAt >= :from
+              and t.transactionAt < :to
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.SELF_TRANSFER
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+            group by targetAccount.accountId
+            """)
+    List<Object[]> sumMonthlyFutureAssetContributionByAccount(@Param("userId") Long userId,
+                                                               @Param("from") LocalDateTime from,
+                                                               @Param("to") LocalDateTime to);
+
     /** 특정 포켓의 정상 소비를 카테고리별로 합산한다. null 카테고리도 한 집계 행으로 유지한다. */
     @Query("""
             select category.categoryId, coalesce(sum(t.amount), 0)

@@ -619,6 +619,8 @@ const router = createRouter({
           FREE: '자유 포켓',
 
           EMERGENCY: '비상금 포켓',
+
+          FUTURE_ASSET: '미래자산 포켓',
         }
 
         const pocketType = typeof to.params.pocketType === 'string' ? to.params.pocketType : ''

@@ -3,6 +3,9 @@ import { api } from '@/api/client'
 export interface AssetForecastResponse {
   currentAsset: number
   monthlyFutureAmount: number
+  achievedAmount: number
+  remainingAmount: number
+  achievementRate: number
   remainingMonths: number
   supportEndDate: string
   expectedAdditionalAsset: number

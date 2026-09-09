@@ -3,6 +3,7 @@ package com.dday.domain.assetforecast.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
@@ -20,6 +21,15 @@ public class AssetForecastResponse {
      * 이번 달 미래자산 포켓 배정액.
      */
     private Long monthlyFutureAmount;
+
+    /** 이번 달 적금·투자 계좌로 실제 이체한 금액. */
+    private Long achievedAmount;
+
+    /** 이번 달 배정액에서 달성액을 뺀 금액. 초과 달성 시 0이다. */
+    private Long remainingAmount;
+
+    /** achievedAmount / monthlyFutureAmount * 100. */
+    private BigDecimal achievementRate;
 
     /**
      * 지원 종료까지 남은 개월 수.

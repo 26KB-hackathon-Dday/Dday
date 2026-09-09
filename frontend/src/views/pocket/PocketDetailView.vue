@@ -9,6 +9,9 @@ import PocketSpendingDonut, {
 } from '@/components/pocket/PocketSpendingDonut.vue'
 import PocketTransactionItem from '@/components/pocket/PocketTransactionItem.vue'
 import PocketTransactionDetailSheet from '@/components/pocket/PocketTransactionDetailSheet.vue'
+import FutureAssetDetailSection from '@/components/pocket/FutureAssetDetailSection.vue'
+import { assetForecastApi, type AssetForecastResponse } from '@/api/assetForecast'
+import { mydataApi, type UserAccount } from '@/api/mydata'
 import {
   POCKET_LABEL,
   pocketApi,
@@ -29,6 +32,8 @@ const router = useRouter()
 const summary = ref<PocketMonthlySummary | null>(null)
 const transactions = ref<PocketTransaction[]>([])
 const categoryUsage = ref<PocketCategoryUsageResponse | null>(null)
+const futureAssetForecast = ref<AssetForecastResponse | null>(null)
+const futureAssetAccounts = ref<UserAccount[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const showAllTransactions = ref(false)
@@ -42,13 +47,14 @@ const selectedCategoryId = ref<number | null>(null)
 const transactionLoading = ref(false)
 const transactionSaving = ref(false)
 const transactionError = ref<string | null>(null)
-const supportedTypes: PocketType[] = ['ESSENTIAL', 'FREE', 'EMERGENCY']
+const supportedTypes: PocketType[] = ['ESSENTIAL', 'FREE', 'EMERGENCY', 'FUTURE_ASSET']
 const pocketType = computed<PocketType | null>(() => {
   const value = typeof route.params.pocketType === 'string' ? route.params.pocketType : ''
   return supportedTypes.includes(value as PocketType) ? (value as PocketType) : null
 })
 const isFree = computed(() => pocketType.value === 'FREE')
 const isEmergency = computed(() => pocketType.value === 'EMERGENCY')
+const isFutureAsset = computed(() => pocketType.value === 'FUTURE_ASSET')
 const summaryTheme = computed(() =>
   isEmergency.value ? ('teal' as const) : isFree.value ? ('orange' as const) : ('blue' as const),
 )
@@ -146,8 +152,26 @@ async function load() {
   error.value = null
   showAllTransactions.value = false
   selectedUsageCategory.value = null
+  futureAssetForecast.value = null
+  futureAssetAccounts.value = []
   try {
     const selectedType = pocketType.value
+    if (selectedType === 'FUTURE_ASSET') {
+      const monthly = await pocketApi.findMonthly(currentMonth.value)
+      summary.value = monthly.pockets.find((pocket) => pocket.pocketType === 'FUTURE_ASSET') ?? null
+      if (!summary.value) throw new Error('POCKET_NOT_FOUND')
+      const [forecastResult, accountResult] = await Promise.allSettled([
+        assetForecastApi.find(),
+        mydataApi.fetchAccounts(),
+      ])
+      futureAssetForecast.value =
+        forecastResult.status === 'fulfilled' ? forecastResult.value : null
+      futureAssetAccounts.value =
+        accountResult.status === 'fulfilled' ? accountResult.value.accounts : []
+      transactions.value = []
+      categoryUsage.value = null
+      return
+    }
     // 필수·자유·비상금은 같은 포켓 거래 API를 사용한다.
     const [monthly, allTransactions, actualCategoryUsage] = await Promise.all([
       pocketApi.findMonthly(currentMonth.value),
@@ -257,65 +281,77 @@ function selectSpendingCategory(category: SpendingCategory) {
       <button type="button" @click="load">다시 시도</button>
     </div>
     <template v-else-if="summary">
-      <PocketBudgetSummary
+      <FutureAssetDetailSection
+        v-if="isFutureAsset"
         :summary="summary"
-        :theme="summaryTheme"
-        :pill-label="isEmergency ? '이번 달 남은 비상금' : '이번 달 남은 예산'"
+        :forecast="futureAssetForecast"
+        :accounts="futureAssetAccounts"
       />
-      <PocketSpendingDonut
-        v-if="isFree"
-        class="section"
-        :categories="spendingCategories"
-        @select="selectSpendingCategory"
-      />
-      <section v-else-if="!isEmergency" class="section">
-        <header class="section__header">
-          <h2>카테고리별 사용 현황</h2>
-          <small v-if="categoryUsage">총 {{ formatWon(categoryUsage.totalUsedAmount) }}</small>
-        </header>
-        <ul v-if="essentialCategories.length" class="category-card">
-          <PocketCategoryUsageItem
-            v-for="category in essentialCategories"
-            :key="category.categoryId"
-            :name="category.categoryName"
-            :category-code="category.categoryCode"
-            :used-amount="category.usedAmount"
-            :selected="selectedUsageCategory?.categoryId === category.categoryId"
-            @select="selectUsageCategory(category)"
-          />
-        </ul>
-        <p v-else class="empty">표시할 카테고리가 없습니다.</p>
-      </section>
-      <section class="section section--transactions">
-        <header class="section__header">
-          <h2>최근 지출 내역</h2>
-          <button
-            v-if="canExpandTransactions"
-            type="button"
-            :aria-expanded="showAllTransactions"
-            aria-controls="pocket-transaction-list"
-            @click="showAllTransactions = !showAllTransactions"
+      <template v-else-if="!isFutureAsset">
+        <PocketBudgetSummary
+          :summary="summary"
+          :theme="summaryTheme"
+          :pill-label="isEmergency ? '이번 달 남은 비상금' : '이번 달 남은 예산'"
+        />
+        <PocketSpendingDonut
+          v-if="isFree"
+          class="section"
+          :categories="spendingCategories"
+          @select="selectSpendingCategory"
+        />
+        <section v-else-if="!isEmergency" class="section">
+          <header class="section__header">
+            <h2>카테고리별 사용 현황</h2>
+            <small v-if="categoryUsage">총 {{ formatWon(categoryUsage.totalUsedAmount) }}</small>
+          </header>
+          <ul v-if="essentialCategories.length" class="category-card">
+            <PocketCategoryUsageItem
+              v-for="category in essentialCategories"
+              :key="category.categoryId"
+              :name="category.categoryName"
+              :category-code="category.categoryCode"
+              :used-amount="category.usedAmount"
+              :selected="selectedUsageCategory?.categoryId === category.categoryId"
+              @select="selectUsageCategory(category)"
+            />
+          </ul>
+          <p v-else class="empty">표시할 카테고리가 없습니다.</p>
+        </section>
+        <section class="section section--transactions">
+          <header class="section__header">
+            <h2>최근 지출 내역</h2>
+            <button
+              v-if="canExpandTransactions"
+              type="button"
+              :aria-expanded="showAllTransactions"
+              aria-controls="pocket-transaction-list"
+              @click="showAllTransactions = !showAllTransactions"
+            >
+              {{ showAllTransactions ? '접기' : '전체보기' }}
+            </button>
+          </header>
+          <ul
+            v-if="visibleTransactions.length"
+            id="pocket-transaction-list"
+            class="transaction-list"
           >
-            {{ showAllTransactions ? '접기' : '전체보기' }}
+            <PocketTransactionItem
+              v-for="transaction in visibleTransactions"
+              :key="transaction.transactionId"
+              :transaction="transaction"
+              @select="openTransaction"
+            />
+          </ul>
+          <p v-else class="empty">이번 달 지출 내역이 없습니다.</p>
+        </section>
+        <section v-if="isEmergency" class="adjustment">
+          <h2>이번 달 예산을 바꾸고 싶나요?</h2>
+          <p>남아 있는 예산 안에서 포켓별 금액을 다시 조정할 수 있어요.</p>
+          <button type="button" @click="openBudgetReadjust">
+            포켓 예산 조정하기 <span aria-hidden="true">→</span>
           </button>
-        </header>
-        <ul v-if="visibleTransactions.length" id="pocket-transaction-list" class="transaction-list">
-          <PocketTransactionItem
-            v-for="transaction in visibleTransactions"
-            :key="transaction.transactionId"
-            :transaction="transaction"
-            @select="openTransaction"
-          />
-        </ul>
-        <p v-else class="empty">이번 달 지출 내역이 없습니다.</p>
-      </section>
-      <section v-if="isEmergency" class="adjustment">
-        <h2>이번 달 예산을 바꾸고 싶나요?</h2>
-        <p>남아 있는 예산 안에서 포켓별 금액을 다시 조정할 수 있어요.</p>
-        <button type="button" @click="openBudgetReadjust">
-          포켓 예산 조정하기 <span aria-hidden="true">→</span>
-        </button>
-      </section>
+        </section>
+      </template>
     </template>
     <BottomSheet v-model="categoryTransactionSheetOpen">
       <section v-if="selectedUsageCategory" class="category-transactions-sheet">

@@ -10,6 +10,7 @@ import UnexpectedIncomeModal from '@/components/pocket/UnexpectedIncomeModal.vue
 import RecurringIncomeMatchModal from '@/components/pocket/RecurringIncomeMatchModal.vue'
 
 import { POCKET_LABEL, POCKET_ORDER, pocketApi, type PocketMonthlyResponse } from '@/api/pocket'
+import { assetForecastApi, type AssetForecastResponse } from '@/api/assetForecast'
 
 import { unexpectedIncomeApi, type UnexpectedIncome } from '@/api/unexpectedIncome'
 
@@ -30,6 +31,7 @@ const unexpectedIncomeStore = useUnexpectedIncomeStore()
  */
 
 const response = ref<PocketMonthlyResponse | null>(null)
+const futureAssetForecast = ref<AssetForecastResponse | null>(null)
 
 const loading = ref(true)
 
@@ -69,11 +71,18 @@ const loadPockets = async () => {
   loading.value = true
 
   response.value = null
+  futureAssetForecast.value = null
   error.value = null
   errorCode.value = null
 
   try {
     response.value = await pocketApi.findMonthly(currentMonth.value)
+    try {
+      futureAssetForecast.value = await assetForecastApi.find()
+    } catch {
+      // 미래자산 부가 정보 실패가 포켓 전체 조회를 막지 않게 한다.
+      futureAssetForecast.value = null
+    }
     return true
   } catch (e) {
     response.value = null
@@ -255,7 +264,7 @@ const handleAddExcess = async () => {
  * =========================
  */
 
-const openPocketDetail = (pocketType: 'ESSENTIAL' | 'FREE') => {
+const openPocketDetail = (pocketType: 'ESSENTIAL' | 'FREE' | 'FUTURE_ASSET') => {
   router.push({
     name: 'pocket-detail',
 
@@ -312,6 +321,10 @@ watch(currentMonth, load, { immediate: true })
             v-if="pocket.pocketType === 'FUTURE_ASSET'"
             :title="POCKET_LABEL.FUTURE_ASSET"
             :budget="pocket.targetAmount"
+            :achieved-amount="futureAssetForecast?.achievedAmount"
+            :achievement-rate="futureAssetForecast?.achievementRate"
+            :current-asset="futureAssetForecast?.currentAsset"
+            @select="openPocketDetail('FUTURE_ASSET')"
           />
 
           <EmergencyPocketCard

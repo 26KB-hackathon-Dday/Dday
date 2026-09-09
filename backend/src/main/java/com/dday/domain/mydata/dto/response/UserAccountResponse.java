@@ -21,11 +21,16 @@ public class UserAccountResponse {
     private final AccountType accountType;
     private final Long balance;
     private final Long availableBalance;
+    private final Long monthlyContribution;
     private final boolean selected;
     private final boolean active;
     private final LocalDateTime lastSyncedAt;
 
     public static UserAccountResponse from(UserAccount account) {
+        return from(account, 0L);
+    }
+
+    public static UserAccountResponse from(UserAccount account, Long monthlyContribution) {
         return UserAccountResponse.builder()
                 .accountId(account.getAccountId())
                 .orgCode(account.getOrgCode())
@@ -34,6 +39,7 @@ public class UserAccountResponse {
                 .accountType(account.getAccountType())
                 .balance(account.getBalance())
                 .availableBalance(account.getAvailableBalance())
+                .monthlyContribution(monthlyContribution != null ? monthlyContribution : 0L)
                 .selected(account.isSelected())
                 .active(account.isActive())
                 .lastSyncedAt(account.getLastSyncedAt())

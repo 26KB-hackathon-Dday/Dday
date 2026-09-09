@@ -5,6 +5,7 @@ import com.dday.domain.assetforecast.repository.AssetForecastAccountRepository;
 import com.dday.domain.assetforecast.repository.AssetForecastPocketBudgetRepository;
 import com.dday.domain.budget.entity.MonthlyPocketBudget;
 import com.dday.domain.mydata.entity.AccountType;
+import com.dday.domain.mydata.repository.FinancialTransactionRepository;
 import com.dday.domain.onboarding.service.OnboardingCalculator;
 import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.user.dto.UserErrorCode;
@@ -16,7 +17,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -32,6 +36,9 @@ public class AssetForecastService {
 
     private final AssetForecastPocketBudgetRepository
             assetForecastPocketBudgetRepository;
+
+    private final FinancialTransactionRepository
+            financialTransactionRepository;
 
     /**
      * 지원 종료 시 예상 총자산 조회.
@@ -142,6 +149,20 @@ public class AssetForecastService {
                         )
                         .orElse(0L);
 
+        LocalDateTime monthStart = budgetMonth.atStartOfDay();
+        LocalDateTime nextMonthStart = budgetMonth.plusMonths(1).atStartOfDay();
+        Long achievedAmount = financialTransactionRepository
+                .sumMonthlyFutureAssetContribution(userId, monthStart, nextMonthStart);
+        if (achievedAmount == null) {
+            achievedAmount = 0L;
+        }
+        long remainingAmount = Math.max(monthlyFutureAmount - achievedAmount, 0L);
+        BigDecimal achievementRate = monthlyFutureAmount == 0L
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(achievedAmount)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(monthlyFutureAmount), 1, RoundingMode.HALF_UP);
+
         /*
          * 지원 종료까지 추가될
          * 예상 자산.
@@ -164,6 +185,15 @@ public class AssetForecastService {
                 )
                 .monthlyFutureAmount(
                         monthlyFutureAmount
+                )
+                .achievedAmount(
+                        achievedAmount
+                )
+                .remainingAmount(
+                        remainingAmount
+                )
+                .achievementRate(
+                        achievementRate
                 )
                 .remainingMonths(
                         remainingMonths

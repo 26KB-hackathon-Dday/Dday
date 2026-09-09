@@ -54,7 +54,7 @@ export interface ConnectResponse {
   accounts: ConnectedAccount[]
 }
 
-export type AccountType = 'DEPOSIT' | 'SAVINGS' | 'LOAN'
+export type AccountType = 'DEPOSIT' | 'SAVINGS' | 'INVESTMENT' | 'LOAN'
 
 /** 연동 계좌 한 건. 기관 이름은 안 내려온다 — orgCode만으로 표시해야 하면 서버에 필드 추가가 필요하다 */
 export interface UserAccount {
@@ -65,6 +65,7 @@ export interface UserAccount {
   accountType: AccountType
   balance: number
   availableBalance: number | null
+  monthlyContribution: number
   selected: boolean
   active: boolean
   lastSyncedAt: string | null
@@ -94,16 +95,40 @@ const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
  */
 const MOCK_INSTITUTIONS: Institution[] = [
   { institutionId: '004', name: '국민은행', category: 'BANK', logoUrl: logoKookmin, popular: true },
-  { institutionId: '090', name: '카카오뱅크', category: 'BANK', logoUrl: logoKakaobank, popular: true },
+  {
+    institutionId: '090',
+    name: '카카오뱅크',
+    category: 'BANK',
+    logoUrl: logoKakaobank,
+    popular: true,
+  },
   { institutionId: '088', name: '신한은행', category: 'BANK', logoUrl: logoShinhan, popular: true },
   { institutionId: '020', name: '우리은행', category: 'BANK', logoUrl: logoWoori },
   { institutionId: '081', name: '하나은행', category: 'BANK', logoUrl: logoHana },
   { institutionId: '011', name: '농협은행', category: 'BANK', logoUrl: logoNonghyup },
   { institutionId: '092', name: '토스뱅크', category: 'BANK', logoUrl: logoTossbank },
 
-  { institutionId: '0306', name: '신한카드', category: 'CARD', logoUrl: logoShinhan, popular: true },
-  { institutionId: '0301', name: 'KB국민카드', category: 'CARD', logoUrl: logoKookmin, popular: true },
-  { institutionId: '0303', name: '삼성카드', category: 'CARD', logoUrl: logoSamsungCard, popular: true },
+  {
+    institutionId: '0306',
+    name: '신한카드',
+    category: 'CARD',
+    logoUrl: logoShinhan,
+    popular: true,
+  },
+  {
+    institutionId: '0301',
+    name: 'KB국민카드',
+    category: 'CARD',
+    logoUrl: logoKookmin,
+    popular: true,
+  },
+  {
+    institutionId: '0303',
+    name: '삼성카드',
+    category: 'CARD',
+    logoUrl: logoSamsungCard,
+    popular: true,
+  },
   { institutionId: '0302', name: '현대카드', category: 'CARD', logoUrl: logoHyundaiCard },
   { institutionId: '0313', name: '우리카드', category: 'CARD', logoUrl: logoWoori },
 ]
