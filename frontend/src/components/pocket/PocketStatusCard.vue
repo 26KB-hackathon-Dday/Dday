@@ -2,9 +2,9 @@
 import { computed } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import type { PocketType } from '@/api/pocket'
-import { formatWon } from '@/utils/format'
+import { formatPercent, formatWon } from '@/utils/format'
 const props = defineProps<{
-  pocketType: Exclude<PocketType, 'FUTURE_ASSET'>
+  pocketType: Extract<PocketType, 'ESSENTIAL' | 'FREE'>
   title: string
   budget: number
   used: number | null
@@ -12,22 +12,17 @@ const props = defineProps<{
   usageRate: number | null
   overAmount?: number | null
 }>()
-const emit = defineEmits<{ select: [pocketType: Exclude<PocketType, 'FUTURE_ASSET'>] }>()
-// 상세 화면을 지원하는 일반 포켓은 모두 버튼으로 렌더링해 부모에게 선택 이벤트를 전달한다.
-const clickable = computed(() => ['ESSENTIAL', 'FREE', 'EMERGENCY'].includes(props.pocketType))
-const iconName = computed(() =>
-  props.pocketType === 'ESSENTIAL' ? 'pocket' : props.pocketType === 'FREE' ? 'benefit' : 'credit',
-)
+const emit = defineEmits<{ select: [pocketType: Extract<PocketType, 'ESSENTIAL' | 'FREE'>] }>()
+const iconName = computed(() => (props.pocketType === 'ESSENTIAL' ? 'pocket' : 'benefit'))
 const rate = computed(() => props.usageRate ?? 0)
 const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
 </script>
 <template>
-  <component
-    :is="clickable ? 'button' : 'article'"
-    class="card"
-    :class="[`card--${pocketType.toLowerCase()}`, { 'card--clickable': clickable }]"
-    :type="clickable ? 'button' : undefined"
-    @click="clickable && emit('select', pocketType)"
+  <button
+    type="button"
+    class="card card--clickable"
+    :class="`card--${pocketType.toLowerCase()}`"
+    @click="emit('select', pocketType)"
   >
     <header>
       <AppIcon :name="iconName" :size="20" aria-hidden="true" />
@@ -44,7 +39,7 @@ const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
       >
         <span :style="{ width: fillWidth }" />
       </div>
-      <small v-if="usageRate != null">{{ usageRate }}% 사용</small>
+      <small v-if="usageRate != null">{{ formatPercent(usageRate) }}% 사용</small>
     </div>
     <dl>
       <div>
@@ -64,7 +59,7 @@ const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
         <dd class="emphasis">{{ formatWon(remaining) }}</dd>
       </div>
     </dl>
-  </component>
+  </button>
 </template>
 <style scoped>
 .card {
@@ -91,10 +86,6 @@ const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
 .card--free {
   --accent: #ff914d;
   background: #fff5ef;
-}
-.card--emergency {
-  --accent: #27b8b8;
-  background: #eaf9fa;
 }
 header {
   display: flex;

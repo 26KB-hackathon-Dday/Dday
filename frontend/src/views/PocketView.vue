@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import PocketStatusCard from '@/components/pocket/PocketStatusCard.vue'
 import FutureAssetPocketCard from '@/components/pocket/FutureAssetPocketCard.vue'
+import EmergencyPocketCard from '@/components/pocket/EmergencyPocketCard.vue'
 import { POCKET_LABEL, POCKET_ORDER, pocketApi, type PocketMonthlyResponse } from '@/api/pocket'
 import { ApiError } from '@/api/types'
 import { formatWon } from '@/utils/format'
@@ -47,13 +48,16 @@ async function load() {
 function openNextBudget() {
   router.push({ name: 'pocket-budget-initial' })
 }
-function openPocketDetail(pocketType: 'ESSENTIAL' | 'FREE' | 'EMERGENCY') {
-  if (!['ESSENTIAL', 'FREE', 'EMERGENCY'].includes(pocketType)) return
+function openPocketDetail(pocketType: 'ESSENTIAL' | 'FREE') {
+  if (!['ESSENTIAL', 'FREE'].includes(pocketType)) return
   router.push({
     name: 'pocket-detail',
     params: { pocketType },
     query: { month: currentMonth.value },
   })
+}
+function openBudgetReadjust() {
+  router.push({ name: 'pocket-budget-readjust' })
 }
 onMounted(load)
 </script>
@@ -89,6 +93,12 @@ onMounted(load)
             v-if="pocket.pocketType === 'FUTURE_ASSET'"
             :title="POCKET_LABEL.FUTURE_ASSET"
             :budget="pocket.targetAmount"
+          />
+          <EmergencyPocketCard
+            v-else-if="pocket.pocketType === 'EMERGENCY'"
+            :title="POCKET_LABEL.EMERGENCY"
+            :budget="pocket.targetAmount"
+            @adjust="openBudgetReadjust"
           />
           <PocketStatusCard
             v-else
