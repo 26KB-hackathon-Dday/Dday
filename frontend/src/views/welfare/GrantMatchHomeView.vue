@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { grantApi, type GrantCard, type GrantHome, type GrantReviewItem } from '@/api/grant'
-import checkIcon from '@/assets/icons/check.svg'
 import checkThinIcon from '@/assets/icons/check-thin.svg'
 import AppIcon from '@/components/AppIcon.vue'
 import GrantCardList from '@/components/GrantCardList.vue'
@@ -89,7 +88,9 @@ watch(reviewOpen, async (isOpen, wasOpen) => {
             <span class="stat__num stat__num--xl">{{ home.summary.confirmed }}</span>
             <span class="stat__unit stat__unit--lg">건</span>
           </p>
-          <img :src="checkIcon" alt="" class="cell__badge" />
+          <span class="cell__badge">
+            <AppIcon name="check-thin" :size="22" />
+          </span>
         </div>
       </div>
 
@@ -256,9 +257,14 @@ watch(reviewOpen, async (isOpen, wasOpen) => {
 }
 .cell__badge {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(39, 184, 184, 0.12);
+  color: var(--c-teal);
 }
 
 /* ── 숫자 + 단위 ── */
