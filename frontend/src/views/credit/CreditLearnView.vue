@@ -34,6 +34,7 @@ const TOPICS: Topic[] = [
     icon: 'card',
     title: '어디서 빌렸는지가 점수를 나눠요.',
     description: '대출 건수와 금융권 종류 확인',
+    to: '/credit-manage/loans',
   },
   {
     icon: 'folder',

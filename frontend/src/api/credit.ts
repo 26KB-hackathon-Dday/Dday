@@ -73,6 +73,7 @@ export const creditApi = {
   fetchExpectedRates: () => api.get<ExpectedRates>('/api/credit/rates/expected'),
   fetchPaymentHistory: () => api.get<PaymentHistory>('/api/credit/payments'),
   fetchCardUsage: () => api.get<CardUsage>('/api/credit/card-usage'),
+  fetchLoans: () => api.get<LoanComposition>('/api/credit/loans'),
 }
 
 // ── 비금융 납부 이력 (GET /api/credit/payments) ───────────────────────────
@@ -144,4 +145,44 @@ export interface CardUsage {
   cards: CardUsageItem[]
   /** 오래된 달부터. 거래가 없는 달도 0으로 채워져 있다. */
   trend: CardUsageTrend[]
+}
+
+// ── 대출 구성 (GET /api/credit/loans) ────────────────────────────────────
+
+export type FinancialSector = 'BANK' | 'NON_BANK' | 'LOAN_COMPANY'
+
+export interface LoanSector {
+  sector: FinancialSector
+  /** 화면에 그대로 쓰는 금융권 문구. 정본은 서버다. */
+  label: string
+  loanCount: number
+  totalBalance: number
+}
+
+export interface LoanItem {
+  accountId: number
+  /** 기관 이름. 모르는 코드면 코드가 그대로 온다. */
+  institutionName: string
+  /** 모르는 기관이면 null. */
+  sector: FinancialSector | null
+  sectorLabel: string | null
+  productName: string
+  /** 남은 원금(원). */
+  balance: number
+  /** 연 이자율(%). 없을 수도 있다. */
+  interestRate: number | null
+}
+
+export interface LoanComposition {
+  loanCount: number
+  totalBalance: number
+  /**
+   * 제1금융권 → 제2금융권 → 대부업 순. 해당 대출이 없는 권역은 빠진다.
+   *
+   * **loanCount·totalBalance와 합이 다를 수 있다** — 권역을 모르는 기관의 대출은
+   * 총계에는 들어가지만 여기서는 빠진다.
+   */
+  sectors: LoanSector[]
+  /** 잔액이 큰 순. */
+  loans: LoanItem[]
 }
