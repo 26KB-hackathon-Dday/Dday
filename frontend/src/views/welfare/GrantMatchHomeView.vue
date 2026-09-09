@@ -81,19 +81,6 @@ watch(reviewOpen, async (isOpen, wasOpen) => {
 
     <!-- 요약 (벤토) -->
     <section class="bento">
-      <div class="cell cell--wide">
-        <span class="cell__label">확인된 지원</span>
-        <div class="cell__row">
-          <p class="stat">
-            <span class="stat__num stat__num--xl">{{ home.summary.confirmed }}</span>
-            <span class="stat__unit stat__unit--lg">건</span>
-          </p>
-          <span class="cell__badge">
-            <AppIcon name="check-thin" :size="22" />
-          </span>
-        </div>
-      </div>
-
       <button
         type="button"
         class="cell cell--button"
@@ -256,22 +243,6 @@ watch(reviewOpen, async (isOpen, wasOpen) => {
   color: var(--c-danger);
   position: relative;
 }
-.cell__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.cell__badge {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(39, 184, 184, 0.12);
-  color: var(--c-teal);
-}
 
 /* ── 숫자 + 단위 ── */
 .stat {
@@ -287,21 +258,11 @@ watch(reviewOpen, async (isOpen, wasOpen) => {
   letter-spacing: -0.2px;
   color: #000;
 }
-.stat__num--xl {
-  font-weight: 700;
-  font-size: 32px;
-  line-height: 40px;
-  letter-spacing: -0.64px;
-}
 .stat__unit {
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
   color: var(--c-text-2);
-}
-.stat__unit--lg {
-  font-size: 20px;
-  line-height: 28px;
 }
 
 .pill {
