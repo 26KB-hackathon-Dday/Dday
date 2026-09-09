@@ -11,10 +11,10 @@
       </section>
 
       <section class="usage-guide">
-        <strong class="usage-guide__title"> 잠금선 아래로는 줄일 수 없어요. </strong>
+        <strong class="usage-guide__title"> 사용한 금액 아래로는 줄일 수 없어요. </strong>
 
         <p class="usage-guide__description">
-          필수·자유 포켓은 사용액, 미래자산은 달성액이 최소 기준이에요. 비상금은 0원까지 조정할 수
+          진하게 표시된 구간은 이미 사용하거나 달성한 금액이에요. 비상금은 자유롭게 다시 배분할 수
           있어요.
         </p>
       </section>
@@ -63,12 +63,12 @@
           <p v-if="totalBudgetSuccess" class="total-success">총 예산이 저장됐어요.</p>
         </section>
 
-        <!-- 포켓별 예산 -->
+        <!-- 포켓 안내 -->
         <section class="adjust-guide">
           <strong class="adjust-guide__title"> 포켓별 예산 </strong>
 
           <p class="adjust-guide__description">
-            잠금선보다 왼쪽으로는 조정할 수 없어요.<br />
+            각 포켓의 금액을 조정해 주세요.<br />
             전체 합계가 총 예산과 같아야 저장할 수 있어요.
           </p>
         </section>
@@ -90,15 +90,12 @@
 
           <template v-else-if="budgetGap < 0">
             <strong class="budget-live-status__title">
+              아직
               {{ formatCurrency(Math.abs(budgetGap)) }}
               남았어요
             </strong>
 
-            <span class="budget-live-status__description">
-              원하는 포켓에
-              {{ formatCurrency(Math.abs(budgetGap)) }}
-              더 배분해 주세요.
-            </span>
+            <span class="budget-live-status__description"> 원하는 포켓에 더 배분해 주세요. </span>
           </template>
 
           <template v-else>
@@ -116,8 +113,7 @@
             :value="budgets.essential"
             :min="lockedAmounts.essential"
             :max="totalBudget"
-            :used-amount="lockedAmounts.essential"
-            :show-used-marker="true"
+            :allowed-max="totalBudget"
             :step="500"
             @change="handlePocketChange('essential', $event)"
           />
@@ -128,8 +124,7 @@
             :value="budgets.free"
             :min="lockedAmounts.free"
             :max="totalBudget"
-            :used-amount="lockedAmounts.free"
-            :show-used-marker="true"
+            :allowed-max="totalBudget"
             :step="500"
             @change="handlePocketChange('free', $event)"
           />
@@ -140,8 +135,7 @@
             :value="budgets.future"
             :min="lockedAmounts.future"
             :max="totalBudget"
-            :used-amount="lockedAmounts.future"
-            :show-used-marker="true"
+            :allowed-max="totalBudget"
             :step="500"
             @change="handlePocketChange('future', $event)"
           />
@@ -151,38 +145,30 @@
             variant="emergency"
             :value="budgets.emergency"
             :min="0"
-            :max="emergencyMax"
-            :show-used-marker="false"
+            :max="totalBudget"
+            :allowed-max="emergencyMax"
             :step="500"
             @change="handlePocketChange('emergency', $event)"
           />
         </section>
 
-        <BudgetForecastCard
-          v-if="forecastLoaded"
-          :current-asset="currentAsset"
-          :expected-asset="expectedAsset"
-          :future-budget="budgets.future"
-          :remaining-months="remainingMonths"
-        />
-
-        <p v-else-if="forecastError" class="forecast-error">예상 자산 정보를 불러오지 못했어요.</p>
+        <!--
+          기존
+          "이 비율로 조정하면"
+          BudgetForecastCard UI 삭제.
+        -->
 
         <button
           class="save-button"
           :class="{
-            'save-button--disabled': !isBalanced || saving,
+            'save-button--disabled': !isBalanced,
           }"
           type="button"
-          :disabled="!isBalanced || saving"
+          :disabled="!isBalanced"
           @click="handleSave"
         >
-          {{ saving ? '저장 중…' : '이 비율로 저장하기' }}
+          이 비율로 저장하기
         </button>
-
-        <p v-if="saveError" class="save-error">
-          {{ saveError }}
-        </p>
       </template>
     </main>
   </div>
@@ -194,7 +180,6 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import PocketBudgetSlider from '@/components/pocket/PocketBudgetSlider.vue'
-import BudgetForecastCard from '@/components/pocket/BudgetForecastCard.vue'
 
 import { budgetAdjustmentApi, type BudgetAdjustmentPocketType } from '@/api/budgetAdjustment'
 
@@ -207,8 +192,6 @@ type PocketType = 'essential' | 'free' | 'future' | 'emergency'
 const router = useRouter()
 
 const totalBudget = ref(0)
-
-const serverMinimumTotalBudget = ref(0)
 
 const budgets = reactive<Record<PocketType, number>>({
   essential: 0,
@@ -232,21 +215,17 @@ const totalBudgetSuccess = ref(false)
 
 const loadError = ref('')
 
-const forecastError = ref('')
-
-const saveError = ref('')
-
 const isLoading = ref(true)
 
 const updatingTotalBudget = ref(false)
 
-const saving = ref(false)
-
+/*
+ * 화면에서는 예상자산 카드를 없앴지만
+ * 확인 화면에 넘길 값 계산용으로 유지.
+ */
 const currentAsset = ref(0)
 
 const remainingMonths = ref(0)
-
-const forecastLoaded = ref(false)
 
 const toSafeNumber = (value: unknown): number => {
   const numberValue = Number(value)
@@ -255,9 +234,7 @@ const toSafeNumber = (value: unknown): number => {
 }
 
 const minimumTotalBudget = computed(() => {
-  const calculated = lockedAmounts.essential + lockedAmounts.free + lockedAmounts.future
-
-  return Math.max(calculated, serverMinimumTotalBudget.value)
+  return lockedAmounts.essential + lockedAmounts.free + lockedAmounts.future
 })
 
 const emergencyMax = computed(() => {
@@ -315,8 +292,6 @@ const loadCurrentBudget = async () => {
 
   totalBudget.value = Math.max(0, toSafeNumber(response.totalBudgetAmount))
 
-  serverMinimumTotalBudget.value = Math.max(0, toSafeNumber(response.minimumTotalBudget))
-
   totalBudgetInput.value = totalBudget.value.toLocaleString('ko-KR')
 
   budgets.essential = 0
@@ -336,38 +311,59 @@ const loadCurrentBudget = async () => {
 
     const targetAmount = Math.max(0, toSafeNumber(pocket.targetAmount))
 
-    const minimumAmount = Math.max(0, toSafeNumber(pocket.minimumAmount))
+    const usedAmount = Math.max(0, toSafeNumber(pocket.usedAmount))
 
     budgets[type] = targetAmount
 
+    /*
+     * 비상금
+     */
     if (type === 'emergency') {
       lockedAmounts.emergency = 0
-    } else {
-      lockedAmounts[type] = minimumAmount
 
-      budgets[type] = Math.max(targetAmount, minimumAmount)
+      return
     }
+
+    /*
+     * 미래자산
+     *
+     * 현재 달성액이 0으로 와도
+     * 현재 할당액보다 낮아지지 않도록 처리.
+     */
+    if (type === 'future') {
+      lockedAmounts.future = Math.max(usedAmount, targetAmount)
+
+      budgets.future = Math.max(targetAmount, lockedAmounts.future)
+
+      return
+    }
+
+    /*
+     * 필수 / 자유
+     */
+    lockedAmounts[type] = usedAmount
+
+    budgets[type] = Math.max(targetAmount, usedAmount)
   })
 
   clampEmergency()
 }
 
+/*
+ * 확인화면 예상자산 값 계산용.
+ * 실패해도 현재 조정 화면은 정상 사용 가능.
+ */
 const loadForecast = async () => {
-  forecastError.value = ''
-
   try {
     const response = await assetForecastApi.find()
 
     currentAsset.value = Math.max(0, toSafeNumber(response.currentAsset))
 
     remainingMonths.value = Math.max(0, toSafeNumber(response.remainingMonths))
+  } catch {
+    currentAsset.value = 0
 
-    forecastLoaded.value = true
-  } catch (error) {
-    forecastLoaded.value = false
-
-    forecastError.value =
-      error instanceof Error ? error.message : '예상 자산 정보를 불러오지 못했어요.'
+    remainingMonths.value = 0
   }
 }
 
@@ -424,10 +420,6 @@ const applyTotalBudget = async () => {
 
   const newTotal = Math.round(value)
 
-  /*
-   * 비상금이나 현재 할당액은
-   * 최소 총예산에 포함하지 않는다.
-   */
   if (newTotal < minimumTotalBudget.value) {
     totalBudgetError.value = `최소 총 예산은 ${formatCurrency(
       minimumTotalBudget.value,
@@ -443,14 +435,8 @@ const applyTotalBudget = async () => {
 
     totalBudget.value = Math.max(0, toSafeNumber(response.totalBudgetAmount))
 
-    serverMinimumTotalBudget.value = Math.max(0, toSafeNumber(response.minimumTotalBudget))
-
     totalBudgetInput.value = totalBudget.value.toLocaleString('ko-KR')
 
-    /*
-     * 총예산 감소 시
-     * 먼저 재배분 가능한 비상금을 줄인다.
-     */
     clampEmergency()
 
     totalBudgetSuccess.value = true
@@ -477,75 +463,34 @@ const handlePocketChange = (type: PocketType, value: number) => {
 
   budgets[type] = Math.max(lockedAmounts[type], safeValue)
 
-  /*
-   * 필수/자유/미래자산을 늘리면
-   * 비상금에서 먼저 줄어든다.
-   */
   clampEmergency()
 }
 
-const handleSave = async () => {
-  if (!isBalanced.value || saving.value) {
+const handleSave = () => {
+  if (!isBalanced.value) {
     return
   }
 
-  saving.value = true
+  router.push({
+    name: 'pocket-budget-readjust-confirm',
 
-  saveError.value = ''
+    query: {
+      total: totalBudget.value.toString(),
 
-  try {
-    await budgetAdjustmentApi.adjustCurrent({
-      totalBudgetAmount: totalBudget.value,
+      essential: budgets.essential.toString(),
 
-      /*
-       * 중요:
-       * allocations가 아니라 pockets.
-       */
-      pockets: [
-        {
-          pocketType: 'ESSENTIAL',
+      free: budgets.free.toString(),
 
-          amount: budgets.essential,
-        },
+      future: budgets.future.toString(),
 
-        {
-          pocketType: 'FREE',
+      emergency: budgets.emergency.toString(),
 
-          amount: budgets.free,
-        },
-
-        {
-          pocketType: 'FUTURE_ASSET',
-
-          amount: budgets.future,
-        },
-
-        {
-          pocketType: 'EMERGENCY',
-
-          amount: budgets.emergency,
-        },
-      ],
-
-      changeReason: '사용자 포켓 예산 재조정',
-    })
-
-    await router.replace({
-      name: 'pockets',
-    })
-  } catch (error) {
-    saveError.value =
-      error instanceof ApiError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : '예산 수정에 실패했어요.'
-  } finally {
-    saving.value = false
-  }
+      expectedAsset: expectedAsset.value.toString(),
+    },
+  })
 }
 
-const formatCurrency = (value: unknown) => {
+const formatCurrency = (value: unknown): string => {
   return `${Math.round(toSafeNumber(value)).toLocaleString('ko-KR')}원`
 }
 
@@ -635,14 +580,6 @@ onMounted(load)
 
 .load-error {
   margin: 0 0 20px;
-
-  color: #d95050;
-
-  font-size: 13px;
-}
-
-.load-error {
-  margin: 20px 0;
 
   color: #d95050;
 
@@ -741,8 +678,7 @@ onMounted(load)
   cursor: not-allowed;
 }
 
-.total-error,
-.save-error {
+.total-error {
   margin: 0;
 
   color: #e05252;
@@ -813,7 +749,7 @@ onMounted(load)
 }
 
 .budget-live-status--under {
-  color: #555555;
+  color: #666666;
 
   border-color: #e4e4e4;
 
@@ -842,34 +778,6 @@ onMounted(load)
   flex-direction: column;
 
   gap: 14px;
-}
-
-.forecast-error {
-  margin-top: 4px;
-
-  padding: 16px;
-
-  border-radius: 12px;
-
-  color: #777777;
-  background: #f5f5f6;
-
-  font-size: 12px;
-  text-align: center;
-}
-
-.forecast-error {
-  width: 100%;
-
-  padding: 18px;
-
-  border-radius: 12px;
-
-  color: #777777;
-  background: #f5f5f6;
-
-  font-size: 12px;
-  text-align: center;
 }
 
 .save-button {
