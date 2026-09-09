@@ -38,9 +38,7 @@ const needsCustomName = computed(() => !!selectedPreset.value?.namePlaceholder)
 const name = computed(() => {
   if (!selectedPreset.value) return ''
   if (!needsCustomName.value) return selectedPreset.value.name
-  const trimmed = customName.value.trim()
-  if (!trimmed) return ''
-  return selectedPreset.value.key === 'ETC' ? trimmed : `${selectedPreset.value.name} - ${trimmed}`
+  return customName.value.trim()
 })
 
 const canSubmit = computed(
