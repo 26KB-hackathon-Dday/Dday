@@ -75,6 +75,7 @@ const progressWidth = computed(() => `${Math.min(Math.max(achievementRate.value,
   <section class="future-section">
     <header class="future-section__header">
       <h2>내 미래자산</h2>
+      <slot name="assets-action" />
     </header>
     <ul v-if="futureAccounts.length" class="asset-list">
       <li

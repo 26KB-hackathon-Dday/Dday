@@ -10,6 +10,7 @@ import PocketSpendingDonut, {
 import PocketTransactionItem from '@/components/pocket/PocketTransactionItem.vue'
 import PocketTransactionDetailSheet from '@/components/pocket/PocketTransactionDetailSheet.vue'
 import FutureAssetDetailSection from '@/components/pocket/FutureAssetDetailSection.vue'
+import MydataRefreshStatus from '@/components/pocket/MydataRefreshStatus.vue'
 import { assetForecastApi, type AssetForecastResponse } from '@/api/assetForecast'
 import { mydataApi, type UserAccount } from '@/api/mydata'
 import {
@@ -25,7 +26,7 @@ import {
   type PocketType,
 } from '@/api/pocket'
 import { ApiError } from '@/api/types'
-import { formatWon } from '@/utils/format'
+import { useMydataRefresh } from '@/composables/useMydataRefresh'
 
 const route = useRoute()
 const router = useRouter()
@@ -251,7 +252,20 @@ async function saveTransactionCategory(categoryId: number) {
   }
 }
 
-onMounted(load)
+const { lastSyncedAt, refreshing, refreshError, loadLastSyncedAt, refresh } = useMydataRefresh(load)
+
+const initialize = async () => {
+  if (isEmergency.value) {
+    await load()
+    return
+  }
+  const synced = await refresh()
+  if (!synced) {
+    await Promise.all([loadLastSyncedAt(), load()])
+  }
+}
+
+onMounted(initialize)
 
 function openBudgetReadjust() {
   // 기존 재조정 화면은 month query를 계약으로 사용하지 않으므로 라우트 이름만 전달한다.
@@ -286,23 +300,41 @@ function selectSpendingCategory(category: SpendingCategory) {
         :summary="summary"
         :forecast="futureAssetForecast"
         :accounts="futureAssetAccounts"
-      />
+      >
+        <template #assets-action>
+          <MydataRefreshStatus
+            :last-synced-at="lastSyncedAt"
+            :refreshing="refreshing"
+            :error="refreshError"
+            @refresh="refresh"
+          />
+        </template>
+      </FutureAssetDetailSection>
       <template v-else-if="!isFutureAsset">
         <PocketBudgetSummary
           :summary="summary"
           :theme="summaryTheme"
           :pill-label="isEmergency ? '이번 달 남은 비상금' : '이번 달 남은 예산'"
         />
-        <PocketSpendingDonut
-          v-if="isFree"
-          class="section"
-          :categories="spendingCategories"
-          @select="selectSpendingCategory"
-        />
+        <template v-if="isFree">
+          <MydataRefreshStatus
+            class="section section-refresh"
+            :last-synced-at="lastSyncedAt"
+            :refreshing="refreshing"
+            :error="refreshError"
+            @refresh="refresh"
+          />
+          <PocketSpendingDonut :categories="spendingCategories" @select="selectSpendingCategory" />
+        </template>
         <section v-else-if="!isEmergency" class="section">
           <header class="section__header">
             <h2>카테고리별 사용 현황</h2>
-            <small v-if="categoryUsage">총 {{ formatWon(categoryUsage.totalUsedAmount) }}</small>
+            <MydataRefreshStatus
+              :last-synced-at="lastSyncedAt"
+              :refreshing="refreshing"
+              :error="refreshError"
+              @refresh="refresh"
+            />
           </header>
           <ul v-if="essentialCategories.length" class="category-card">
             <PocketCategoryUsageItem
@@ -401,6 +433,9 @@ function selectSpendingCategory(category: SpendingCategory) {
   padding: 18px 22px 32px;
   overflow-x: hidden;
   background: var(--c-bg);
+}
+.section-refresh {
+  margin-bottom: 8px;
 }
 .state {
   display: grid;
