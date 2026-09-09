@@ -12,7 +12,8 @@ public enum MydataSuccessCode implements SuccessCode {
     MYDATA_SYNCED(HttpStatus.OK, "MyData 정보를 동기화했습니다."),
     MYDATA_CONNECTED(HttpStatus.OK, "MyData 연동이 완료되었습니다."),
     ACCOUNTS_FOUND(HttpStatus.OK, "연동된 계좌를 조회했습니다."),
-    ACCOUNT_SELECTION_UPDATED(HttpStatus.OK, "계좌 선택 여부가 변경되었습니다.");
+    ACCOUNT_SELECTION_UPDATED(HttpStatus.OK, "계좌 선택 여부가 변경되었습니다."),
+    INSTITUTION_DISCONNECTED(HttpStatus.OK, "기관 연결을 해제했습니다.");
 
     private final HttpStatus status;
     private final String message;

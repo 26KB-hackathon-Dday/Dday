@@ -73,4 +73,8 @@ export const mydataApi = {
   async connect(_body: ConnectRequest): Promise<ConnectResponse> {
     return api.post<ConnectResponse>('/api/mydata/connect')
   },
+
+  /** 기관 하나의 연결 해제. orgCode는 화면 표시용이 아니라 서버 식별값(예: "004")이다 */
+  disconnectInstitution: (orgCode: string) =>
+    api.delete<void>(`/api/mydata/institutions/${orgCode}`),
 }

@@ -13,4 +13,10 @@ public interface UserCardRepository extends JpaRepository<UserCard, Long> {
             Long userId, String orgCode, String cardIdentifier);
 
     List<UserCard> findAllByUserUserId(Long userId);
+
+    /** 기관 연결 해제 대상을 찾는다. 같은 기관 카드가 여러 개일 수 있어 리스트다. */
+    List<UserCard> findAllByUserUserIdAndOrgCode(Long userId, String orgCode);
+
+    /** 회원의 마이데이터 연결이 전부 끊겼는지 판단할 때 쓴다. */
+    boolean existsByUserUserIdAndActiveTrue(Long userId);
 }

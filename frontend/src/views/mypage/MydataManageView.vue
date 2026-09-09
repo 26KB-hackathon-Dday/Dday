@@ -2,10 +2,13 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { mydataApi } from '@/api/mydata'
+import { ApiError } from '@/api/types'
 
 const router = useRouter()
 
 interface ConnectedInstitution {
+  /** 서버 기관 코드(예: "004") — 연결 해제 API가 이 값을 받는다 */
   id: string
   name: string
   type: 'bank' | 'card'
@@ -14,10 +17,14 @@ interface ConnectedInstitution {
   isToggled: boolean
 }
 
-/** 실 연동 목록/해제 API가 아직 없어 화면 목데이터로 그린다. */
+/**
+ * 연동 계좌 목록 조회(`GET /api/mydata/accounts`)는 계좌만 내려주고 카드는 안 내려줘서
+ * 아직 이 화면 전체를 실 데이터로 그리지 못한다 — 목데이터로 그리되, id는 실제 서버
+ * 기관 코드(`Institution` 코드)를 써서 "연결 해제"는 실 API를 부르게 한다.
+ */
 const institutions = ref<ConnectedInstitution[]>([
   {
-    id: 'KB',
+    id: '004',
     name: '국민은행',
     type: 'bank',
     statusText: '연결됨 · 오늘 14:32 업데이트',
@@ -25,7 +32,7 @@ const institutions = ref<ConnectedInstitution[]>([
     isToggled: true,
   },
   {
-    id: 'SHINHAN_CARD',
+    id: '0306',
     name: '신한카드',
     type: 'card',
     statusText: '만료 임박 · 오늘 10:15 업데이트',
@@ -33,7 +40,7 @@ const institutions = ref<ConnectedInstitution[]>([
     isToggled: true,
   },
   {
-    id: 'TOSS',
+    id: '092',
     name: '토스뱅크',
     type: 'bank',
     statusText: '연결됨 · 오늘 14:32 업데이트',
@@ -42,6 +49,7 @@ const institutions = ref<ConnectedInstitution[]>([
   },
 ])
 
+const disconnecting = ref(false)
 const hasExpiringSoon = computed(() => institutions.value.some((item) => item.isWarning))
 
 function toggle(item: ConnectedInstitution) {
@@ -49,14 +57,32 @@ function toggle(item: ConnectedInstitution) {
 }
 
 /** 토글을 끈 기관만 실제로 연결을 해제한다 — 유지할 기관은 그대로 둔다. */
-function disconnect() {
+async function disconnect() {
   const toRemove = institutions.value.filter((item) => !item.isToggled)
   if (toRemove.length === 0) {
     showToast('해제할 기관을 먼저 꺼주세요')
     return
   }
-  institutions.value = institutions.value.filter((item) => item.isToggled)
-  showToast(`${toRemove.length}개 기관 연결을 해제했어요`)
+
+  disconnecting.value = true
+  const failedNames: string[] = []
+  for (const item of toRemove) {
+    try {
+      await mydataApi.disconnectInstitution(item.id)
+    } catch (e) {
+      failedNames.push(item.name)
+      showToast(e instanceof ApiError ? e.message : `${item.name} 연결 해제에 실패했어요`)
+    }
+  }
+  disconnecting.value = false
+
+  const disconnectedCount = toRemove.length - failedNames.length
+  institutions.value = institutions.value.filter(
+    (item) => item.isToggled || failedNames.includes(item.name),
+  )
+  if (disconnectedCount > 0) {
+    showToast(`${disconnectedCount}개 기관 연결을 해제했어요`)
+  }
 }
 
 function reconsent() {
@@ -119,7 +145,14 @@ function reconsent() {
     </div>
 
     <div class="actions">
-      <button type="button" class="btn btn--outline" @click="disconnect">연결 해제</button>
+      <button
+        type="button"
+        class="btn btn--outline"
+        :disabled="disconnecting"
+        @click="disconnect"
+      >
+        연결 해제
+      </button>
       <button type="button" class="btn btn--solid" @click="reconsent">다시 동의하기</button>
     </div>
   </div>
