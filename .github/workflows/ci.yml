@@ -225,11 +225,14 @@ jobs:
           # 덕분에 GHCR 패키지를 public으로 열지 않아도 된다 (PAT를 서버에 두는 것보다 안전하다).
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # data.go.kr 복지서비스 수집 키. 리포 Secret에 있으면 서버 .env에 반영한다.
+          # 비어 있어도 배포는 정상 — 수집 잡만 실패한다 (docker-compose.prod.yml 참고).
+          WELFARE_API_KEY: ${{ secrets.WELFARE_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GHCR_USER,GHCR_TOKEN
+          envs: GHCR_USER,GHCR_TOKEN,WELFARE_API_KEY
           script: |
             set -e
             cd /home/${{ secrets.EC2_USER }}/dday
@@ -245,6 +248,17 @@ jobs:
             if ! grep -q '^JWT_SECRET=' .env 2>/dev/null; then
               echo "JWT_SECRET=$(head -c 48 /dev/urandom | base64 | tr -d '\n')" >> .env
               echo "JWT_SECRET 을 새로 생성해 .env 에 넣었다."
+            fi
+
+            # 복지서비스 수집 키. JWT와 달리 매 배포 최신값으로 맞춘다 (리포 Secret이 정본).
+            # Secret이 비어 있으면 건드리지 않는다 — 서버에 이미 넣어둔 값이 있으면 지우지 않기 위해서.
+            if [ -n "$WELFARE_API_KEY" ]; then
+              if grep -q '^WELFARE_API_KEY=' .env 2>/dev/null; then
+                sed -i "s|^WELFARE_API_KEY=.*|WELFARE_API_KEY=$WELFARE_API_KEY|" .env
+              else
+                echo "WELFARE_API_KEY=$WELFARE_API_KEY" >> .env
+              fi
+              echo "WELFARE_API_KEY 를 .env 에 반영했다."
             fi
 
             docker compose -f docker-compose.prod.yml pull backend
