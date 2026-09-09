@@ -90,14 +90,14 @@ class MockMydataProvisionerTest {
         given(accountRepository.findAllByMockUserServiceUserIdAndActiveTrueOrderByMockAccountId(
                 TEMPLATE_USER_ID)).willReturn(List.of(MockMydataAccount.builder()
                 .mockUser(template)
-                .externalAccountId("SH-LOAN-0001")
-                .orgCode("088")
+                .externalAccountId("KB-LOAN-0001")
+                .orgCode("004")
                 .accountNum("110-1111-222222")
-                .accountName("신한 신용대출")
-                .productName("쏠편한 직장인대출")
+                .accountName("KB국민 전세자금대출")
+                .productName("청년전용 버팀목전세자금대출")
                 .accountType(MockAccountType.LOAN)
-                .balance(8_000_000L)
-                .interestRate(new BigDecimal("5.40"))
+                .balance(30_000_000L)
+                .interestRate(new BigDecimal("2.10"))
                 .build()));
         given(accountRepository.save(any(MockMydataAccount.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
@@ -107,7 +107,7 @@ class MockMydataProvisionerTest {
         provisioner.provision(TARGET_USER_ID, "복제본");
 
         then(accountRepository).should().save(savedAccount.capture());
-        assertThat(savedAccount.getValue().getInterestRate()).isEqualByComparingTo("5.40");
+        assertThat(savedAccount.getValue().getInterestRate()).isEqualByComparingTo("2.10");
         assertThat(savedAccount.getValue().getAccountType()).isEqualTo(MockAccountType.LOAN);
     }
 

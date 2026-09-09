@@ -16,6 +16,8 @@ export default defineConfig({
     },
   },
   server: {
+    // 기본 5173. 포트가 이미 쓰이면 PORT 환경변수로 넘긴다 (여러 개발 인스턴스 공존).
+    port: process.env.PORT ? Number(process.env.PORT) : undefined,
     proxy: {
       // 배포 환경에서는 Cloudflare Worker(worker/index.ts)가 같은 일을 한다.
       // 덕분에 프론트 코드는 로컬이든 배포든 '/api/...'만 부르면 된다 — 환경 분기가 없다.

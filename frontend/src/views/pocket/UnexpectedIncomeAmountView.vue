@@ -24,7 +24,7 @@
             @input="handleAmountInput"
           />
 
-          <span class="amount-unit"> 원 </span>
+          <span class="amount-unit">원</span>
         </div>
 
         <div class="amount-divider" />
@@ -42,7 +42,15 @@
         </p>
       </section>
 
-      <button class="next-button" type="button" @click="handleNext">
+      <button
+        class="next-button"
+        :class="{
+          'next-button--disabled': parsedAmount <= 0,
+        }"
+        type="button"
+        :disabled="parsedAmount <= 0"
+        @click="handleNext"
+      >
         {{ buttonAmountText }}을 예산에 추가하기
       </button>
     </main>
@@ -59,7 +67,9 @@ const router = useRouter()
 
 const store = useUnexpectedIncomeStore()
 
-const amountInput = ref(store.includedAmount.toLocaleString('ko-KR'))
+const amountInput = ref(
+  store.includedAmount > 0 ? store.includedAmount.toLocaleString('ko-KR') : '',
+)
 
 const errorMessage = ref('')
 
@@ -74,7 +84,11 @@ const excludedPreview = computed(() => {
 })
 
 const buttonAmountText = computed(() => {
-  return parsedAmount.value.toLocaleString('ko-KR')
+  if (parsedAmount.value <= 0) {
+    return '0원'
+  }
+
+  return `${parsedAmount.value.toLocaleString('ko-KR')}원`
 })
 
 const handleAmountInput = (event: Event) => {
@@ -87,10 +101,14 @@ const handleAmountInput = (event: Event) => {
     return
   }
 
-  amountInput.value = Number(onlyNumbers).toLocaleString('ko-KR')
+  const numberValue = Number(onlyNumbers)
+
+  amountInput.value = numberValue.toLocaleString('ko-KR')
+
+  errorMessage.value = ''
 }
 
-const handleNext = () => {
+const handleNext = async () => {
   errorMessage.value = ''
 
   const amount = parsedAmount.value
@@ -109,13 +127,13 @@ const handleNext = () => {
 
   store.setIncludedAmount(amount)
 
-  router.push({
+  await router.push({
     name: 'pocket-unexpected-income-allocate',
   })
 }
 
 const formatCurrency = (value: number) => {
-  return `${value.toLocaleString('ko-KR')}원`
+  return `${Number(value ?? 0).toLocaleString('ko-KR')}원`
 }
 </script>
 
@@ -125,6 +143,7 @@ const formatCurrency = (value: number) => {
   min-height: 100vh;
 
   background: #ffffff;
+
   color: #171717;
 }
 
@@ -193,6 +212,10 @@ const formatCurrency = (value: number) => {
   letter-spacing: -1px;
 }
 
+.amount-input::placeholder {
+  color: #cccccc;
+}
+
 .amount-unit {
   flex-shrink: 0;
 
@@ -222,6 +245,7 @@ const formatCurrency = (value: number) => {
 
 .excluded-description strong {
   color: #555555;
+
   font-weight: 600;
 }
 
@@ -252,7 +276,15 @@ const formatCurrency = (value: number) => {
   cursor: pointer;
 }
 
-.next-button:active {
+.next-button--disabled {
+  color: #999999;
+
+  background: #e7e7e7;
+
+  cursor: not-allowed;
+}
+
+.next-button:active:not(:disabled) {
   opacity: 0.85;
 }
 </style>

@@ -46,12 +46,22 @@ import java.time.LocalDateTime;
         },
         indexes = {
                 @Index(name = "idx_financial_transaction_at", columnList = "transaction_at"),
-                @Index(name = "idx_financial_transaction_pocket_at",
-                        columnList = "pocket_id, transaction_at"),
-                @Index(name = "idx_financial_transaction_classification",
-                        columnList = "classification_status"),
-                @Index(name = "idx_financial_transaction_account", columnList = "account_id"),
-                @Index(name = "idx_financial_transaction_card", columnList = "card_id")
+                @Index(
+                        name = "idx_financial_transaction_pocket_at",
+                        columnList = "pocket_id, transaction_at"
+                ),
+                @Index(
+                        name = "idx_financial_transaction_classification",
+                        columnList = "classification_status"
+                ),
+                @Index(
+                        name = "idx_financial_transaction_account",
+                        columnList = "account_id"
+                ),
+                @Index(
+                        name = "idx_financial_transaction_card",
+                        columnList = "card_id"
+                )
         }
 )
 public class FinancialTransaction {
@@ -140,8 +150,13 @@ public class FinancialTransaction {
     private ClassificationSource classificationSource;
 
     /**
-     * 새로 들어온 돈을 사용자에게 알리고 확인받았는지. 입금이 잡히면 "예산에 반영할까요"를
-     * 물어야 하는데, 이 플래그가 없으면 재동기화 때마다 같은 입금을 또 묻게 된다.
+     * 새로 들어온 돈을 사용자에게 알리고 확인받았는지.
+     *
+     * 입금 거래(INCOME)는 처음 생성될 때 false로 저장해서
+     * "예산에 반영할까요?" 확인 대상이 되게 한다.
+     *
+     * 사용자가 해당 입금을 처리한 뒤에는
+     * markNewFundChecked()를 호출해서 true로 바꾼다.
      */
     @Column(name = "new_fund_checked", nullable = false)
     private boolean newFundChecked;
@@ -155,14 +170,22 @@ public class FinancialTransaction {
     private LocalDateTime updatedAt;
 
     @Builder
-    private FinancialTransaction(TransactionSourceType sourceType, UserAccount account,
-                                 UserCard card, String sourceTransactionId,
-                                 UserAccount counterpartyAccount,
-                                 FinancialTransaction originalTransaction,
-                                 LocalDateTime transactionAt, LocalDateTime syncedAt,
-                                 TransactionType transactionType, TransactionStatus transactionStatus,
-                                 Long amount,
-                                 String merchantName, String merchantRegno, String transMemo) {
+    private FinancialTransaction(
+            TransactionSourceType sourceType,
+            UserAccount account,
+            UserCard card,
+            String sourceTransactionId,
+            UserAccount counterpartyAccount,
+            FinancialTransaction originalTransaction,
+            LocalDateTime transactionAt,
+            LocalDateTime syncedAt,
+            TransactionType transactionType,
+            TransactionStatus transactionStatus,
+            Long amount,
+            String merchantName,
+            String merchantRegno,
+            String transMemo
+    ) {
         this.sourceType = sourceType;
         this.account = account;
         this.card = card;
@@ -176,21 +199,33 @@ public class FinancialTransaction {
         this.merchantName = merchantName;
         this.merchantRegno = merchantRegno;
         this.transMemo = transMemo;
+
         this.transactionStatus = transactionStatus != null
-                ? transactionStatus : TransactionStatus.NORMAL;
+                ? transactionStatus
+                : TransactionStatus.NORMAL;
+
         this.classificationStatus = ClassificationStatus.UNCLASSIFIED;
-        this.newFundChecked = true;
+
+        /*
+         * 입금이면 사용자의 확인이 필요하므로 false.
+         * 지출/이체/기타 거래는 새 수입 확인 대상이 아니므로 true.
+         */
+        this.newFundChecked = transactionType != TransactionType.INCOME;
     }
 
     /**
      * 자동분류 결과를 붙인다. 사용자가 이미 손댄 거래는 건드리지 않는다 —
      * 재동기화 때 사용자의 수정이 조용히 되돌아가는 것을 막는다.
      */
-    public void classifyAutomatically(Category category, Pocket pocket,
-                                      ClassificationSource source) {
+    public void classifyAutomatically(
+            Category category,
+            Pocket pocket,
+            ClassificationSource source
+    ) {
         if (this.classificationStatus == ClassificationStatus.MANUAL_CLASSIFIED) {
             return;
         }
+
         this.category = category;
         this.pocket = pocket;
         this.classificationSource = source;
@@ -206,7 +241,10 @@ public class FinancialTransaction {
     }
 
     /** 취소·환불 반영. 행을 지우지 않고 상태만 바꾼다. */
-    public void markStatus(TransactionStatus status, FinancialTransaction originalTransaction) {
+    public void markStatus(
+            TransactionStatus status,
+            FinancialTransaction originalTransaction
+    ) {
         this.transactionStatus = status;
         this.originalTransaction = originalTransaction;
     }
@@ -217,6 +255,10 @@ public class FinancialTransaction {
         this.counterpartyAccount = counterpartyAccount;
     }
 
+    /**
+     * 새로 들어온 돈에 대해 사용자가 처리를 완료했을 때 호출한다.
+     * true가 되면 같은 입금에 대해 다시 알림을 띄우지 않는다.
+     */
     public void markNewFundChecked() {
         this.newFundChecked = true;
     }

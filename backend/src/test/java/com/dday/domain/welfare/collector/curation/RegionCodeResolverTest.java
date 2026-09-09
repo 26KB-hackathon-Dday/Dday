@@ -5,15 +5,23 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 지역명 → 법정동 시도 코드. v1은 시도 2자리만.
+ * 지역명 → 법정동 코드. 시도 2자리가 기본, 등록된 시군구는 10자리.
  */
 class RegionCodeResolverTest {
 
     @Test
     void 시도명을_2자리_코드로_푼다() {
-        assertThat(RegionCodeResolver.resolve("서울특별시", "용산구")).isEqualTo("11");
         assertThat(RegionCodeResolver.resolve("서울특별시", null)).isEqualTo("11");
         assertThat(RegionCodeResolver.resolve("경기도", "수원시")).isEqualTo("41");
+        // 등록 안 된 시군구는 시도로 떨어진다
+        assertThat(RegionCodeResolver.resolve("서울특별시", "강남구")).isEqualTo("11");
+    }
+
+    @Test
+    void 등록된_시군구는_10자리_법정동_코드() {
+        // 프론트 stores/onboarding.ts HARDCODED_REGION_CODES와 같아야 한다
+        assertThat(RegionCodeResolver.resolve("서울특별시", "용산구")).isEqualTo("1117000000");
+        assertThat(RegionCodeResolver.resolve("서울특별시", "서대문구")).isEqualTo("1141000000");
     }
 
     @Test

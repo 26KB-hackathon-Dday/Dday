@@ -641,6 +641,14 @@ onMounted(load)
   font-size: 13px;
 }
 
+.load-error {
+  margin: 20px 0;
+
+  color: #d95050;
+
+  font-size: 13px;
+}
+
 .total-card {
   display: flex;
   flex-direction: column;
@@ -840,6 +848,20 @@ onMounted(load)
   margin-top: 4px;
 
   padding: 16px;
+
+  border-radius: 12px;
+
+  color: #777777;
+  background: #f5f5f6;
+
+  font-size: 12px;
+  text-align: center;
+}
+
+.forecast-error {
+  width: 100%;
+
+  padding: 18px;
 
   border-radius: 12px;
 

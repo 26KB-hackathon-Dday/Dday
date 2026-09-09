@@ -35,9 +35,11 @@ async function connectMydata() {
     const result = await mydataApi.connect({
       institutionIds: bankInstitutions.map((i) => i.institutionId),
     })
+    // 대출 계좌는 뺀다 — 대출 잔액은 갚아야 할 빚이지 "모아둔 자산"이 아니다.
     // 기관 이름은 서버가 내려준 값을 그대로 쓴다. 프론트에서 코드를 이름으로 바꾸지 않는다.
-    accounts.value = result.accounts
-    onboarding.totalSaved = result.accounts.reduce((sum, account) => sum + account.balance, 0)
+    const savedAccounts = result.accounts.filter((account) => account.accountType !== 'LOAN')
+    accounts.value = savedAccounts
+    onboarding.totalSaved = savedAccounts.reduce((sum, account) => sum + account.balance, 0)
     connected.value = true
   } catch (e) {
     accounts.value = []

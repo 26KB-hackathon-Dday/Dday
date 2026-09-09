@@ -11,8 +11,20 @@ const route = useRoute()
 const router = useRouter()
 
 const title = computed(() => route.meta.title ?? '')
+const pathsWithoutBack = new Set([
+  '/',
+  '/pockets',
+  '/pockets/budget-initial',
+  '/grants',
+  '/credit-manage',
+])
 // route가 바뀔 때마다 다시 계산되도록 fullPath를 참조한다 (history.state는 반응형이 아니다).
-const canGoBack = computed(() => route.fullPath != null && window.history.state?.back != null)
+const canGoBack = computed(
+  () =>
+    route.fullPath != null &&
+    !pathsWithoutBack.has(route.path) &&
+    window.history.state?.back != null,
+)
 // 마이페이지 진입점 — 하단 탭엔 없어서 상단바가 유일한 경로다. 마이페이지 자신에서는 숨긴다.
 const showAccount = computed(() => route.name !== 'mypage')
 
@@ -26,7 +38,9 @@ function goBack() {
     <button v-if="canGoBack" type="button" class="topbar__back" aria-label="뒤로" @click="goBack">
       <AppIcon name="back" :size="16" />
     </button>
-    <h1 class="topbar__title">{{ title }}</h1>
+    <div class="topbar__heading">
+      <h1 class="topbar__title">{{ title }}</h1>
+    </div>
     <button
       v-if="showAccount"
       type="button"
@@ -36,12 +50,7 @@ function goBack() {
     >
       <AppIcon name="profile" :size="22" />
     </button>
-    <button
-      v-if="showAccount"
-      type="button"
-      class="topbar__bell"
-      aria-label="알림"
-    >
+    <button v-if="showAccount" type="button" class="topbar__bell" aria-label="알림">
       <AppIcon name="bell" :size="26" />
     </button>
   </header>
@@ -56,6 +65,7 @@ function goBack() {
   align-items: center;
   height: 56px;
   padding: 0 24px;
+  border-bottom: 1px solid var(--c-border);
   background: var(--c-bg);
 }
 
@@ -74,19 +84,31 @@ function goBack() {
   background: var(--c-surface);
 }
 
-.topbar__title {
-  flex: 1;
+.topbar__heading {
+  position: absolute;
+  left: 50%;
+  width: calc(100% - 144px);
   min-width: 0;
-  font-size: 20px;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.topbar__title {
+  overflow: hidden;
+  font-size: 17px;
   font-weight: 500;
   letter-spacing: -0.2px;
   color: #000;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar__account {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
   padding: 8px;
   border-radius: 9999px;
   color: var(--c-text);

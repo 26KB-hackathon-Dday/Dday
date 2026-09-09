@@ -3,6 +3,7 @@ package com.dday.domain.mydata.service;
 import com.dday.domain.mockmydata.service.MockMydataProvisioner;
 import com.dday.domain.mydata.dto.response.MydataConnectResponse;
 import com.dday.domain.mydata.repository.UserAccountRepository;
+import com.dday.domain.mydata.repository.UserCardRepository;
 import com.dday.domain.pocket.service.PocketService;
 import com.dday.domain.mydata.dto.response.MydataSyncResponse;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ public class MydataConnectService {
     private final MockMydataProvisioner mockMydataProvisioner;
     private final MydataService mydataService;
     private final UserAccountRepository userAccountRepository;
+    private final UserCardRepository userCardRepository;
     private final PocketService pocketService;
 
     /**
@@ -70,8 +72,11 @@ public class MydataConnectService {
         log.info("마이데이터 연결: userId={}, 목데이터 복제={}", userId, provisioned);
 
         // 동기화가 끝난 뒤 읽어야 이번에 새로 붙은 계좌까지 응답에 담긴다.
+        // 비활성 계좌·카드는 뺀다 — 기관을 정리한 뒤에도 예전에 연동했던 회원은 죽은
+        // 행까지 세어 "연결된 기관 수"가 실제보다 많게 나오면 안 된다.
         return MydataConnectResponse.of(
-                userAccountRepository.findAllByUserUserIdOrderByAccountIdAsc(userId),
+                userAccountRepository.findAllByUserUserIdAndActiveTrueOrderByAccountIdAsc(userId),
+                userCardRepository.findAllByUserUserIdAndActiveTrueOrderByCardIdAsc(userId),
                 sync.getInsertedTransactionCount());
     }
 }

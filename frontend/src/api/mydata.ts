@@ -19,8 +19,13 @@ import logoKakaobank from '@/assets/logos/kakaobank.svg'
 import logoTossbank from '@/assets/logos/tossbank.svg'
 import logoHyundaiCard from '@/assets/logos/hyundai-card.svg'
 import logoSamsungCard from '@/assets/logos/samsung-card.png'
+import logoHyundaiCapital from '@/assets/logos/hyundai-capital.svg'
+import logoLotteCapital from '@/assets/logos/lotte-capital.svg'
+import logoWooriCapital from '@/assets/logos/woori-capital.svg'
+import logoKbCapital from '@/assets/logos/kb-capital.svg'
+import logoHanaCapital from '@/assets/logos/hana-capital.svg'
 
-export type InstitutionCategory = 'BANK' | 'CARD' | 'SECURITIES'
+export type InstitutionCategory = 'BANK' | 'CARD' | 'CAPITAL' | 'SECURITIES'
 
 export interface Institution {
   /** 기관 코드(백엔드 `Institution` enum의 code). 연동·해제 요청 때 이 값을 보낸다 */
@@ -47,14 +52,24 @@ export interface ConnectedAccount {
   /** 마스킹된 계좌번호 (예: 110-***-4567) */
   accountNumber: string
   balance: number
+  /** DEPOSIT · SAVINGS · LOAN · INVESTMENT · ETC. 대출은 자산이 아니라 빚이라 합산에서 뺀다 */
+  accountType: AccountType
+}
+
+/** 연동된 기관 하나(계좌든 카드든, 중복 제거됨). 완료 화면의 체크리스트가 이걸 그린다 */
+export interface ConnectedInstitution {
+  institutionId: string
+  institutionName: string
 }
 
 export interface ConnectResponse {
+  /** 연결된 "기관" 수다 — accounts 배열 길이가 아니다. institutions.length와 같다 */
   connectedCount: number
   accounts: ConnectedAccount[]
+  institutions: ConnectedInstitution[]
 }
 
-export type AccountType = 'DEPOSIT' | 'SAVINGS' | 'LOAN'
+export type AccountType = 'DEPOSIT' | 'SAVINGS' | 'LOAN' | 'INVESTMENT' | 'ETC'
 
 /** 연동 계좌 한 건. 기관 이름은 안 내려온다 — orgCode만으로 표시해야 하면 서버에 필드 추가가 필요하다 */
 export interface UserAccount {
@@ -87,10 +102,12 @@ export interface UserCard {
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * 은행 7개 + 카드사 5개 — 백엔드 `Institution` enum과 코드를 맞췄다(대출 전용 기관인
- * 현대캐피탈·SBI저축은행은 연동 화면에서 고를 대상이 아니라 뺐다).
+ * 은행 7개 + 카드사 5개 + 캐피탈 5개 — 백엔드 `Institution` enum과 코드를 맞췄다.
  *
- * 대표 3개(`popular`)는 국내 이용자 수 기준 상위권 은행/카드사로 골랐다.
+ * **분류마다 우리가 실제로 데모 데이터를 붙여둔 기관(국민은행·국민카드·우리카드·
+ * 현대캐피탈)을 배열 맨 앞, `popular`로 둔다.** 무엇을 고르든 서버는 이 4곳만
+ * 연동해주기 때문에, 목록 첫 화면에서부터 실제로 연동될 기관이 먼저 보여야
+ * "왜 고른 게 아니라 딴 게 연결됐지"라는 혼란이 없다.
  */
 const MOCK_INSTITUTIONS: Institution[] = [
   { institutionId: '004', name: '국민은행', category: 'BANK', logoUrl: logoKookmin, popular: true },
@@ -101,11 +118,17 @@ const MOCK_INSTITUTIONS: Institution[] = [
   { institutionId: '011', name: '농협은행', category: 'BANK', logoUrl: logoNonghyup },
   { institutionId: '092', name: '토스뱅크', category: 'BANK', logoUrl: logoTossbank },
 
+  { institutionId: '0301', name: '국민카드', category: 'CARD', logoUrl: logoKookmin, popular: true },
+  { institutionId: '0313', name: '우리카드', category: 'CARD', logoUrl: logoWoori, popular: true },
   { institutionId: '0306', name: '신한카드', category: 'CARD', logoUrl: logoShinhan, popular: true },
-  { institutionId: '0301', name: 'KB국민카드', category: 'CARD', logoUrl: logoKookmin, popular: true },
-  { institutionId: '0303', name: '삼성카드', category: 'CARD', logoUrl: logoSamsungCard, popular: true },
+  { institutionId: '0303', name: '삼성카드', category: 'CARD', logoUrl: logoSamsungCard },
   { institutionId: '0302', name: '현대카드', category: 'CARD', logoUrl: logoHyundaiCard },
-  { institutionId: '0313', name: '우리카드', category: 'CARD', logoUrl: logoWoori },
+
+  { institutionId: '0602', name: '현대캐피탈', category: 'CAPITAL', logoUrl: logoHyundaiCapital, popular: true },
+  { institutionId: '0603', name: '롯데캐피탈', category: 'CAPITAL', logoUrl: logoLotteCapital, popular: true },
+  { institutionId: '0604', name: 'KB캐피탈', category: 'CAPITAL', logoUrl: logoKbCapital, popular: true },
+  { institutionId: '0605', name: '우리금융캐피탈', category: 'CAPITAL', logoUrl: logoWooriCapital },
+  { institutionId: '0606', name: '하나캐피탈', category: 'CAPITAL', logoUrl: logoHanaCapital },
 ]
 
 export const mydataApi = {

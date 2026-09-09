@@ -93,6 +93,7 @@ const formatCurrency = (value: unknown) => {
 <style scoped>
 .forecast-card {
   width: 100%;
+
   padding: 26px 22px 22px;
   border: 1px solid #e5e5e5;
   border-radius: 16px;
@@ -116,6 +117,7 @@ const formatCurrency = (value: unknown) => {
 .forecast-card__result {
   display: flex;
   align-items: center;
+
   gap: 8px;
   flex-wrap: wrap;
 }
@@ -141,6 +143,7 @@ const formatCurrency = (value: unknown) => {
 
 .forecast-card__difference--minus {
   color: #e05252;
+
   background: #fff0f0;
 }
 

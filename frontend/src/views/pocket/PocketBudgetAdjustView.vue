@@ -255,6 +255,7 @@ const handleTotalInput = (event: Event) => {
 
   if (!onlyNumbers) {
     totalBudgetInput.value = ''
+
     return
   }
 

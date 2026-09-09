@@ -12,9 +12,9 @@ import org.springframework.http.HttpStatus;
 public enum BudgetAdjustmentSuccessCode
         implements SuccessCode {
 
-    BUDGET_ADJUSTMENT_FOUND(
+    CURRENT_BUDGET_FOUND(
             HttpStatus.OK,
-            "이번 달 예산 조정 정보를 조회했습니다."
+            "현재 포켓 예산을 조회했습니다."
     ),
 
     TOTAL_BUDGET_UPDATED(
@@ -24,7 +24,7 @@ public enum BudgetAdjustmentSuccessCode
 
     BUDGET_ADJUSTED(
             HttpStatus.OK,
-            "이번 달 예산을 조정했습니다."
+            "포켓 예산을 변경했습니다."
     );
 
     private final HttpStatus status;

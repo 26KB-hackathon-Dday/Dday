@@ -27,16 +27,21 @@ onMounted(async () => {
 
 const banks = computed(() => institutions.value.filter((i) => i.category === 'BANK'))
 const cards = computed(() => institutions.value.filter((i) => i.category === 'CARD'))
+const capitals = computed(() => institutions.value.filter((i) => i.category === 'CAPITAL'))
 
 /** 처음엔 대표 기관 3개만 보여주고, "자세히 보기"를 눌러야 전체가 펼쳐진다. */
 const showAllBanks = ref(false)
 const showAllCards = ref(false)
+const showAllCapitals = ref(false)
 
 const visibleBanks = computed(() =>
   showAllBanks.value ? banks.value : banks.value.filter((i) => i.popular),
 )
 const visibleCards = computed(() =>
   showAllCards.value ? cards.value : cards.value.filter((i) => i.popular),
+)
+const visibleCapitals = computed(() =>
+  showAllCapitals.value ? capitals.value : capitals.value.filter((i) => i.popular),
 )
 
 const allSelected = computed({
@@ -129,6 +134,25 @@ function next() {
             @click="showAllCards = true"
           >
             카드 전체보기 ({{ cards.length }})
+          </button>
+        </section>
+
+        <section v-if="capitals.length" class="group">
+          <h2 class="group-title">캐피탈</h2>
+          <InstitutionItem
+            v-for="capital in visibleCapitals"
+            :key="capital.institutionId"
+            :institution="capital"
+            :model-value="isSelected(capital.institutionId)"
+            @update:model-value="signup.toggleInstitution(capital.institutionId)"
+          />
+          <button
+            v-if="!showAllCapitals && capitals.length > visibleCapitals.length"
+            type="button"
+            class="more-btn"
+            @click="showAllCapitals = true"
+          >
+            캐피탈 전체보기 ({{ capitals.length }})
           </button>
         </section>
       </template>
