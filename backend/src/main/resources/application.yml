@@ -52,8 +52,10 @@ spring:
   # 복지서비스 수집 배치 (domain/welfare).
   batch:
     job:
-      # ⚠️ 앱이 뜰 때 잡을 자동 실행하지 않는다. 안 그러면 배포·CI 기동마다 외부 API를 때린다
-      #    (CI엔 WELFARE_API_KEY도 없다). 실행은 오직 WelfareCollectScheduler의 cron으로만.
+      # ⚠️ 스프링 배치의 "기동 시 등록된 잡 전부 실행"은 끈다. 안 그러면 배포·CI 기동마다
+      #    외부 API를 때린다 (CI엔 WELFARE_API_KEY도 없다).
+      #    수집 실행 경로는 WelfareCollectScheduler(매월 1일) · WelfareCollectBootstrap(최초 1회,
+      #    키가 있고 수집 이력이 없을 때) · 로컬 수동 엔드포인트뿐이다.
       enabled: false
     jdbc:
       # BATCH_JOB_INSTANCE 등 메타테이블을 만든다. Batch 5의 schema-mysql.sql은
