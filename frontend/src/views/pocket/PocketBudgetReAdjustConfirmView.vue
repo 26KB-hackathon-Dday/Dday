@@ -89,15 +89,15 @@
         </strong>
       </section>
 
-      <p v-if="errorMessage" class="error-message">
-        {{ errorMessage }}
+      <p v-if="saveError" class="error-message">
+        {{ saveError }}
       </p>
 
       <section class="bottom-area">
         <div class="bottom-divider" />
 
-        <button class="confirm-button" type="button" :disabled="saving" @click="handleConfirm">
-          {{ saving ? '변경 내용을 저장하고 있어요' : `${monthLabel} 계획 변경하기` }}
+        <button class="confirm-button" type="button" :disabled="isSaving" @click="handleConfirm">
+          {{ isSaving ? '변경 내용을 저장하고 있어요' : `${monthLabel} 계획 변경하기` }}
         </button>
       </section>
     </main>
@@ -111,13 +111,17 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { budgetAdjustmentApi } from '@/api/budgetAdjustment'
 
-import { ApiError } from '@/api/types'
-
 const route = useRoute()
 const router = useRouter()
 
-const saving = ref(false)
-const errorMessage = ref('')
+const isSaving = ref(false)
+
+const saveError = ref('')
+
+const monthLabel = computed(() => {
+  const now = new Date()
+  return `${now.getMonth() + 1}월`
+})
 
 const getQueryNumber = (value: unknown, fallback: number): number => {
   let rawValue: unknown = value
@@ -147,12 +151,6 @@ const emergencyBudget = computed(() => getQueryNumber(route.query.emergency, 0))
 
 const expectedAsset = computed(() => getQueryNumber(route.query.expectedAsset, 0))
 
-const monthLabel = computed(() => {
-  const month = new Date().getMonth() + 1
-
-  return `${month}월`
-})
-
 const getPercentage = (amount: number): number => {
   if (totalBudget.value <= 0) {
     return 0
@@ -176,51 +174,48 @@ const formatShortCurrency = (value: number): string => {
 }
 
 const handleConfirm = async () => {
-  if (saving.value) {
+  if (isSaving.value) {
     return
   }
 
-  saving.value = true
-  errorMessage.value = ''
+  saveError.value = ''
+
+  isSaving.value = true
 
   try {
-    await budgetAdjustmentApi.updateCurrent({
+    await budgetAdjustmentApi.adjustCurrent({
       totalBudgetAmount: totalBudget.value,
 
-      pockets: [
+      allocations: [
         {
           pocketType: 'ESSENTIAL',
           amount: essentialBudget.value,
         },
+
         {
           pocketType: 'FREE',
           amount: freeBudget.value,
         },
+
         {
           pocketType: 'EMERGENCY',
           amount: emergencyBudget.value,
         },
+
         {
           pocketType: 'FUTURE_ASSET',
           amount: futureBudget.value,
         },
       ],
-
-      changeReason: '사용자 포켓 예산 재조정',
     })
 
-    /*
-     * PATCH 성공 후 실제 내 포켓 화면으로 이동.
-     *
-     * replace를 사용해서 뒤로가기를 눌렀을 때
-     * 방금 확정한 확인 화면으로 다시 돌아오지 않게 한다.
-     */
-    router.replace('/pockets')
+    await router.push({
+      name: 'pockets',
+    })
   } catch (error) {
-    errorMessage.value =
-      error instanceof ApiError ? error.message : '예산 변경 내용을 저장하지 못했어요.'
+    saveError.value = error instanceof Error ? error.message : '예산 변경에 실패했어요.'
   } finally {
-    saving.value = false
+    isSaving.value = false
   }
 }
 </script>
