@@ -27,6 +27,7 @@ const transactions = ref<PocketTransaction[]>([])
 const categoryUsage = ref<PocketCategoryUsageResponse | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+const showAllTransactions = ref(false)
 const supportedTypes: PocketType[] = ['ESSENTIAL', 'FREE', 'EMERGENCY']
 const pocketType = computed<PocketType | null>(() => {
   const value = typeof route.params.pocketType === 'string' ? route.params.pocketType : ''
@@ -48,7 +49,15 @@ const expenses = computed(() =>
     (item) => item.transactionType === 'EXPENSE' && item.transactionStatus === 'NORMAL',
   ),
 )
-const visibleTransactions = computed(() => expenses.value.slice(0, 3))
+const canExpandTransactions = computed(
+  () =>
+    (pocketType.value === 'ESSENTIAL' || pocketType.value === 'FREE') && expenses.value.length > 3,
+)
+const visibleTransactions = computed(() =>
+  showAllTransactions.value && canExpandTransactions.value
+    ? expenses.value
+    : expenses.value.slice(0, 3),
+)
 const spendingCategories = computed<SpendingCategory[]>(() => {
   const totals = new Map<string, number>()
   expenses.value.forEach((item) => {
@@ -91,6 +100,7 @@ async function load() {
   route.meta.title = POCKET_LABEL[pocketType.value]
   loading.value = true
   error.value = null
+  showAllTransactions.value = false
   try {
     const selectedType = pocketType.value
     // 필수·자유·비상금은 같은 포켓 거래 API를 사용한다.
@@ -153,9 +163,17 @@ function openBudgetReadjust() {
       <section class="section section--transactions">
         <header class="section__header">
           <h2>최근 지출 내역</h2>
-          <button type="button" disabled title="거래내역 전체 화면 준비 중">전체보기</button>
+          <button
+            v-if="canExpandTransactions"
+            type="button"
+            :aria-expanded="showAllTransactions"
+            aria-controls="pocket-transaction-list"
+            @click="showAllTransactions = !showAllTransactions"
+          >
+            {{ showAllTransactions ? '접기' : '전체보기' }}
+          </button>
         </header>
-        <ul v-if="visibleTransactions.length" class="transaction-list">
+        <ul v-if="visibleTransactions.length" id="pocket-transaction-list" class="transaction-list">
           <PocketTransactionItem
             v-for="transaction in visibleTransactions"
             :key="transaction.transactionId"
@@ -219,12 +237,9 @@ function openBudgetReadjust() {
   font-size: 10px;
 }
 .section__header button {
+  cursor: pointer;
   color: var(--c-text-3);
   font-size: 12px;
-}
-.section__header button:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
 }
 .category-card {
   overflow: hidden;
