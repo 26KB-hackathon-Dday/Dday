@@ -43,7 +43,7 @@ const gradient = computed(() => {
     })
     .join(', ')})`
 })
-const roundedRatio = (ratio: number) => Math.round(ratio)
+const formatRatio = (ratio: number) => (ratio < 10 ? ratio.toFixed(1) : String(Math.round(ratio)))
 </script>
 
 <template>
@@ -54,12 +54,12 @@ const roundedRatio = (ratio: number) => Math.round(ratio)
       <div
         class="donut"
         role="img"
-        :aria-label="segments.map((item) => `${item.name} ${roundedRatio(item.ratio)}%`).join(', ')"
+        :aria-label="segments.map((item) => `${item.name} ${formatRatio(item.ratio)}%`).join(', ')"
         :style="{ background: gradient }"
       >
         <div class="donut__center">
           <strong>{{ leader?.name }}</strong
-          ><span>{{ roundedRatio(leader?.ratio ?? 0) }}%</span>
+          ><span>{{ formatRatio(leader?.ratio ?? 0) }}%</span>
         </div>
       </div>
       <ul class="legend">
@@ -71,7 +71,7 @@ const roundedRatio = (ratio: number) => Math.round(ratio)
           >
             <span class="legend__dot" :style="{ backgroundColor: segment.color }" />
             <span class="legend__name">{{ segment.name }}</span>
-            <strong>{{ roundedRatio(segment.ratio) }}%</strong>
+            <strong>{{ formatRatio(segment.ratio) }}%</strong>
             <span class="legend__chevron" aria-hidden="true">›</span>
           </button>
         </li>
