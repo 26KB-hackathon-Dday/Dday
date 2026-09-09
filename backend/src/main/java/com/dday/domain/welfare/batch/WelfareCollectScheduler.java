@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 /**
  * 매월 1일 00:00(KST) 수집 잡을 띄운다. 주기는 {@code welfare.collect.cron}.
  *
- * <p>앱 기동 시 자동 실행은 {@code spring.batch.job.enabled=false}로 막혀 있고,
- * 실행 경로는 이 스케줄러(또는 로컬 전용 수동 엔드포인트)뿐이다.
+ * <p>실행 경로: 이 스케줄러 · {@link WelfareCollectBootstrap}(최초 1회) · 로컬 전용 수동
+ * 엔드포인트. {@code spring.batch.job.enabled=false}라 잡 자동 실행은 없다.
  */
 @Slf4j
 @Component

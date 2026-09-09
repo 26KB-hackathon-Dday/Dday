@@ -21,6 +21,12 @@ public interface WelfareProgramRepository extends JpaRepository<WelfareProgram, 
     Optional<WelfareProgram> findByServId(String servId);
 
     /**
+     * 자동 수집된 행이 하나라도 있는가 — "수집이 한 번이라도 돌았나" 판단.
+     * {@code data.sql}의 {@code DEMO-*} 시드는 {@link ProgramSource#MANUAL_CURATION}이라 안 잡힌다.
+     */
+    boolean existsBySource(ProgramSource source);
+
+    /**
      * 이번 실행에 포함되지 않은 후보 — 마지막 수집 시각이 이번 실행 기준 시각보다 이전인 행.
      * 목록에서 사라졌거나(종료 의심) 룰이 이번엔 걸러낸 것들이다. 지우지는 않는다.
      */
