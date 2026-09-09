@@ -14,6 +14,9 @@ public interface UserCardRepository extends JpaRepository<UserCard, Long> {
 
     List<UserCard> findAllByUserUserId(Long userId);
 
+    /** 표시 순서가 화면에서 바뀌면 안 되니 등록 순서(id)로 고정한다. */
+    List<UserCard> findAllByUserUserIdOrderByCardIdAsc(Long userId);
+
     /** 기관 연결 해제 대상을 찾는다. 같은 기관 카드가 여러 개일 수 있어 리스트다. */
     List<UserCard> findAllByUserUserIdAndOrgCode(Long userId, String orgCode);
 
