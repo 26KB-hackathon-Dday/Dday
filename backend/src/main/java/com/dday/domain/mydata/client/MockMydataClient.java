@@ -87,6 +87,7 @@ public class MockMydataClient implements MydataClient {
                 .orgCode(source.getOrgCode())
                 .cardName(source.getCardName())
                 .cardType(CardType.valueOf(source.getCardType().name()))
+                .creditLimit(source.getCreditLimit())
                 .build();
     }
 

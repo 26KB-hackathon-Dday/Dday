@@ -149,6 +149,7 @@ public class MockMydataProvisioner {
                     .orgCode(source.getOrgCode())
                     .cardName(source.getCardName())
                     .cardType(source.getCardType())
+                    .creditLimit(source.getCreditLimit())
                     .build());
 
             copyCardTransactions(source, copy, serviceUserId);
