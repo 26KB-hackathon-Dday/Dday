@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { REGIONS } from '@/data/regions'
 import StepProgress from '@/components/signup/StepProgress.vue'
 
+const route = useRoute()
 const router = useRouter()
 const onboarding = useOnboardingStore()
 
@@ -17,7 +18,7 @@ const filtered = computed(() =>
 function select(name: string) {
   onboarding.regionName = name
   onboarding.districtName = ''
-  router.push('/onboarding/region/district')
+  router.push({ path: '/onboarding/region/district', query: route.query })
 }
 </script>
 

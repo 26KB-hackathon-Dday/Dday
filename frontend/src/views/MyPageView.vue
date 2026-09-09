@@ -41,6 +41,14 @@ const sections = computed<{ label: string; items: MenuItem[] }[]>(() => [
     items: [
       { text: '기본 정보 수정', onClick: () => router.push('/mypage/edit') },
       { text: '보안 및 비밀번호', onClick: () => router.push('/mypage/password') },
+      {
+        text: '거주지역 변경',
+        onClick: () => router.push({ path: '/onboarding/region', query: { from: 'mypage' } }),
+      },
+      {
+        text: '주거 정보 수정',
+        onClick: () => router.push({ path: '/onboarding/housing-type', query: { from: 'mypage' } }),
+      },
     ],
   },
   {

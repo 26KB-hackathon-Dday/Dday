@@ -32,7 +32,11 @@ async function next() {
     const result = await onboarding.submitHousingType(selected.value)
     // 주거비 입력이 필요 없는 형태면 그 화면과 다음 체크포인트를 건너뛴다.
     if (result.skipHousingCost) {
-      router.push(route.query.from === 'review' ? '/onboarding/review' : '/onboarding/income')
+      if (route.query.from === 'mypage') {
+        router.push('/mypage')
+      } else {
+        router.push(route.query.from === 'review' ? '/onboarding/review' : '/onboarding/income')
+      }
     } else {
       router.push({ path: '/onboarding/housing-cost', query: route.query })
     }
