@@ -93,6 +93,29 @@ INSERT INTO users (
     initial_asset = VALUES(initial_asset),
     settlement_received = VALUES(settlement_received);
 
+-- 온보딩을 마치지 않은 데모 계정. 회원가입(약관 동의)까지만 하고 멈춘 상태를 재현한다
+-- (housing_type·region_code·초기자산 등은 온보딩 단계에서 받는 값이라 전부 NULL).
+-- password_hash는 user1과 동일한 해시를 그대로 써서 같은 비밀번호(test1234!)로 로그인된다.
+--
+--   ID: user2@test.com  /  PW: test1234!
+INSERT INTO users (
+    user_id, email, password_hash, name, phone, status,
+    terms_agreed_at, agreed_location, onboarding_completed, mydata_connected,
+    created_at, updated_at
+) VALUES (
+    9002, 'user2@test.com',
+    '$2a$10$magcQpOXpje6Wayj0TD8qO7dR9JOya6f7LQGfTXvsFvtrCWic9unG',
+    '온보딩전', '010-7777-2222', 'ACTIVE',
+    '2026-09-05 00:00:00', 0, 0, 0,
+    '2026-09-05 00:00:00', '2026-09-05 00:00:00'
+) ON DUPLICATE KEY UPDATE
+    password_hash = VALUES(password_hash),
+    name = VALUES(name),
+    phone = VALUES(phone),
+    status = VALUES(status),
+    onboarding_completed = VALUES(onboarding_completed),
+    mydata_connected = VALUES(mydata_connected);
+
 -- 온보딩에서 받는 주거비. users.housing_type = MONTHLY 와 앞뒤가 맞아야 한다.
 -- estimated_monthly(월 예상 주거비)는 컬럼이 없다 — 월세+관리비로 매번 계산한다.
 INSERT INTO housing_cost (user_id, deposit, monthly_rent, maintenance_fee, updated_at)
