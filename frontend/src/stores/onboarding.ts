@@ -60,11 +60,20 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   }
 
   /**
-   * 지역-코드 매핑 테이블이 아직 없어, 시/도+구 이름 조합을 임시 코드로 쓴다.
-   * TODO: 백엔드에 법정동 코드 매핑이 생기면 이 값을 실제 regionCode로 교체한다.
+   * 지역-코드 매핑 테이블이 아직 없어, 나머지 구/군/시는 시/도+이름 조합을 임시 코드로 쓴다.
+   * TODO: 매핑 테이블이 생기면 이 값을 전부 실제 regionCode로 교체하고 아래 표는 지운다.
+   *
+   * 용산구·서대문구 두 곳만 먼저 실제 법정동 코드로 하드코딩한다 — 지역코드로 지원제도를
+   * 매칭하는 API가 이 두 지역을 기준으로 먼저 붙을 예정이라, 임시 코드로는 확인할 수 없다.
    */
+  const HARDCODED_REGION_CODES: Record<string, string> = {
+    용산구: '1117000000',
+    서대문구: '1141000000',
+  }
+
   async function submitRegion() {
-    regionCode.value = `${regionName.value}-${districtName.value}`
+    regionCode.value =
+      HARDCODED_REGION_CODES[districtName.value] ?? `${regionName.value}-${districtName.value}`
     return onboardingApi.saveRegion({
       regionCode: regionCode.value,
       regionName: regionName.value,
