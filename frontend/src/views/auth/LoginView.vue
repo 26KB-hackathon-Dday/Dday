@@ -159,7 +159,7 @@ async function submit() {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-bottom: 10%;
+  padding-bottom: 16%;
 }
 
 .title {
@@ -263,7 +263,7 @@ async function submit() {
 /* 세로가 짧은 기기(SE 등)에서는 위로 밀어올리는 여백을 줄여 폼이 화면 밖으로 밀리지 않게 한다 */
 @media (max-height: 640px) {
   .center {
-    padding-bottom: 2%;
+    padding-bottom: 4%;
   }
 
   .title {
