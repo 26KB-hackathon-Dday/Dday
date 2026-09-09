@@ -10,6 +10,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { userApi, type Me } from '@/api/user'
+import { assetForecastApi, type AssetForecastResponse } from '@/api/assetForecast'
 import AppIcon from '@/components/AppIcon.vue'
 import HomeActionCards from '@/components/home/HomeActionCards.vue'
 
@@ -20,9 +21,15 @@ const SUPPORT_YEARS = 5
 const FALLBACK_DAYS_LEFT = 1825
 
 const me = ref<Me | null>(null)
+const forecast = ref<AssetForecastResponse | null>(null)
 
 onMounted(async () => {
-  me.value = await userApi.fetchMe()
+  const [meResult, forecastResult] = await Promise.allSettled([
+    userApi.fetchMe(),
+    assetForecastApi.find(),
+  ])
+  if (meResult.status === 'fulfilled') me.value = meResult.value
+  if (forecastResult.status === 'fulfilled') forecast.value = forecastResult.value
 })
 
 /** 오늘 00:00 (로컬). */
@@ -81,10 +88,8 @@ const ddayText = computed(() => {
   return d >= 0 ? `D-${d}` : `D+${Math.abs(d)}`
 })
 
-// TODO: "지원 종료 시 예상 자산"은 자산·저축·투자 흐름을 반영한 추정 API가 필요하다.
-//       그 엔드포인트가 생기기 전까지는 온보딩 시점 보유 자산을 그대로 보여준다.
 const assetText = computed(() => {
-  const a = me.value?.initialAsset
+  const a = forecast.value?.forecastNetAsset
   return a == null ? '—' : `${a.toLocaleString('ko-KR')}원`
 })
 </script>
@@ -113,12 +118,12 @@ const assetText = computed(() => {
     <section class="proj">
       <h2 class="proj__title">지원 종료 시 예상 자산</h2>
       <div class="proj__card">
-        <p class="proj__amount">{{ assetText }}</p>
+        <p class="proj__amount" :class="{ 'proj__amount--danger': forecast != null && forecast.forecastNetAsset <= 0 }">{{ assetText }}</p>
         <p class="proj__desc">현재 자산과 저축, 투자 흐름을 기준으로 예상했어요.</p>
-        <div class="proj__link">
+        <RouterLink class="proj__link" :to="{ name: 'asset-forecast' }">
           <span>예상 자산 자세히 보러가기</span>
           <AppIcon name="arrow-right" :size="10" />
-        </div>
+        </RouterLink>
       </div>
     </section>
 
@@ -246,6 +251,9 @@ const assetText = computed(() => {
   line-height: 34px;
   letter-spacing: -0.52px;
   color: #fff;
+}
+.proj__amount--danger {
+  color: #ff7770;
 }
 .proj__desc {
   margin-top: 8px;

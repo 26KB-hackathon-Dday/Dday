@@ -9,7 +9,7 @@ defineEmits<{ adjust: [] }>()
 <template>
   <article class="card">
     <header>
-      <AppIcon name="credit" :size="20" aria-hidden="true" />
+      <AppIcon name="pocket-emergency" :size="20" aria-hidden="true" />
       <h2>{{ title }}</h2>
     </header>
     <dl>

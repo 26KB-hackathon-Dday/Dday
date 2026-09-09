@@ -2,6 +2,8 @@ package com.dday.domain.income.repository;
 
 import com.dday.domain.income.entity.RecurringIncome;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,4 +18,7 @@ public interface RecurringIncomeRepository extends JpaRepository<RecurringIncome
      * 남의 수입을 건드리는 요청이 조회 단계에서 빈 값이 되어 애초에 진행되지 않는다.
      */
     Optional<RecurringIncome> findByRecurringIncomeIdAndUserUserId(Long recurringIncomeId, Long userId);
+
+    @Query("select coalesce(sum(income.expectedAmount), 0) from RecurringIncome income where income.user.userId = :userId")
+    Long sumExpectedAmountByUserId(@Param("userId") Long userId);
 }

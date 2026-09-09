@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Builder
@@ -61,4 +62,37 @@ public class AssetForecastResponse {
      * 현재 계산에서는 수익률을 반영하지 않는다.
      */
     private boolean investmentReturnIncluded;
+
+    private Long currentTotalAsset;
+    private Long currentCashAsset;
+    private Long currentSavingInvestmentAsset;
+    private Long currentHousingDeposit;
+    private Long forecastTotalAsset;
+    private Long forecastNetAsset;
+    private Long forecastShortageAmount;
+    private Long forecastCashAsset;
+    private Long forecastSavingInvestmentAsset;
+    private Long forecastHousingDeposit;
+    private Long monthlyConvertedNetIncome;
+    private Long averageMonthlySavingInvestment;
+    private Long totalAssetChange;
+    private Long savingInvestmentChange;
+    private Long cashDepletionMonth;
+    private Long liquidAssetDepletionMonth;
+    private Long housingDepositDepletionMonth;
+    private BigDecimal cashRatio;
+    private BigDecimal savingInvestmentRatio;
+    private BigDecimal housingDepositRatio;
+    private CalculationBasis calculationBasis;
+    private boolean dataSufficient;
+
+    @Getter
+    @Builder
+    public static class CalculationBasis {
+        private List<Long> monthlyIncome;
+        private List<Long> monthlyExpense;
+        private Long currentFixedIncome;
+        private List<Long> monthlySavingInvestment;
+        private Integer validIncomeMonthCount;
+    }
 }

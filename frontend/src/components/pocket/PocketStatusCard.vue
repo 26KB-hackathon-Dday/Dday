@@ -13,7 +13,9 @@ const props = defineProps<{
   overAmount?: number | null
 }>()
 const emit = defineEmits<{ select: [pocketType: Extract<PocketType, 'ESSENTIAL' | 'FREE'>] }>()
-const iconName = computed(() => (props.pocketType === 'ESSENTIAL' ? 'pocket' : 'benefit'))
+const iconName = computed(() =>
+  props.pocketType === 'ESSENTIAL' ? 'category-housing' : 'benefit',
+)
 const rate = computed(() => props.usageRate ?? 0)
 const fillWidth = computed(() => `${Math.min(Math.max(rate.value, 0), 100)}%`)
 </script>

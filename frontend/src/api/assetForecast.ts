@@ -13,6 +13,38 @@ export interface AssetForecastResponse {
   remainingAmount: number
   achievementRate: number
   remainingMonths: number
+  supportEndDate: string
+  expectedAdditionalAsset: number
+  expectedAsset: number
+  investmentReturnIncluded: boolean
+  currentTotalAsset: number
+  currentCashAsset: number
+  currentSavingInvestmentAsset: number
+  currentHousingDeposit: number
+  forecastTotalAsset: number
+  forecastNetAsset: number
+  forecastShortageAmount: number
+  forecastCashAsset: number
+  forecastSavingInvestmentAsset: number
+  forecastHousingDeposit: number
+  monthlyConvertedNetIncome: number
+  averageMonthlySavingInvestment: number
+  totalAssetChange: number
+  savingInvestmentChange: number
+  cashDepletionMonth: number | null
+  liquidAssetDepletionMonth: number | null
+  housingDepositDepletionMonth: number | null
+  cashRatio: number
+  savingInvestmentRatio: number
+  housingDepositRatio: number
+  calculationBasis: {
+    monthlyIncome: number[]
+    monthlyExpense: number[]
+    currentFixedIncome: number
+    monthlySavingInvestment: number[]
+    validIncomeMonthCount: number
+  }
+  dataSufficient: boolean
 }
 
 export const assetForecastApi = {
