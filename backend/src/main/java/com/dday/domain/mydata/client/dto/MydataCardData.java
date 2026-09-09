@@ -14,4 +14,7 @@ public class MydataCardData {
     private String orgCode;
     private String cardName;
     private CardType cardType;
+
+    /** 카드 한도(원). 체크·선불카드는 {@code null}이다. */
+    private Long creditLimit;
 }

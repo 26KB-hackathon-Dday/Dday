@@ -264,4 +264,29 @@ public interface FinancialTransactionRepository extends JpaRepository<FinancialT
                                          @Param("pocketId") Long pocketId,
                                          @Param("from") LocalDateTime from,
                                          @Param("to") LocalDateTime to);
+
+    /**
+     * 한도가 있는 카드(신용카드)의 정상 소비를 월·카드별로 합산한다.
+     *
+     * <p>돌려주는 행은 {@code [연, 월, 카드 ID, 합계]}다. 체크·선불카드는 한도가 없어
+     * 이용률을 낼 수 없으므로 아예 제외한다 — 합계에 섞이면 이용률이 부풀려진다.
+     *
+     * <p>{@code year()}·{@code month()}는 표준 JPQL 함수다. {@code date_format} 같은
+     * DB 전용 함수를 쓰면 이 쿼리만 MySQL에 묶인다.
+     */
+    @Query("""
+            select year(t.transactionAt), month(t.transactionAt),
+                   t.card.cardId, coalesce(sum(t.amount), 0)
+            from FinancialTransaction t
+            where t.card.user.userId = :userId
+              and t.card.creditLimit is not null
+              and t.transactionAt >= :from
+              and t.transactionAt < :to
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.EXPENSE
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+            group by year(t.transactionAt), month(t.transactionAt), t.card.cardId
+            """)
+    List<Object[]> sumCardSpendingByMonth(@Param("userId") Long userId,
+                                          @Param("from") LocalDateTime from,
+                                          @Param("to") LocalDateTime to);
 }

@@ -97,8 +97,10 @@ public class MydataSyncWriter {
                             .cardIdentifier(source.getExternalCardId())
                             .cardName(source.getCardName())
                             .cardType(source.getCardType())
+                            .creditLimit(source.getCreditLimit())
                             .build());
-            card.sync(source.getCardName(), source.getCardType(), syncedAt);
+            card.sync(source.getCardName(), source.getCardType(), source.getCreditLimit(),
+                    syncedAt);
             cardsByExternalId.put(source.getExternalCardId(), cardRepository.save(card));
         }
         return new MydataSourceSnapshot(accountsByExternalId, cardsByExternalId);
