@@ -34,7 +34,7 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     /** 목 인증번호. 실 발송을 붙이는 순간 함께 제거한다. */
-    private static final String MOCK_CODE = "000000";
+    private static final String MOCK_CODE = "371829";
 
     /** 인증번호 유효시간(초). 응답의 expiresIn으로도 나간다. */
     private static final int CODE_EXPIRES_IN_SECONDS = 180;
