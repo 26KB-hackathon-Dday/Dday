@@ -6,6 +6,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
+import ddayLogo from '@/assets/dday-logo.png'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +39,7 @@ function goBack() {
     <button v-if="canGoBack" type="button" class="topbar__back" aria-label="뒤로" @click="goBack">
       <AppIcon name="back" :size="16" />
     </button>
+    <img v-else class="topbar__logo" :src="ddayLogo" alt="D-1825" />
     <div class="topbar__heading">
       <h1 class="topbar__title">{{ title }}</h1>
     </div>
@@ -73,11 +75,18 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
+  margin-right: 8px;
   padding: 8px;
   margin-left: -8px;
   border-radius: 9999px;
   color: var(--c-text-2);
+}
+
+.topbar__logo {
+  display: block;
+  width: auto;
+  height: 30px;
+  object-fit: contain;
 }
 
 .topbar__back:hover {

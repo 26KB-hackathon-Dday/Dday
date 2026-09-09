@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
+import ddayLogo from '@/assets/dday-logo.png'
 
 const router = useRouter()
-
-/**
- * 자립준비청년의 지원 종료까지 남은 날. 서비스 이름이자 첫 화면의 전부다.
- *
- * 지금은 상수다 — 로그인 전이라 사용자의 실제 보호종료일을 모른다.
- * 1825 = 5년(지원 기간)이고, 개인 D-day는 로그인 후 홈에서 서버 값으로 보여준다.
- */
-const DDAY = 1825
 </script>
 
 <template>
@@ -20,7 +13,7 @@ const DDAY = 1825
          padding-bottom을 더 줘서 무게중심을 위로 살짝 밀어올린다. -->
     <div class="center">
       <div class="hero">
-        <h1 class="dday">D-{{ DDAY }}</h1>
+        <img class="landing-logo" :src="ddayLogo" alt="D-1825" />
         <p class="subtitle">지원이 끝나는 날까지,<br />당신의 금융 자립을 함께 준비해요.</p>
       </div>
 
@@ -62,12 +55,11 @@ const DDAY = 1825
   text-align: center;
 }
 
-.dday {
-  font-size: 72px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  color: var(--color-primary);
+.landing-logo {
+  display: block;
+  width: min(100%, 150px);
+  height: auto;
+  object-fit: contain;
 }
 
 .subtitle {
@@ -86,10 +78,6 @@ const DDAY = 1825
 
 /* 세로가 짧은 기기(SE 등)에서는 타이틀을 줄여 버튼이 밀려나지 않게 한다 */
 @media (max-height: 640px) {
-  .dday {
-    font-size: 56px;
-  }
-
   .subtitle {
     font-size: 16px;
   }
