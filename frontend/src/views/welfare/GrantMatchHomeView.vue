@@ -240,6 +240,12 @@ watch(reviewOpen, async (isOpen, wasOpen) => {
   justify-content: space-between;
   min-height: 80px;
 }
+/* 라벨과 건수를 세로로 쌓아 다른 셀과 리듬을 맞춘다 (기본은 한 줄로 붙어 "지원5건"). */
+.cell--split > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .cell__label {
   font-size: 12px;
   font-weight: 500;
