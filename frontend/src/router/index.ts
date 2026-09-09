@@ -370,6 +370,12 @@ const router = createRouter({
       component: () => import('@/views/mypage/PrivacyPolicyView.vue'),
       meta: { title: '개인정보처리방침', requiresAuth: true },
     },
+    {
+      path: '/mypage/mydata',
+      name: 'mypage-mydata',
+      component: () => import('@/views/mypage/MydataManageView.vue'),
+      meta: { title: '금융정보 연결 관리', requiresAuth: true },
+    },
 
     {
       path: '/pockets/unexpected-income/allocate',

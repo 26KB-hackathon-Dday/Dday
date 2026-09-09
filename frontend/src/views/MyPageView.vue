@@ -55,10 +55,14 @@ const sections = computed<{ label: string; items: MenuItem[] }[]>(() => [
     label: '금융정보 관리',
     items: [
       {
-        text: '연결된 금융기관',
+        text: '금융기관 연결',
         badge: me.value?.mydataConnected ? '연결됨' : '미연결',
         badgeTone: me.value?.mydataConnected ? 'on' : 'off',
         onClick: () => router.push({ path: '/mydata/select', query: { from: 'mypage' } }),
+      },
+      {
+        text: '연결된 금융기관',
+        onClick: () => router.push('/mypage/mydata'),
       },
       {
         text: '정기 수입 작성',
