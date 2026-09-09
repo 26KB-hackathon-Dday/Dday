@@ -72,6 +72,7 @@ export const creditApi = {
   fetchScoreHistory: () => api.get<CreditScoreHistory>('/api/credit/scores/recent'),
   fetchExpectedRates: () => api.get<ExpectedRates>('/api/credit/rates/expected'),
   fetchPaymentHistory: () => api.get<PaymentHistory>('/api/credit/payments'),
+  fetchCardUsage: () => api.get<CardUsage>('/api/credit/card-usage'),
 }
 
 // ── 비금융 납부 이력 (GET /api/credit/payments) ───────────────────────────
@@ -110,4 +111,37 @@ export interface PaymentHistory {
   unpaidCount: number
   /** 건강보험료 → 국민연금 → 통신요금 순. 이력이 없는 종류는 빠진다. */
   types: PaymentTypeHistory[]
+}
+
+// ── 카드 한도 대비 이용률 (GET /api/credit/card-usage) ────────────────────
+
+export interface CardUsageItem {
+  cardId: number
+  cardName: string
+  creditLimit: number
+  /** 이번 달 사용액(원). */
+  usage: number
+  /** 한도 대비 이용률(%). */
+  utilization: number
+}
+
+export interface CardUsageTrend {
+  /** "yyyy-MM". */
+  month: string
+  usage: number
+  utilization: number
+}
+
+export interface CardUsage {
+  months: number
+  /** "yyyy-MM". 신용카드가 없으면 null. */
+  currentMonth: string | null
+  totalCreditLimit: number
+  currentUsage: number
+  /** 총 사용액 / 총 한도. 신용카드가 없으면 null — 0%와 구별해야 한다. */
+  currentUtilization: number | null
+  /** 한도가 있는 카드만. 체크·선불카드는 빠진다. */
+  cards: CardUsageItem[]
+  /** 오래된 달부터. 거래가 없는 달도 0으로 채워져 있다. */
+  trend: CardUsageTrend[]
 }

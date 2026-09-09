@@ -328,6 +328,12 @@ const router = createRouter({
       meta: { title: '납부 기록', requiresAuth: true },
     },
     {
+      path: '/credit-manage/card-usage',
+      name: 'credit-card-usage',
+      component: () => import('@/views/credit/CardUsageView.vue'),
+      meta: { title: '카드 사용 현황', requiresAuth: true },
+    },
+    {
       // 하단 탭엔 없고 상단바 계정 아이콘으로만 들어온다.
       path: '/mypage',
       name: 'mypage',
