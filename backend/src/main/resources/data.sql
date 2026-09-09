@@ -346,7 +346,25 @@ INSERT INTO mock_mydata_card_transaction (
     (9107, 9001, 'HD-TX-202609-07', '2026-09-06 10:11:00', 89000, '무신사 스토어',     '1048100000', 'CANCELED', 'HD-TX-202609-06', '2026-09-06 10:11:00', '2026-09-06 10:11:00'),
     (9108, 9001, 'HD-TX-202609-08', '2026-09-06 18:45:00', 12800, '배달의민족',        '1208147521', 'NORMAL',   NULL, '2026-09-06 18:45:00', '2026-09-06 18:45:00'),
     (9109, 9001, 'HD-TX-202609-09', '2026-09-07 11:30:00',  6800, '투썸플레이스',      '1048164000', 'NORMAL',   NULL, '2026-09-07 11:30:00', '2026-09-07 11:30:00'),
-    (9110, 9001, 'HD-TX-202609-10', '2026-09-08 08:20:00',  1450, '서울교통공사',      '1108600000', 'NORMAL',   NULL, '2026-09-08 08:20:00', '2026-09-08 08:20:00')
+    (9110, 9001, 'HD-TX-202609-10', '2026-09-08 08:20:00',  1450, '서울교통공사',      '1108600000', 'NORMAL',   NULL, '2026-09-08 08:20:00', '2026-09-08 08:20:00'),
+    -- 카테고리별로 자립준비청년이 실제로 쓸 법한 소비를 더 채운 8월 내역
+    -- (식비·교통비·편의점·쇼핑·문화·의료·교육 등 카테고리를 고루 채워 화면에서 분류가 비어 보이지 않게 한다)
+    (9111, 9001, 'HD-TX-202608-11', '2026-08-16 12:20:00',  8900, '본죽앤비빔밥 강남점', '2211112222', 'NORMAL', NULL, '2026-08-16 12:20:00', '2026-08-16 12:20:00'),
+    (9112, 9001, 'HD-TX-202608-12', '2026-08-17 19:05:00',  6900, '맘스터치 신논현점',   '2222223333', 'NORMAL', NULL, '2026-08-17 19:05:00', '2026-08-17 19:05:00'),
+    (9113, 9001, 'HD-TX-202608-13', '2026-08-17 21:40:00',  8500, '배스킨라빈스 강남역점', '7733445566', 'NORMAL', NULL, '2026-08-17 21:40:00', '2026-08-17 21:40:00'),
+    (9114, 9001, 'HD-TX-202608-14', '2026-08-18 08:05:00',  1450, '서울교통공사',        '1108600000', 'NORMAL', NULL, '2026-08-18 08:05:00', '2026-08-18 08:05:00'),
+    (9115, 9001, 'HD-TX-202608-15', '2026-08-18 23:10:00',  9800, '카카오T',             '1199887766', 'NORMAL', NULL, '2026-08-18 23:10:00', '2026-08-18 23:10:00'),
+    (9116, 9001, 'HD-TX-202608-16', '2026-08-19 09:30:00',  5400, 'CU 강남대로점',       '3311224455', 'NORMAL', NULL, '2026-08-19 09:30:00', '2026-08-19 09:30:00'),
+    (9117, 9001, 'HD-TX-202608-17', '2026-08-19 22:00:00', 12300, 'GS25 역삼점',         '3322335566', 'NORMAL', NULL, '2026-08-19 22:00:00', '2026-08-19 22:00:00'),
+    (9118, 9001, 'HD-TX-202608-18', '2026-08-21 15:00:00', 45900, '쿠팡',                '1055667788', 'NORMAL', NULL, '2026-08-21 15:00:00', '2026-08-21 15:00:00'),
+    (9119, 9001, 'HD-TX-202608-19', '2026-08-22 19:20:00', 14000, 'CGV 강남',            '1122334455', 'NORMAL', NULL, '2026-08-22 19:20:00', '2026-08-22 19:20:00'),
+    (9120, 9001, 'HD-TX-202608-20', '2026-08-23 17:40:00', 16800, '교보문고 강남점',      '1133445566', 'NORMAL', NULL, '2026-08-23 17:40:00', '2026-08-23 17:40:00'),
+    (9121, 9001, 'HD-TX-202608-21', '2026-08-24 09:00:00', 14900, '유튜브 프리미엄',      NULL,         'NORMAL', NULL, '2026-08-24 09:00:00', '2026-08-24 09:00:00'),
+    (9122, 9001, 'HD-TX-202608-22', '2026-08-27 14:30:00', 18000, '강남서울병원',        '4400556677', 'NORMAL', NULL, '2026-08-27 14:30:00', '2026-08-27 14:30:00'),
+    (9123, 9001, 'HD-TX-202608-23', '2026-08-27 14:50:00', 12500, '온누리약국',          '4411667788', 'NORMAL', NULL, '2026-08-27 14:50:00', '2026-08-27 14:50:00'),
+    (9124, 9001, 'HD-TX-202608-24', '2026-08-29 20:00:00', 89000, '해커스어학원',        '5500778899', 'NORMAL', NULL, '2026-08-29 20:00:00', '2026-08-29 20:00:00'),
+    (9125, 9001, 'HD-TX-202608-25', '2026-08-30 10:00:00', 33000, '클래스101',           NULL,         'NORMAL', NULL, '2026-08-30 10:00:00', '2026-08-30 10:00:00'),
+    (9126, 9001, 'HD-TX-202609-11', '2026-09-07 08:20:00',  1450, '서울교통공사',        '1108600000', 'NORMAL', NULL, '2026-09-07 08:20:00', '2026-09-07 08:20:00')
 ON DUPLICATE KEY UPDATE
     transaction_at = VALUES(transaction_at),
     amount = VALUES(amount),
@@ -389,6 +407,65 @@ ON DUPLICATE KEY UPDATE
     category_name = VALUES(category_name),
     default_pocket_type = VALUES(default_pocket_type),
     is_active = VALUES(is_active);
+
+-- ── 가맹점 자동분류 규칙 (user_merchant_rule) ──────────────────────────────
+--
+-- MyData 원본에는 업종 카테고리가 없어 TransactionClassificationService는
+-- 이 규칙이 없으면 전부 '자유 포켓 · 미분류'로만 떨어뜨린다 (§ 클래스 상단 주석 참고).
+-- 데모 계정 소비내역을 카테고리별로 보여주려고 위 카드 거래내역의 가맹점마다
+-- 규칙을 미리 심어둔다. merchant_key는 서비스 코드(merchantKey())와 같은 규칙으로
+-- 계산한다 — 사업자번호가 있으면 REGNO:숫자만, 없으면 NAME:대문자·공백정리.
+--
+-- 실제 회원이 이 화면에서 직접 분류를 바꾸면 saveFutureRule()이 같은 테이블에
+-- 규칙을 새로 쌓는데, 그때도 uk_user_merchant_key가 있어 멱등하게 덮어써진다.
+INSERT INTO user_merchant_rule (user_id, merchant_key, merchant_regno, merchant_name, category_id, pocket_id, created_at, updated_at)
+SELECT u.user_id, r.merchant_key, r.merchant_regno, r.merchant_name, c.category_id, p.pocket_id,
+       '2026-09-01 00:00:00', '2026-09-01 00:00:00'
+FROM users u
+JOIN pocket p ON p.user_id = u.user_id
+JOIN (
+    -- 식비
+    SELECT 'REGNO:2201234567' AS merchant_key, '2201234567' AS merchant_regno, '김밥천국 강남점'     AS merchant_name, 'FOOD'         AS category_code
+    UNION ALL SELECT 'REGNO:1208147521', '1208147521', '배달의민족',          'FOOD'
+    UNION ALL SELECT 'REGNO:2211112222', '2211112222', '본죽앤비빔밥 강남점',  'FOOD'
+    UNION ALL SELECT 'REGNO:2222223333', '2222223333', '맘스터치 신논현점',    'FOOD'
+    -- 카페·간식
+    UNION ALL SELECT 'REGNO:1208800000', '1208800000', '스타벅스 역삼점',      'CAFE'
+    UNION ALL SELECT 'REGNO:1048164000', '1048164000', '투썸플레이스',        'CAFE'
+    UNION ALL SELECT 'REGNO:7733445566', '7733445566', '배스킨라빈스 강남역점', 'CAFE'
+    -- 편의점·마트
+    UNION ALL SELECT 'REGNO:3302345678', '3302345678', '이마트24 논현점',      'CONVENIENCE'
+    UNION ALL SELECT 'REGNO:3311224455', '3311224455', 'CU 강남대로점',        'CONVENIENCE'
+    UNION ALL SELECT 'REGNO:3322335566', '3322335566', 'GS25 역삼점',          'CONVENIENCE'
+    -- 교통비
+    UNION ALL SELECT 'REGNO:1108600000', '1108600000', '서울교통공사',         'TRANSPORT'
+    UNION ALL SELECT 'REGNO:1199887766', '1199887766', '카카오T',              'TRANSPORT'
+    -- 쇼핑
+    UNION ALL SELECT 'REGNO:1048100000', '1048100000', '무신사 스토어',        'SHOPPING'
+    UNION ALL SELECT 'REGNO:1055667788', '1055667788', '쿠팡',                'SHOPPING'
+    -- 뷰티·미용
+    UNION ALL SELECT 'REGNO:2208765432', '2208765432', '올리브영 강남',        'BEAUTY'
+    -- 문화·여가
+    UNION ALL SELECT 'REGNO:1122334455', '1122334455', 'CGV 강남',            'CULTURE'
+    UNION ALL SELECT 'REGNO:1133445566', '1133445566', '교보문고 강남점',      'CULTURE'
+    -- 구독료 (사업자번호가 없어 이름으로 매칭)
+    UNION ALL SELECT 'NAME:유튜브 프리미엄', NULL, '유튜브 프리미엄',          'SUBSCRIPTION'
+    UNION ALL SELECT 'NAME:넷플릭스',        NULL, '넷플릭스',                'SUBSCRIPTION'
+    -- 의료·건강
+    UNION ALL SELECT 'REGNO:4400556677', '4400556677', '강남서울병원',        'MEDICAL'
+    UNION ALL SELECT 'REGNO:4411667788', '4411667788', '온누리약국',          'MEDICAL'
+    -- 교육·자기계발
+    UNION ALL SELECT 'REGNO:5500778899', '5500778899', '해커스어학원',        'EDUCATION'
+    UNION ALL SELECT 'NAME:클래스101',      NULL, '클래스101',               'EDUCATION'
+) r ON 1 = 1
+JOIN category c ON c.category_code = r.category_code
+                AND p.pocket_type = c.default_pocket_type
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    merchant_regno = VALUES(merchant_regno),
+    merchant_name = VALUES(merchant_name),
+    category_id = VALUES(category_id),
+    pocket_id = VALUES(pocket_id);
 
 -- ── 월 예산 (monthly_budget / monthly_pocket_budget / budget_draft_factor) ─
 --
