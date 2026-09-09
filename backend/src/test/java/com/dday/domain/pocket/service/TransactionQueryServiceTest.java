@@ -72,11 +72,32 @@ class TransactionQueryServiceTest {
     }
 
     @Test
-    void 비상금과_미래자산은_소비_거래_조회에서_거부한다() {
+    void 비상금_포켓의_거래를_조회할_수_있다() {
+        Pocket pocket = Pocket.builder()
+                .pocketType(PocketType.EMERGENCY)
+                .pocketName("비상금")
+                .build();
+        ReflectionTestUtils.setField(pocket, "pocketId", 30L);
+        given(pocketRepository.findByUserUserIdAndPocketType(1L, PocketType.EMERGENCY))
+                .willReturn(Optional.of(pocket));
+        given(transactionRepository.findPocketPage(
+                eq(1L), eq(30L), any(), any(), isNull(), isNull(), any()))
+                .willReturn(new PageImpl<>(List.of()));
+
+        var result = transactionQueryService.findAll(
+                1L, PocketType.EMERGENCY, "2026-09", null, null, 0, 20);
+
+        assertThat(result.getContent()).isEmpty();
+        verify(transactionRepository).findPocketPage(
+                eq(1L), eq(30L), any(), any(), isNull(), isNull(), any());
+    }
+
+    @Test
+    void 미래자산은_소비_거래_조회에서_거부한다() {
         assertThatThrownBy(() -> transactionQueryService.findAll(
-                1L, PocketType.EMERGENCY, "2026-09", null, null, 0, 20))
+                1L, PocketType.FUTURE_ASSET, "2026-09", null, null, 0, 20))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("소비 거래는 필수 또는 자유 포켓만 조회할 수 있습니다.");
+                .hasMessage("거래 내역은 필수, 자유 또는 비상금 포켓만 조회할 수 있습니다.");
     }
 
     @Test

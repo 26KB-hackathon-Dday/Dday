@@ -53,6 +53,10 @@ public class MockMydataCard {
     @Column(name = "card_type", nullable = false, length = 20)
     private MockCardType cardType;
 
+    /** 카드 한도(원). 체크·선불카드는 한도가 없으므로 {@code null}이다. */
+    @Column(name = "credit_limit")
+    private Long creditLimit;
+
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
@@ -66,12 +70,13 @@ public class MockMydataCard {
 
     @Builder
     private MockMydataCard(MockMydataUser mockUser, String externalCardId, String orgCode,
-                           String cardName, MockCardType cardType) {
+                           String cardName, MockCardType cardType, Long creditLimit) {
         this.mockUser = mockUser;
         this.externalCardId = externalCardId;
         this.orgCode = orgCode;
         this.cardName = cardName;
         this.cardType = cardType;
+        this.creditLimit = creditLimit;
         this.active = true;
     }
 

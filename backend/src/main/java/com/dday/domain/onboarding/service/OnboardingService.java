@@ -136,6 +136,22 @@ public class OnboardingService {
     }
 
     /**
+     * 수정. <b>조회 단계에서 소유자를 함께 건다</b> — id만으로 찾아 뒤에서 검사하면
+     * 검사를 빠뜨린 코드가 남의 수입을 고친다. PATCH라 보내지 않은 필드는 그대로 둔다.
+     */
+    @Transactional
+    public IncomeSaveResponse updateIncome(Long userId, Long incomeId, IncomeUpdateRequest request) {
+        RecurringIncome income = recurringIncomeRepository
+                .findByRecurringIncomeIdAndUserUserId(incomeId, userId)
+                .orElseThrow(() -> new BusinessException(OnboardingErrorCode.INCOME_NOT_FOUND));
+
+        income.update(request.getName(), request.getIncomeType(), request.getAmount(),
+                request.getPaymentTiming(), null, null);
+
+        return IncomeSaveResponse.of(incomeId, sum(findIncomes(userId)));
+    }
+
+    /**
      * 삭제. <b>조회 단계에서 소유자를 함께 건다</b> — id만으로 찾아 뒤에서 검사하면
      * 검사를 빠뜨린 코드가 남의 데이터를 지운다.
      *

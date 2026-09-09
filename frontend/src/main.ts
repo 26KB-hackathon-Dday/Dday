@@ -3,10 +3,14 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import Vant from 'vant'
+import Vant, { Locale } from 'vant'
+import koKR from 'vant/es/locale/lang/ko-KR'
 
 import App from './App.vue'
 import router from './router'
+
+// 기본 로케일이 중국어라 DatePicker 등의 확인/취소 버튼이 한자로 뜬다.
+Locale.use('ko-KR', koKR)
 
 const app = createApp(App)
 

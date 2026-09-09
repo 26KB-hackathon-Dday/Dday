@@ -13,7 +13,7 @@
       <section class="usage-guide">
         <strong class="usage-guide__title"> 이미 사용한 금액은 변경할 수 없어요. </strong>
 
-        <p class="usage-guide__description">각 포켓은 현재 사용액 이상으로만 조정할 수 있어요.</p>
+        <button class="retry-button" type="button" @click="loadCurrentBudget">다시 불러오기</button>
       </section>
 
       <p v-if="loadError" class="load-error">
@@ -283,6 +283,92 @@
           예상 자산 정보를 불러오지 못했어요.
         </section>
 
+              <input
+                class="pocket-slider"
+                type="range"
+                :min="usedAmounts.emergency"
+                :max="totalBudget"
+                :step="STEP"
+                :value="budgets.emergency"
+                :style="getSliderStyle(budgets.emergency, usedAmounts.emergency)"
+                @input="handlePocketInput('emergency', $event)"
+              />
+
+              <p class="used-amount">
+                🔒 현재 사용액
+                {{ formatCurrency(usedAmounts.emergency) }}
+              </p>
+            </section>
+          </div>
+        </section>
+
+        <!-- 현재 배분 상태 -->
+        <section class="budget-status" :class="statusClass">
+          <div class="budget-status__row">
+            <span> 현재 배분 </span>
+
+            <strong>
+              {{ formatCurrency(allocatedTotal) }}
+            </strong>
+          </div>
+
+          <div class="budget-status__row">
+            <span> 총 예산 </span>
+
+            <strong>
+              {{ formatCurrency(totalBudget) }}
+            </strong>
+          </div>
+
+          <div class="budget-status__divider" />
+
+          <div v-if="budgetGap > 0" class="status-message status-message--error">
+            <strong>
+              총 예산보다
+              {{ formatCurrency(budgetGap) }}
+              많아요.
+            </strong>
+
+            <span> 다른 포켓의 예산을 줄여주세요. </span>
+          </div>
+
+          <div v-else-if="budgetGap < 0" class="status-message">
+            <strong>
+              아직
+              {{ formatCurrency(Math.abs(budgetGap)) }}
+              남았어요.
+            </strong>
+
+            <span> 원하는 포켓에 더 배분해 주세요. </span>
+          </div>
+
+          <div v-else class="status-message status-message--success">
+            <strong> 총 예산에 맞게 배분됐어요. </strong>
+          </div>
+
+          <button
+            v-if="budgetGap !== 0 && lastChangedPocket"
+            class="auto-button"
+            type="button"
+            @click="autoBalance"
+          >
+            자동으로 맞추기
+          </button>
+
+          <p v-if="autoBalanceError" class="auto-error">
+            {{ autoBalanceError }}
+          </p>
+        </section>
+
+        <!-- 예상 자산 -->
+        <BudgetForecastCard
+          :expected-asset="expectedAsset"
+          :previous-asset="previousAsset"
+          :difference="assetDifference"
+          :future-budget="budgets.future"
+        />
+
+        <!-- 저장 -->
         <button
           class="save-button"
           :class="{
@@ -464,7 +550,6 @@ const handlePocketInput = (type: PocketType, event: Event) => {
   budgets[type] = Math.max(requestedValue, usedAmounts[type])
 
   lastChangedPocket.value = type
-
   autoBalanceError.value = ''
 }
 
@@ -490,7 +575,6 @@ const applyTotalBudget = () => {
 
   if (!value || value <= 0) {
     totalBudgetError.value = '총 예산을 입력해 주세요.'
-
     return
   }
 
@@ -535,7 +619,6 @@ const autoBalance = () => {
     if (reducibleTotal < amountToReduce) {
       autoBalanceError.value =
         '이미 사용한 금액 때문에 자동으로 맞출 수 없어요. 총 예산을 늘려주세요.'
-
       return
     }
 
@@ -554,20 +637,11 @@ const autoBalance = () => {
         continue
       }
 
-      let decrease = 0
+      const reducible = Math.max(budgets[type] - usedAmounts[type], 0)
 
-      if (index === otherTypes.length - 1) {
-        decrease = Math.min(reducible, remaining)
-      } else {
-        const ratio = reducible / reducibleTotal
-
-        decrease = Math.round((amountToReduce * ratio) / STEP) * STEP
-
-        decrease = Math.min(decrease, reducible, remaining)
-      }
+      const decrease = Math.min(reducible, remaining)
 
       budgets[type] -= decrease
-
       remaining -= decrease
 
       if (remaining === 0) {
@@ -605,8 +679,9 @@ const autoBalance = () => {
   if (otherTotal === 0) {
     const fallback = otherTypes.includes('emergency') ? 'emergency' : otherTypes[0]
 
-    if (fallback) {
-      budgets[fallback] += amountToAdd
+  for (const type of otherTypes) {
+    if (amountToAdd <= 0) {
+      break
     }
 
     return
@@ -670,6 +745,11 @@ const handleSave = () => {
     return
   }
 
+  /*
+   * 여기서는 아직 DB를 수정하지 않는다.
+   * 확인 화면에서 최종 버튼을 눌렀을 때
+   * PATCH API를 호출한다.
+   */
   router.push({
     name: 'pocket-budget-readjust-confirm',
 
@@ -696,7 +776,6 @@ onMounted(load)
 .budget-page {
   width: 100%;
   min-height: 100vh;
-
   background: #ffffff;
   color: #171717;
 }
@@ -704,64 +783,56 @@ onMounted(load)
 .budget-content {
   display: flex;
   flex-direction: column;
-
   width: 100%;
   max-width: 430px;
-
+  min-height: calc(100vh - 120px);
   margin: 0 auto;
+  padding: 34px 28px 40px;
+}
 
-  padding: 28px 28px 42px;
+.state-section {
+  padding: 80px 0;
+  text-align: center;
+  color: #666666;
+  font-size: 14px;
 }
 
 .intro-section {
-  margin-bottom: 18px;
+  margin-bottom: 28px;
 }
 
 .intro-title {
   margin: 0;
-
-  font-size: 27px;
+  font-size: 28px;
   font-weight: 700;
-  line-height: 1.35;
-
-  letter-spacing: -0.8px;
+  line-height: 1.3;
+  letter-spacing: -1px;
 }
 
 .intro-description {
-  margin: 7px 0 0;
-
-  color: #777777;
-
-  font-size: 13px;
-  line-height: 1.6;
+  margin: 8px 0 0;
+  color: #666666;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .usage-guide {
-  margin-bottom: 26px;
-
-  padding: 14px 16px;
-
-  border-radius: 10px;
-
-  background: #f5f5f6;
+  padding: 18px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: #f5f6f8;
 }
 
 .usage-guide__title {
   display: block;
-
-  color: #333333;
-
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .usage-guide__description {
-  margin: 5px 0 0;
-
-  color: #888888;
-
-  font-size: 11px;
-  line-height: 1.5;
+  margin: 6px 0 0;
+  color: #777777;
+  font-size: 12px;
 }
 
 .load-error {
@@ -773,21 +844,15 @@ onMounted(load)
 }
 
 .total-card {
-  display: flex;
-  flex-direction: column;
-
-  gap: 15px;
-
-  padding: 20px 18px;
-
-  border: 1px solid #e4e4e4;
-  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e7e7e7;
+  border-radius: 14px;
+  background: #ffffff;
 }
 
 .total-card__text {
   display: flex;
   flex-direction: column;
-
   gap: 5px;
 }
 
@@ -799,10 +864,9 @@ onMounted(load)
 }
 
 .total-description {
-  color: #888888;
-
-  font-size: 11px;
-  line-height: 1.5;
+  color: #777777;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .total-input-wrap {
@@ -817,7 +881,6 @@ onMounted(load)
 
 .total-input {
   flex: 1;
-
   min-width: 0;
 
   border: 0;
@@ -855,17 +918,12 @@ onMounted(load)
 
   font-size: 12px;
   font-weight: 700;
-
-  cursor: pointer;
 }
 
 .total-error {
-  margin: -5px 0 0;
-
-  color: #e05252;
-
-  font-size: 11px;
-  line-height: 1.5;
+  margin: 10px 0 0;
+  color: #d64545;
+  font-size: 12px;
 }
 
 .pocket-section {
@@ -922,9 +980,7 @@ onMounted(load)
 
 .pocket-card__top {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-
   gap: 12px;
 }
 
@@ -935,7 +991,6 @@ onMounted(load)
   padding: 6px 10px;
 
   border-radius: 999px;
-
   font-size: 12px;
   font-weight: 700;
 }
@@ -962,8 +1017,7 @@ onMounted(load)
 
 .pocket-min {
   margin: 7px 0 0;
-
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .pocket-min--essential {
@@ -1004,6 +1058,8 @@ onMounted(load)
 }
 
 .pocket-slider {
+  --slider-progress: 0%;
+
   width: 100%;
 
   margin-top: 22px;
@@ -1013,6 +1069,7 @@ onMounted(load)
   height: 4px;
 
   border-radius: 999px;
+  outline: none;
 
   outline: none;
 
@@ -1026,9 +1083,8 @@ onMounted(load)
 }
 
 .pocket-slider::-webkit-slider-thumb {
-  width: 18px;
-  height: 18px;
-
+  width: 20px;
+  height: 20px;
   appearance: none;
 
   border: 4px solid #ffffff;
@@ -1094,71 +1150,59 @@ onMounted(load)
 
 .budget-status__row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-
-  color: #777777;
-
-  font-size: 12px;
+  margin-bottom: 8px;
+  color: #666666;
+  font-size: 13px;
 }
 
 .budget-status__row strong {
   color: #171717;
-
-  font-size: 15px;
-  font-weight: 700;
 }
 
 .budget-status__divider {
   height: 1px;
-
+  margin: 14px 0;
   background: #eeeeee;
 }
 
 .status-message {
   display: flex;
   flex-direction: column;
-
-  gap: 3px;
-
-  color: #666666;
-
-  font-size: 11px;
+  gap: 4px;
+  color: #555555;
+  font-size: 12px;
 }
 
-.status-message--error {
-  color: #d95050;
+.status-message strong {
+  color: #171717;
+  font-size: 13px;
 }
 
-.status-message--success {
-  color: #15936f;
+.status-message--error strong {
+  color: #d64545;
+}
+
+.status-message--success strong {
+  color: #248c6b;
 }
 
 .auto-button {
   width: 100%;
-  height: 45px;
-
-  margin-top: 3px;
-
+  height: 40px;
+  margin-top: 14px;
   border: 0;
   border-radius: 9px;
-
-  background: #f0f0f0;
-
+  background: #f2f2f2;
   color: #171717;
-
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-
-  cursor: pointer;
 }
 
 .auto-error {
-  margin: 0;
-
-  color: #e05252;
-
-  font-size: 10px;
+  margin: 10px 0 0;
+  color: #d64545;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -1178,26 +1222,19 @@ onMounted(load)
 
 .save-button {
   width: 100%;
-  height: 60px;
-
+  height: 58px;
   margin-top: 26px;
-
   border: 0;
   border-radius: 10px;
-
   color: #ffffff;
   background: #111111;
-
   font-size: 15px;
   font-weight: 700;
-
   cursor: pointer;
 }
 
 .save-button--disabled {
-  color: #999999;
-  background: #e5e5e5;
-
-  cursor: not-allowed;
+  background: #d7d7d7;
+  cursor: default;
 }
 </style>

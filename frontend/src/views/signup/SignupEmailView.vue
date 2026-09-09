@@ -67,11 +67,21 @@ function next() {
           />
           <button
             class="check-button"
+            :class="{ checked: signup.emailChecked }"
             type="button"
             :disabled="!canCheck || checking"
             @click="checkEmail"
           >
-            중복 확인
+            <svg
+              v-if="signup.emailChecked"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+            >
+              <path d="m5 12.5 4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            {{ signup.emailChecked ? '확인 완료' : '중복 확인' }}
           </button>
         </div>
 
@@ -120,6 +130,9 @@ function next() {
 }
 
 .check-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   flex: none;
   height: 54px;
   padding: 0 14px;
@@ -130,7 +143,11 @@ function next() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   white-space: nowrap;
-  transition: opacity 0.15s;
+  transition:
+    opacity 0.15s,
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .check-button:disabled {
@@ -139,6 +156,23 @@ function next() {
 
 .check-button:not(:disabled):active {
   opacity: 0.7;
+}
+
+/* 확인이 끝났다는 걸 문구뿐 아니라 버튼 자체로도 눈에 띄게 한다 — 아래 성공 문구만으로는
+   버튼을 다시 눌러도 되는지 헷갈린다는 피드백이 있었다. */
+.check-button.checked {
+  color: #ffffff;
+  background-color: #2e9e5b;
+  border-color: #2e9e5b;
+}
+
+.check-button.checked:disabled {
+  opacity: 1;
+}
+
+.check-button.checked svg {
+  width: 14px;
+  height: 14px;
 }
 
 .error {

@@ -57,7 +57,7 @@ public class MydataSyncWriter {
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         Set<String> accountKeys = accountData.stream().map(this::accountKey).collect(Collectors.toSet());
-        accountRepository.findAllByUserUserId(userId).stream()
+        accountRepository.findAllByUserUserIdOrderByAccountIdAsc(userId).stream()
                 .filter(account -> !accountKeys.contains(accountKey(account)))
                 .forEach(UserAccount::deactivate);
 
@@ -75,9 +75,11 @@ public class MydataSyncWriter {
                             .accountType(source.getAccountType())
                             .balance(source.getBalance())
                             .availableBalance(source.getAvailableBalance())
+                            .interestRate(source.getInterestRate())
                             .build());
             account.sync(source.getAccountName(), source.getProductName(), source.getAccountType(),
-                    source.getBalance(), source.getAvailableBalance(), syncedAt);
+                    source.getBalance(), source.getAvailableBalance(), source.getInterestRate(),
+                    syncedAt);
             accountsByExternalId.put(source.getExternalAccountId(), accountRepository.save(account));
         }
 
@@ -97,8 +99,10 @@ public class MydataSyncWriter {
                             .cardIdentifier(source.getExternalCardId())
                             .cardName(source.getCardName())
                             .cardType(source.getCardType())
+                            .creditLimit(source.getCreditLimit())
                             .build());
-            card.sync(source.getCardName(), source.getCardType(), syncedAt);
+            card.sync(source.getCardName(), source.getCardType(), source.getCreditLimit(),
+                    syncedAt);
             cardsByExternalId.put(source.getExternalCardId(), cardRepository.save(card));
         }
         return new MydataSourceSnapshot(accountsByExternalId, cardsByExternalId);

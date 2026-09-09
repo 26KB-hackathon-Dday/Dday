@@ -16,6 +16,7 @@ public enum OnboardingSuccessCode implements SuccessCode {
     HOUSING_COST_SAVED(HttpStatus.OK, "주거비가 저장되었습니다."),
     INCOMES_FOUND(HttpStatus.OK, "정기수입을 조회했습니다."),
     INCOME_CREATED(HttpStatus.CREATED, "정기수입이 추가되었습니다."),
+    INCOME_UPDATED(HttpStatus.OK, "정기수입이 수정되었습니다."),
     INCOME_DELETED(HttpStatus.OK, "삭제되었습니다."),
     ASSETS_SAVED(HttpStatus.OK, "자산 정보가 저장되었습니다."),
     ONBOARDING_COMPLETED(HttpStatus.OK, "온보딩이 완료되었습니다.");

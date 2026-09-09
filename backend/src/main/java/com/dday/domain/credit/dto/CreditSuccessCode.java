@@ -9,7 +9,12 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum CreditSuccessCode implements SuccessCode {
 
-    CREDIT_SCORES_FOUND(HttpStatus.OK, "최근 신용점수를 조회했습니다.");
+    CREDIT_SCORES_FOUND(HttpStatus.OK, "최근 신용점수를 조회했습니다."),
+    EXPECTED_RATES_FOUND(HttpStatus.OK, "예상 금리를 조회했습니다."),
+    PAYMENTS_FOUND(HttpStatus.OK, "납부 이력을 조회했습니다."),
+    PAYMENTS_SYNCED(HttpStatus.OK, "납부 이력을 동기화했습니다."),
+    CARD_USAGE_FOUND(HttpStatus.OK, "카드 이용률을 조회했습니다."),
+    LOANS_FOUND(HttpStatus.OK, "대출 구성을 조회했습니다.");
 
     private final HttpStatus status;
     private final String message;

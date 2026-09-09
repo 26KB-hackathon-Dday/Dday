@@ -5,7 +5,7 @@ import PrimaryButton from '@/components/common/PrimaryButton.vue'
 const router = useRouter()
 
 function start() {
-  router.replace('/')
+  router.replace('/onboarding/intro')
 }
 </script>
 

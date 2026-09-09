@@ -221,6 +221,12 @@ public class User {
         this.mydataConsentExpiresAt = consentExpiresAt;
     }
 
+    /** 연결된 기관을 마지막 하나까지 해제했을 때 부른다. 재연결하면 다시 동의를 받으므로 만료시각도 지운다. */
+    public void disconnectMydata() {
+        this.mydataConnected = false;
+        this.mydataConsentExpiresAt = null;
+    }
+
     /** 동의가 아직 살아있는지. 만료됐으면 동기화를 돌리지 않고 재동의를 받아야 한다. */
     public boolean hasValidMydataConsent(LocalDateTime now) {
         return this.mydataConnected

@@ -17,6 +17,15 @@ on:
   # 수동 실행에는 경로 필터가 걸리지 않는다.
   # 코드 변경 없이 재배포하거나 배선만 확인할 때의 탈출구다.
   workflow_dispatch:
+    inputs:
+      logs_only:
+        description: '배포하지 않고 운영 로그만 가져온다'
+        type: boolean
+        default: false
+      reset_db:
+        description: "⚠️ 운영 DB를 통째로 지우고 다시 만든다. 실행하려면 RESET 을 그대로 입력"
+        type: string
+        default: ''
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -32,6 +41,7 @@ env:
 jobs:
   # ── 1. 컴파일 + 테스트 ────────────────────────────────────────────────────
   build:
+    if: ${{ !inputs.logs_only && inputs.reset_db != 'RESET' }}
     runs-on: ubuntu-latest
 
     # backend/.env.sample과 동일한 로컬 개발 전용 값이다 (운영 비밀값 아님).
@@ -80,7 +90,7 @@ jobs:
   # ── 2. 도커 이미지 빌드 + GHCR push ───────────────────────────────────────
   image:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: ${{ github.ref == 'refs/heads/main' && !inputs.logs_only && inputs.reset_db != 'RESET' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -115,9 +125,76 @@ jobs:
   # ── 3. EC2 배포 ───────────────────────────────────────────────────────────
   # 저장소 Variable DEPLOY_ENABLED=true 일 때만 돈다.
   # EC2를 아직 안 만들었으면 이 잡은 통째로 건너뛴다 — main push가 빨갛게 뜨지 않는다.
+  # 배포가 아니라 "지금 서버가 왜 이러는지"를 볼 때 쓴다. 500이 나는데 EC2 SSH 키를 가진
+  # 사람이 없으면 아무도 원인을 못 보므로, Actions에서 로그만 떠올 수 있게 열어둔다.
+  #   gh workflow run ci.yml -f logs_only=true
+  logs:
+    if: ${{ inputs.logs_only }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump backend logs
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.EC2_USER }}/dday
+            echo "===== 컨테이너 상태 ====="
+            docker compose -f docker-compose.prod.yml ps -a
+            echo "===== backend 로그 (최근 300줄) ====="
+            docker compose -f docker-compose.prod.yml logs backend --tail 300 --no-color
+
+  # ⚠️ **운영 DB를 통째로 지운다.** ddl-auto: update 는 컬럼 이름·타입 변경과 삭제를
+  # 반영하지 못해서, 엔티티를 고치다 보면 운영 스키마가 어긋나 런타임에 터진다
+  # (Unknown column 'p1_0.pocket_id' 같은 형태). 해커톤 동안 그때마다 빠르게 초기화하려고 둔다.
+  #
+  # 실수로 도는 걸 막으려고 reset_db 에 정확히 RESET 을 입력해야만 실행된다.
+  #   gh workflow run ci.yml -f reset_db=RESET
+  #
+  # 지워지는 것: 회원·거래·예산 등 전부. data.sql 시드는 재기동 때 자동 복원된다.
+  # **실사용 데이터가 생긴 뒤에는 이 잡을 지운다.**
+  reset-db:
+    if: ${{ inputs.reset_db == 'RESET' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Drop & recreate database, then restart backend
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/${{ secrets.EC2_USER }}/dday
+
+            # 접속정보는 서버 .env 에만 있다. 저장소로 끌어오지 않는다.
+            set -a; . ./.env; set +a
+            DB="${DB_NAME:-dday}"
+
+            # 백엔드에는 mysql 클라이언트가 없어서 일회용 컨테이너로 붙는다.
+            # utf8mb4 를 빼면 한글이 깨진다.
+            docker run --rm mysql:8.4 mysql               -h "$DB_HOST" -u "$DB_USERNAME" -p"$DB_PASSWORD"               -e "DROP DATABASE IF EXISTS \`$DB\`; CREATE DATABASE \`$DB\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+
+            echo "DB 재생성 완료: $DB"
+
+            # 재기동해야 ddl-auto 가 스키마를 만들고 data.sql 이 시드를 넣는다.
+            docker compose -f docker-compose.prod.yml restart backend
+
+      - name: Health check
+        run: |
+          for i in $(seq 1 24); do
+            if curl -fsS --max-time 5 "http://${{ secrets.EC2_HOST }}/health/db"; then
+              echo ""; echo "재생성 후 정상 기동"; exit 0
+            fi
+            echo "대기 중... ($i/24)"; sleep 5
+          done
+          echo "::error::재생성 후 120초 안에 뜨지 않았다. logs_only=true 로 로그를 확인할 것"
+          exit 1
+
   deploy:
     needs: image
-    if: vars.DEPLOY_ENABLED == 'true'
+    if: ${{ vars.DEPLOY_ENABLED == 'true' && !inputs.logs_only && inputs.reset_db != 'RESET' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -157,6 +234,19 @@ jobs:
             set -e
             cd /home/${{ secrets.EC2_USER }}/dday
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            # JWT 서명키는 저장소에 둘 수 없고(공개되면 누구나 토큰을 위조한다) compose가
+            # 없으면 기동을 거부한다. 그래서 서버에 한 번 만들어 .env에 남긴다.
+            #
+            # 두 번째 배포부터는 이미 있으므로 건너뛴다 — 매번 새로 만들면 배포할 때마다
+            # 발급된 토큰이 전부 무효가 되어 사용자가 로그아웃된다.
+            #
+            # 키를 바꾸려면(유출 등) 서버에서 .env의 JWT_SECRET 줄을 지우고 재배포한다.
+            if ! grep -q '^JWT_SECRET=' .env 2>/dev/null; then
+              echo "JWT_SECRET=$(head -c 48 /dev/urandom | base64 | tr -d '\n')" >> .env
+              echo "JWT_SECRET 을 새로 생성해 .env 에 넣었다."
+            fi
+
             docker compose -f docker-compose.prod.yml pull backend
             docker compose -f docker-compose.prod.yml up -d
             # 태그가 바뀌면서 참조를 잃은 옛 이미지를 정리한다. 20GB 디스크가 금방 찬다.
@@ -171,5 +261,21 @@ jobs:
             fi
             echo "대기 중... ($i/18)"; sleep 5
           done
-          echo "::error::/health/db 가 90초 안에 응답하지 않았다. EC2에서 docker compose logs backend 를 확인할 것"
+          echo "::error::/health/db 가 90초 안에 응답하지 않았다. 아래 'Dump backend logs' 단계의 로그를 확인할 것"
           exit 1
+
+      # 배포가 깨졌을 때 EC2에 SSH로 들어가야만 원인을 알 수 있으면, 키를 가진 사람이
+      # 붙을 때까지 아무도 손을 못 쓴다. 실패했을 때만 로그를 여기로 끌어온다.
+      - name: Dump backend logs
+        if: failure()
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.EC2_USER }}/dday
+            echo "===== 컨테이너 상태 ====="
+            docker compose -f docker-compose.prod.yml ps -a
+            echo "===== backend 로그 (최근 200줄) ====="
+            docker compose -f docker-compose.prod.yml logs backend --tail 200 --no-color

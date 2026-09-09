@@ -153,14 +153,15 @@
       <button
         class="save-button"
         :class="{
-          'save-button--disabled': !budgetStore.isBudgetBalanced,
+          'save-button--disabled': !budgetStore.isBudgetBalanced || saving,
         }"
         type="button"
-        :disabled="!budgetStore.isBudgetBalanced"
+        :disabled="!budgetStore.isBudgetBalanced || saving"
         @click="handleSave"
       >
-        조정 내용 저장하기
+        {{ saving ? '확정 중…' : '조정 내용 저장하기' }}
       </button>
+      <p v-if="saveError" class="save-error" role="alert">{{ saveError }}</p>
     </main>
   </div>
 </template>
@@ -176,6 +177,8 @@ import BudgetForecastCard from '@/components/pocket/BudgetForecastCard.vue'
 import { assetForecastApi } from '@/api/assetForecast'
 
 import { usePocketBudgetStore, type PocketType } from '@/stores/pocketBudget'
+import { budgetApi } from '@/api/budget'
+import { ApiError } from '@/api/types'
 
 const router = useRouter()
 
@@ -186,6 +189,8 @@ const totalBudgetInput = ref(budgetStore.totalBudget.toLocaleString('ko-KR'))
 const totalBudgetError = ref('')
 
 const lastChangedPocket = ref<PocketType | null>(null)
+const saving = ref(false)
+const saveError = ref('')
 
 const currentAsset = ref(0)
 
@@ -284,24 +289,28 @@ const formatCurrency = (value: number) => {
   return `${Number(value ?? 0).toLocaleString('ko-KR')}원`
 }
 
-const handleSave = () => {
-  if (!budgetStore.isBudgetBalanced) {
+const handleSave = async () => {
+  if (!budgetStore.isBudgetBalanced || saving.value) {
     return
   }
-
-  console.log('포켓 예산 조정 저장', {
-    totalBudget: budgetStore.totalBudget,
-
-    essentialBudget: budgetStore.essentialBudget,
-
-    freeBudget: budgetStore.freeBudget,
-
-    futureBudget: budgetStore.futureBudget,
-
-    emergencyBudget: budgetStore.emergencyBudget,
-  })
-
-  router.back()
+  saving.value = true
+  saveError.value = ''
+  try {
+    await budgetApi.confirmCurrent({
+      totalBudgetAmount: budgetStore.totalBudget,
+      pockets: [
+        { pocketType: 'ESSENTIAL', amount: budgetStore.essentialBudget },
+        { pocketType: 'FREE', amount: budgetStore.freeBudget },
+        { pocketType: 'FUTURE_ASSET', amount: budgetStore.futureBudget },
+        { pocketType: 'EMERGENCY', amount: budgetStore.emergencyBudget },
+      ],
+    })
+    router.replace({ name: 'pockets' })
+  } catch (e) {
+    saveError.value = e instanceof ApiError ? e.message : '예산 확정에 실패했습니다.'
+  } finally {
+    saving.value = false
+  }
 }
 
 onMounted(loadForecast)
@@ -643,5 +652,12 @@ onMounted(loadForecast)
 
 .save-button:active:not(.save-button--disabled) {
   opacity: 0.85;
+}
+
+.save-error {
+  margin-top: 12px;
+  color: var(--color-danger);
+  font-size: 13px;
+  text-align: center;
 }
 </style>

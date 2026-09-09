@@ -15,13 +15,21 @@ const open = defineModel<boolean>({ required: true })
 const props = defineProps<{ items: GrantReviewItem[] }>()
 const emit = defineEmits<{ answer: [item: GrantReviewItem, receiving: boolean] }>()
 
+/**
+ * 열릴 때 큐를 스냅샷으로 고정한다. 부모가 답변마다 홈을 다시 받아 `items`가 줄어들어도
+ * 진행 중인 되묻기가 흔들리지 않게 — 라이브 `items`를 인덱싱하면 항목이 건너뛰어진다.
+ */
+const queue = ref<GrantReviewItem[]>([])
 const index = ref(0)
 watch(open, (isOpen) => {
-  if (isOpen) index.value = 0
+  if (isOpen) {
+    queue.value = [...props.items]
+    index.value = 0
+  }
 })
 
-const current = computed(() => props.items[index.value])
-const total = computed(() => props.items.length)
+const current = computed(() => queue.value[index.value])
+const total = computed(() => queue.value.length)
 
 function answer(receiving: boolean) {
   const item = current.value

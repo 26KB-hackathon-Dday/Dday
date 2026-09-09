@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -66,6 +67,15 @@ public class UserAccount {
     private Long balance;
 
     /** 출금 가능 잔액. 마이너스 통장·예약이체 때문에 잔액과 다를 수 있고, 안 주는 기관도 있다. */
+    /**
+     * 연 이자율(%). 대출 계좌만 값이 있고 예금·적금은 {@code null}이다.
+     *
+     * <p>이율이라 {@link BigDecimal}이다 — 5.4%를 {@code double}로 두면 표시할 때
+     * 5.3999…가 튀어나온다 (AGENTS.md §4).
+     */
+    @Column(name = "interest_rate", precision = 5, scale = 2)
+    private BigDecimal interestRate;
+
     @Column(name = "available_balance")
     private Long availableBalance;
 
@@ -91,7 +101,7 @@ public class UserAccount {
     @Builder
     private UserAccount(User user, String orgCode, String accountNum, String accountName,
                         String productName, AccountType accountType, Long balance,
-                        Long availableBalance) {
+                        Long availableBalance, BigDecimal interestRate) {
         this.user = user;
         this.orgCode = orgCode;
         this.accountNum = accountNum;
@@ -100,6 +110,7 @@ public class UserAccount {
         this.accountType = accountType;
         this.balance = balance != null ? balance : 0L;
         this.availableBalance = availableBalance;
+        this.interestRate = interestRate;
         this.selected = false;
         this.active = true;
     }
@@ -111,12 +122,14 @@ public class UserAccount {
      * 이전 동기화에서 비활성 처리된 계좌가 다시 응답에 나타나면 활성 상태로 복구한다.
      */
     public void sync(String accountName, String productName, AccountType accountType,
-                     Long balance, Long availableBalance, LocalDateTime syncedAt) {
+                     Long balance, Long availableBalance, BigDecimal interestRate,
+                     LocalDateTime syncedAt) {
         this.accountName = accountName;
         this.productName = productName;
         this.accountType = accountType;
         this.balance = balance;
         this.availableBalance = availableBalance;
+        this.interestRate = interestRate;
         this.lastSyncedAt = syncedAt;
         this.active = true;
     }

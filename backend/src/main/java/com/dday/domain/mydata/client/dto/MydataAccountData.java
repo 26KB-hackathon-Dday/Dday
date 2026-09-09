@@ -1,6 +1,8 @@
 package com.dday.domain.mydata.client.dto;
 
 import com.dday.domain.mydata.entity.AccountType;
+import java.math.BigDecimal;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,4 +20,7 @@ public class MydataAccountData {
     private AccountType accountType;
     private Long balance;
     private Long availableBalance;
+
+    /** 연 이자율(%). 대출 계좌만 값이 있다. */
+    private BigDecimal interestRate;
 }

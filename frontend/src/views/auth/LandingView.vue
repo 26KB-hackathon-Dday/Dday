@@ -15,14 +15,19 @@ const DDAY = 1825
 
 <template>
   <div class="landing">
-    <div class="hero">
-      <h1 class="dday">D-{{ DDAY }}</h1>
-      <p class="subtitle">지원이 끝나는 날까지,<br />당신의 금융 자립을 함께 준비해요.</p>
-    </div>
+    <!-- 카카오·네이버 로그인 화면처럼, 화면 정중앙이 아니라 살짝 위에 hero+버튼 묶음이 온다.
+         .center가 flex:1로 남는 공간을 먹고 그 안에서 justify-content:center로 세로 중앙에 두되,
+         padding-bottom을 더 줘서 무게중심을 위로 살짝 밀어올린다. -->
+    <div class="center">
+      <div class="hero">
+        <h1 class="dday">D-{{ DDAY }}</h1>
+        <p class="subtitle">지원이 끝나는 날까지,<br />당신의 금융 자립을 함께 준비해요.</p>
+      </div>
 
-    <div class="actions">
-      <PrimaryButton @click="router.push('/signup/start')">회원가입</PrimaryButton>
-      <PrimaryButton variant="ghost" @click="router.push('/login')">로그인</PrimaryButton>
+      <div class="actions">
+        <PrimaryButton @click="router.push('/signup/start')">회원가입</PrimaryButton>
+        <PrimaryButton variant="ghost" @click="router.push('/login')">로그인</PrimaryButton>
+      </div>
     </div>
   </div>
 </template>
@@ -38,20 +43,27 @@ const DDAY = 1825
   padding: 0 var(--space-page);
 }
 
-/* hero가 남는 공간을 전부 먹고 그 안에서 가운데 정렬한다.
-   버튼 묶음은 자기 높이만 차지하므로 자연히 최하단에 붙는다. */
-.hero {
+.center {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* 정중앙보다 살짝 위로 — 아래쪽 여백을 더 둬서 무게중심을 끌어올린다 */
+  padding-bottom: 12%;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: var(--space-lg);
+  margin-bottom: calc(var(--space-lg) * 1.6);
   text-align: center;
 }
 
 .dday {
-  font-size: 64px;
+  font-size: 72px;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -59,24 +71,31 @@ const DDAY = 1825
 }
 
 .subtitle {
-  font-size: 16px;
+  font-size: 19px;
+  font-weight: 600;
   line-height: 1.6;
-  color: var(--color-secondary);
+  color: var(--color-primary);
 }
 
 .actions {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-bottom: var(--space-lg);
-  /* iOS 홈 인디케이터에 버튼이 가리지 않게 한 뼘 더 */
-  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  width: 100%;
 }
 
 /* 세로가 짧은 기기(SE 등)에서는 타이틀을 줄여 버튼이 밀려나지 않게 한다 */
 @media (max-height: 640px) {
   .dday {
-    font-size: 52px;
+    font-size: 56px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .center {
+    padding-bottom: 4%;
   }
 }
 </style>

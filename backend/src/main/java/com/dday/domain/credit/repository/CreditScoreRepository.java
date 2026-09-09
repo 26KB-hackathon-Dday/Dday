@@ -4,6 +4,7 @@ import com.dday.domain.credit.entity.CreditScore;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 신용점수 기록 조회.
@@ -21,4 +22,9 @@ public interface CreditScoreRepository extends JpaRepository<CreditScore, Long> 
      * 변동폭의 부호가 뒤집히므로 PK를 보조 정렬키로 건다.
      */
     List<CreditScore> findTop6ByUserUserIdOrderByUpdatedAtDescCreditScoreIdDesc(Long userId);
+
+    /**
+     * 가장 최근 기록 한 건. 정렬 기준은 위와 같다 — 같은 시각의 기록이 섞이면 "최신"이 흔들린다.
+     */
+    Optional<CreditScore> findFirstByUserUserIdOrderByUpdatedAtDescCreditScoreIdDesc(Long userId);
 }

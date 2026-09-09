@@ -81,8 +81,10 @@ class FinancialTransactionRepositoryTest {
                 .cardName("체크카드").cardType(CardType.CHECK)
                 .build());
 
+        // 코드에 유일값을 섞는다. category.uk_category_code 때문에 고정 코드를 쓰면
+        // data.sql 시드(FOOD 등)와 부딪혀 테스트가 통째로 깨진다.
         category = persist(Category.builder()
-                .categoryCode("FOOD").categoryName("식비")
+                .categoryCode("TEST-" + System.nanoTime()).categoryName("테스트 카테고리")
                 .defaultPocketType(PocketType.ESSENTIAL)
                 .build());
 

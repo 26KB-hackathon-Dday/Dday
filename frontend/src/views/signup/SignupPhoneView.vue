@@ -14,6 +14,9 @@ const signup = useSignupStore()
 const errorMessage = ref('')
 const submitting = ref(false)
 
+/** 실제 문자 발송처럼 최소한의 로딩을 보여준다 — API가 즉시 응답해도 버튼이 깜빡이지 않게 */
+const minDelay = (ms = 900) => new Promise((resolve) => setTimeout(resolve, ms))
+
 /** 화면에는 하이픈 포함으로 보여주고, 스토어에는 숫자만(11자리) 저장한다. */
 const displayValue = computed({
   get: () => toHyphenatedPhone(signup.phone),
@@ -30,7 +33,10 @@ async function submit() {
   submitting.value = true
   errorMessage.value = ''
   try {
-    await authApi.sendPhoneCode({ phone: toHyphenatedPhone(signup.phone), purpose: 'SIGNUP' })
+    await Promise.all([
+      authApi.sendPhoneCode({ phone: toHyphenatedPhone(signup.phone), purpose: 'SIGNUP' }),
+      minDelay(),
+    ])
     router.push('/signup/phone/verify')
   } catch (e) {
     errorMessage.value = e instanceof ApiError ? e.message : '인증번호 발송에 실패했습니다.'
