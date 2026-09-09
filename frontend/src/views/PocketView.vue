@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
-import AppIcon from '@/components/AppIcon.vue'
 
 import PocketStatusCard from '@/components/pocket/PocketStatusCard.vue'
 import FutureAssetPocketCard from '@/components/pocket/FutureAssetPocketCard.vue'
@@ -55,10 +53,6 @@ const monthNumber = computed(() => {
   return Number(currentMonth.value.slice(5))
 })
 
-const nextMonthNumber = computed(() => {
-  return (monthNumber.value % 12) + 1
-})
-
 const orderedPockets = computed(() => {
   return [...(response.value?.pockets ?? [])].sort((a, b) => {
     return POCKET_ORDER.indexOf(a.pocketType) - POCKET_ORDER.indexOf(b.pocketType)
@@ -74,17 +68,28 @@ const needsBudgetConfirmation = computed(() => {
 const loadPockets = async () => {
   loading.value = true
 
+  response.value = null
   error.value = null
   errorCode.value = null
 
   try {
     response.value = await pocketApi.findMonthly(currentMonth.value)
+    return true
   } catch (e) {
     response.value = null
 
     error.value = e instanceof ApiError ? e.message : '포켓 정보를 불러오지 못했습니다.'
 
     errorCode.value = e instanceof ApiError ? e.code : null
+
+    if (needsBudgetConfirmation.value) {
+      await router.replace({
+        name: 'pocket-budget-initial',
+        query: { month: currentMonth.value },
+      })
+      return false
+    }
+    return false
   } finally {
     loading.value = false
   }
@@ -250,12 +255,6 @@ const handleAddExcess = async () => {
  * =========================
  */
 
-const openNextBudget = () => {
-  router.push({
-    name: 'pocket-budget-initial',
-  })
-}
-
 const openPocketDetail = (pocketType: 'ESSENTIAL' | 'FREE') => {
   router.push({
     name: 'pocket-detail',
@@ -277,41 +276,25 @@ const openBudgetReadjust = () => {
 }
 
 const load = async () => {
-  await loadPockets()
+  const pocketsLoaded = await loadPockets()
 
-  await checkNewIncome()
+  if (pocketsLoaded) {
+    await checkNewIncome()
+  }
 }
 
-onMounted(load)
+watch(currentMonth, load, { immediate: true })
 </script>
 
 <template>
   <main class="page">
-    <h1>{{ monthNumber }}월 포켓</h1>
-
-    <button type="button" class="notice" @click="openNextBudget">
-      <span> {{ nextMonthNumber }}월 최적화 포켓 예산이 만들어졌어요! </span>
-
-      <AppIcon name="chevron-right" :size="18" aria-hidden="true" />
-    </button>
+    <h1 v-if="response">{{ monthNumber }}월 포켓</h1>
 
     <p v-if="loading" class="state" role="status">포켓 현황을 불러오는 중…</p>
 
     <div v-else-if="error" class="state error" role="alert">
-      <p>
-        {{ error }}
-      </p>
-
-      <button
-        v-if="needsBudgetConfirmation"
-        type="button"
-        class="budget-button"
-        @click="openNextBudget"
-      >
-        예산 확정하러 가기
-      </button>
-
-      <button v-else type="button" @click="load">다시 시도</button>
+      <p>{{ error }}</p>
+      <button type="button" @click="load">다시 시도</button>
     </div>
 
     <template v-else-if="response">
@@ -384,7 +367,10 @@ onMounted(load)
 
 <style scoped>
 .page {
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  min-height: calc(100dvh - 120px);
 
   padding: 4px 16px 28px;
 
@@ -398,42 +384,6 @@ h1 {
   font-weight: 700;
 
   letter-spacing: -0.5px;
-}
-
-.notice {
-  display: flex;
-
-  width: 100%;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 12px;
-
-  margin-top: 10px;
-
-  padding: 12px 14px;
-
-  border: 0;
-  border-radius: 9px;
-
-  background: var(--c-surface);
-
-  color: var(--c-text-2);
-
-  text-align: left;
-
-  font-size: 12px;
-
-  cursor: pointer;
-}
-
-.notice:hover {
-  filter: brightness(0.98);
-}
-
-.notice .app-icon {
-  color: #b9b9b9;
 }
 
 .state {
@@ -466,14 +416,6 @@ h1 {
   background: transparent;
 
   cursor: pointer;
-}
-
-.error .budget-button {
-  border-color: var(--c-primary);
-
-  background: var(--c-primary);
-
-  color: var(--c-bg);
 }
 
 .total {

@@ -2,7 +2,7 @@
   <div class="budget-page">
     <main class="budget-content">
       <section class="intro-section">
-        <h2 class="intro-title">9월 최적화 예산</h2>
+        <h2 class="intro-title">{{ monthNumber }}월 최적화 예산</h2>
 
         <p class="intro-description">
           이번 달 들어올 돈과 지난 소비를 바탕으로<br />
@@ -49,16 +49,24 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { usePocketBudgetStore } from '@/stores/pocketBudget'
 import { budgetApi } from '@/api/budget'
 import { ApiError } from '@/api/types'
 
 const router = useRouter()
+const route = useRoute()
 const budgetStore = usePocketBudgetStore()
 const submitting = ref(false)
 const errorMessage = ref('')
+const currentMonth = computed(() => {
+  const queryMonth = typeof route.query.month === 'string' ? route.query.month : ''
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(queryMonth)) return queryMonth
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+})
+const monthNumber = computed(() => Number(currentMonth.value.slice(5)))
 
 const pockets = computed(() => [
   {
@@ -90,6 +98,7 @@ const formatCurrency = (value: number) => {
 const goToAdjust = () => {
   router.push({
     name: 'pocket-budget-adjust',
+    query: { month: currentMonth.value },
   })
 }
 
@@ -107,7 +116,7 @@ const handleConfirm = async () => {
         { pocketType: 'EMERGENCY', amount: budgetStore.emergencyBudget },
       ],
     })
-    router.replace({ name: 'pockets' })
+    router.replace({ name: 'pockets', query: { month: currentMonth.value } })
   } catch (e) {
     errorMessage.value = e instanceof ApiError ? e.message : '예산 확정에 실패했습니다.'
   } finally {

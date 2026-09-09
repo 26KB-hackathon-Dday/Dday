@@ -169,7 +169,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import PocketBudgetSlider from '@/components/pocket/PocketBudgetSlider.vue'
 import BudgetForecastCard from '@/components/pocket/BudgetForecastCard.vue'
@@ -181,6 +181,7 @@ import { budgetApi } from '@/api/budget'
 import { ApiError } from '@/api/types'
 
 const router = useRouter()
+const route = useRoute()
 
 const budgetStore = usePocketBudgetStore()
 
@@ -305,7 +306,7 @@ const handleSave = async () => {
         { pocketType: 'EMERGENCY', amount: budgetStore.emergencyBudget },
       ],
     })
-    router.replace({ name: 'pockets' })
+    router.replace({ name: 'pockets', query: route.query })
   } catch (e) {
     saveError.value = e instanceof ApiError ? e.message : '예산 확정에 실패했습니다.'
   } finally {
