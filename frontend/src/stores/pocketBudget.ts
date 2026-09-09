@@ -1,29 +1,48 @@
 import { computed, ref } from 'vue'
+
 import { defineStore } from 'pinia'
 
 export type PocketType = 'essential' | 'free' | 'future' | 'emergency'
 
 export const usePocketBudgetStore = defineStore('pocketBudget', () => {
-  // =========================
-  // 이번 달 총 예산
-  // =========================
+  const toSafeAmount = (value: unknown) => {
+    const numberValue = Number(value)
+
+    if (!Number.isFinite(numberValue)) {
+      return 0
+    }
+
+    return Math.max(0, Math.round(numberValue))
+  }
+
+  /*
+   * =========================
+   * 총 예산
+   * =========================
+   */
 
   const totalBudget = ref(2_500_000)
 
-  // =========================
-  // 포켓별 예산
-  // =========================
+  /*
+   * =========================
+   * 포켓별 예산
+   * =========================
+   */
 
   const essentialBudget = ref(1_050_000)
+
   const freeBudget = ref(650_000)
+
   const futureBudget = ref(500_000)
+
   const emergencyBudget = ref(300_000)
 
-  // =========================
-  // 예상 자산
-  // TODO: 추후 백엔드 API 연동
-  // =========================
-
+  /*
+   * 기존 화면 호환용.
+   *
+   * 실제 예상자산 화면에서는
+   * assetForecast API를 사용한다.
+   */
   const previousAsset = ref(24_000_000)
 
   const expectedAsset = computed(() => {
@@ -34,58 +53,41 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
     return expectedAsset.value - previousAsset.value
   })
 
-  // =========================
-  // 현재 포켓 배분 합계
-  // =========================
-
   const allocatedTotal = computed(() => {
-    return essentialBudget.value + freeBudget.value + futureBudget.value + emergencyBudget.value
+    return (
+      toSafeAmount(essentialBudget.value) +
+      toSafeAmount(freeBudget.value) +
+      toSafeAmount(futureBudget.value) +
+      toSafeAmount(emergencyBudget.value)
+    )
   })
 
-  /*
-   * 양수:
-   * 총 예산보다 많이 배분됨
-   *
-   * 음수:
-   * 아직 배분할 돈이 남음
-   *
-   * 0:
-   * 정확히 맞음
-   */
   const budgetGap = computed(() => {
-    return allocatedTotal.value - totalBudget.value
+    return allocatedTotal.value - toSafeAmount(totalBudget.value)
   })
 
   const isBudgetBalanced = computed(() => {
-    return budgetGap.value === 0
+    return budgetGap.value === 0 && totalBudget.value > 0
   })
-
-  // =========================
-  // 포켓 값 조회
-  // =========================
 
   const getPocketValue = (type: PocketType): number => {
     switch (type) {
       case 'essential':
-        return essentialBudget.value
+        return toSafeAmount(essentialBudget.value)
 
       case 'free':
-        return freeBudget.value
+        return toSafeAmount(freeBudget.value)
 
       case 'future':
-        return futureBudget.value
+        return toSafeAmount(futureBudget.value)
 
       case 'emergency':
-        return emergencyBudget.value
+        return toSafeAmount(emergencyBudget.value)
     }
   }
 
-  // =========================
-  // 포켓 값 변경
-  // =========================
-
   const setPocketValue = (type: PocketType, value: number) => {
-    const normalizedValue = Math.max(0, value)
+    const normalizedValue = toSafeAmount(value)
 
     switch (type) {
       case 'essential':
@@ -106,42 +108,23 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
     }
   }
 
-  // =========================
-  // 사용자가 슬라이더 직접 조정
-  // =========================
-
   const updatePocket = (type: PocketType, value: number) => {
-    /*
-     * 개별 포켓 하나가
-     * 총 예산보다 클 수는 없도록 제한
-     */
-    const normalizedValue = Math.max(0, Math.min(value, totalBudget.value))
+    const safeValue = toSafeAmount(value)
+
+    const normalizedValue = Math.min(safeValue, toSafeAmount(totalBudget.value))
 
     setPocketValue(type, normalizedValue)
   }
 
-  // =========================
-  // 총 예산 등록
-  // =========================
-
   const setTotalBudget = (newTotal: number) => {
-    if (!Number.isFinite(newTotal) || newTotal <= 0) {
+    const normalized = toSafeAmount(newTotal)
+
+    if (normalized <= 0) {
       return
     }
 
-    /*
-     * 총예산만 변경한다.
-     *
-     * 기존 포켓 금액은 그대로 두고
-     * 사용자가 직접 조정하거나
-     * 자동으로 맞추기를 누르도록 한다.
-     */
-    totalBudget.value = newTotal
+    totalBudget.value = normalized
   }
-
-  // =========================
-  // 나머지 포켓 목록
-  // =========================
 
   const getOtherTypes = (fixedType: PocketType): PocketType[] => {
     const allTypes: PocketType[] = ['essential', 'free', 'future', 'emergency']
@@ -149,28 +132,13 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
     return allTypes.filter((type) => type !== fixedType)
   }
 
-  // =========================
-  // 자동으로 맞추기
-  // =========================
-
   const autoBalance = (fixedType: PocketType) => {
-    /*
-     * 마지막으로 사용자가 만진 포켓은
-     * 그대로 유지한다.
-     */
     const fixedValue = getPocketValue(fixedType)
 
-    /*
-     * 나머지 포켓들에 배분할 수 있는 금액
-     */
     const remainingBudget = totalBudget.value - fixedValue
 
     const otherTypes = getOtherTypes(fixedType)
 
-    /*
-     * 해당 포켓 하나만으로
-     * 총예산을 넘긴 경우
-     */
     if (remainingBudget < 0) {
       setPocketValue(fixedType, totalBudget.value)
 
@@ -185,10 +153,6 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
       return sum + getPocketValue(type)
     }, 0)
 
-    /*
-     * 나머지 3개가 전부 0이면
-     * 남는 금액을 비상금에 넣는다.
-     */
     if (otherTotal === 0) {
       otherTypes.forEach((type) => {
         setPocketValue(type, 0)
@@ -205,25 +169,15 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
 
     let assignedAmount = 0
 
-    /*
-     * 나머지 포켓의 기존 비율을 기준으로
-     * remainingBudget 재분배
-     */
     otherTypes.forEach((type, index) => {
-      const currentValue = getPocketValue(type)
-
       let nextValue = 0
 
-      /*
-       * 마지막 포켓은
-       * 반올림 오차까지 전부 받는다.
-       */
       if (index === otherTypes.length - 1) {
         nextValue = remainingBudget - assignedAmount
       } else {
-        const ratio = currentValue / otherTotal
+        const ratio = getPocketValue(type) / otherTotal
 
-        nextValue = Math.round((remainingBudget * ratio) / 50_000) * 50_000
+        nextValue = Math.round(remainingBudget * ratio)
       }
 
       nextValue = Math.max(0, nextValue)
@@ -233,16 +187,8 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
       assignedAmount += nextValue
     })
 
-    /*
-     * 혹시 발생할 수 있는
-     * 합계 오차 최종 보정
-     */
     normalizeTotal(fixedType)
   }
-
-  // =========================
-  // 합계 보정
-  // =========================
 
   const normalizeTotal = (fixedType: PocketType) => {
     const gap = totalBudget.value - allocatedTotal.value
@@ -263,10 +209,6 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
 
     setPocketValue(target, getPocketValue(target) + gap)
   }
-
-  // =========================
-  // 초기화
-  // =========================
 
   const resetBudget = () => {
     totalBudget.value = 2_500_000

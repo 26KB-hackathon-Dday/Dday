@@ -50,20 +50,6 @@
           </div>
         </div>
 
-        <div class="pocket-row pocket-row--emergency">
-          <span class="pocket-badge pocket-badge--emergency"> 비상금 포켓 </span>
-
-          <div class="pocket-value">
-            <strong>
-              {{ formatCurrency(emergencyBudget) }}
-            </strong>
-
-            <span class="pocket-percent pocket-percent--emergency">
-              {{ getPercentage(emergencyBudget) }}%
-            </span>
-          </div>
-        </div>
-
         <div class="pocket-row pocket-row--future">
           <span class="pocket-badge pocket-badge--future"> 미래자산 포켓 </span>
 
@@ -74,6 +60,20 @@
 
             <span class="pocket-percent pocket-percent--future">
               {{ getPercentage(futureBudget) }}%
+            </span>
+          </div>
+        </div>
+
+        <div class="pocket-row pocket-row--emergency">
+          <span class="pocket-badge pocket-badge--emergency"> 비상금 포켓 </span>
+
+          <div class="pocket-value">
+            <strong>
+              {{ formatCurrency(emergencyBudget) }}
+            </strong>
+
+            <span class="pocket-percent pocket-percent--emergency">
+              {{ getPercentage(emergencyBudget) }}%
             </span>
           </div>
         </div>
@@ -109,9 +109,10 @@ import { computed, ref } from 'vue'
 
 import { useRoute, useRouter } from 'vue-router'
 
-import { budgetAdjustmentApi } from '@/api/budgetAdjustment'
+import { budgetAdjustmentApi, type BudgetAdjustmentRequest } from '@/api/budgetAdjustment'
 
 const route = useRoute()
+
 const router = useRouter()
 
 const isSaving = ref(false)
@@ -120,6 +121,7 @@ const saveError = ref('')
 
 const monthLabel = computed(() => {
   const now = new Date()
+
   return `${now.getMonth() + 1}월`
 })
 
@@ -183,31 +185,39 @@ const handleConfirm = async () => {
   isSaving.value = true
 
   try {
-    await budgetAdjustmentApi.adjustCurrent({
+    const request: BudgetAdjustmentRequest = {
       totalBudgetAmount: totalBudget.value,
 
-      allocations: [
+      pockets: [
         {
           pocketType: 'ESSENTIAL',
+
           amount: essentialBudget.value,
         },
 
         {
           pocketType: 'FREE',
+
           amount: freeBudget.value,
         },
 
         {
-          pocketType: 'EMERGENCY',
-          amount: emergencyBudget.value,
+          pocketType: 'FUTURE_ASSET',
+
+          amount: futureBudget.value,
         },
 
         {
-          pocketType: 'FUTURE_ASSET',
-          amount: futureBudget.value,
+          pocketType: 'EMERGENCY',
+
+          amount: emergencyBudget.value,
         },
       ],
-    })
+
+      changeReason: '사용자 포켓 예산 재조정',
+    }
+
+    await budgetAdjustmentApi.adjustCurrent(request)
 
     await router.push({
       name: 'pockets',
@@ -224,6 +234,7 @@ const handleConfirm = async () => {
 .confirm-page {
   width: 100%;
   min-height: 100vh;
+
   background: #ffffff;
   color: #171717;
 }
@@ -231,11 +242,15 @@ const handleConfirm = async () => {
 .confirm-content {
   display: flex;
   flex-direction: column;
+
   width: 100%;
   max-width: 430px;
   min-height: calc(100vh - 56px);
+
   margin: 0 auto;
   padding: 28px 28px 36px;
+
+  box-sizing: border-box;
 }
 
 .intro-section {
@@ -244,15 +259,19 @@ const handleConfirm = async () => {
 
 .intro-title {
   margin: 0;
+
   font-size: 27px;
   font-weight: 700;
   line-height: 1.32;
+
   letter-spacing: -0.8px;
 }
 
 .intro-description {
   margin: 12px 0 0;
+
   color: #777777;
+
   font-size: 12px;
   line-height: 1.6;
 }
@@ -261,31 +280,42 @@ const handleConfirm = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   width: 100%;
   min-height: 68px;
+
   padding: 0 16px;
+
   border: 1px solid #e4e4e4;
   border-radius: 12px;
+
   background: #ffffff;
+
+  box-sizing: border-box;
 }
 
 .total-label {
   color: #555555;
+
   font-size: 14px;
   font-weight: 500;
 }
 
 .total-amount {
   color: #111111;
+
   font-size: 20px;
   font-weight: 800;
+
   letter-spacing: -0.5px;
 }
 
 .pocket-list {
   display: flex;
   flex-direction: column;
+
   gap: 12px;
+
   margin-top: 54px;
 }
 
@@ -293,9 +323,14 @@ const handleConfirm = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   min-height: 66px;
+
   padding: 0 16px;
+
   border-radius: 12px;
+
+  box-sizing: border-box;
 }
 
 .pocket-row--essential {
@@ -317,8 +352,11 @@ const handleConfirm = async () => {
 .pocket-badge {
   display: inline-flex;
   align-items: center;
+
   padding: 6px 10px;
+
   border-radius: 999px;
+
   font-size: 12px;
   font-weight: 700;
 }
@@ -346,11 +384,13 @@ const handleConfirm = async () => {
 .pocket-value {
   display: flex;
   align-items: center;
+
   gap: 8px;
 }
 
 .pocket-value strong {
   color: #171717;
+
   font-size: 16px;
   font-weight: 800;
 }
@@ -359,9 +399,13 @@ const handleConfirm = async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   min-width: 34px;
+
   padding: 3px 6px;
+
   border-radius: 999px;
+
   font-size: 10px;
   font-weight: 600;
 }
@@ -390,66 +434,86 @@ const handleConfirm = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+
   margin-top: 34px;
   padding: 26px 16px;
+
   border-radius: 12px;
+
   background: #f5f6ff;
 }
 
 .forecast-icon {
   margin-bottom: 8px;
+
   color: #111111;
+
   font-size: 22px;
   font-weight: 700;
 }
 
 .forecast-label {
   color: #777777;
+
   font-size: 12px;
 }
 
 .forecast-amount {
   margin-top: 6px;
+
   color: #111111;
+
   font-size: 25px;
   font-weight: 800;
+
   letter-spacing: -0.8px;
 }
 
 .error-message {
   margin: 20px 0 0;
+
   color: #d64545;
+
   font-size: 13px;
   line-height: 1.5;
+
   text-align: center;
 }
 
 .bottom-area {
   margin-top: auto;
+
   padding-top: 70px;
 }
 
 .bottom-divider {
   width: 100%;
   height: 1px;
+
   margin-bottom: 20px;
+
   background: #eeeeee;
 }
 
 .confirm-button {
   width: 100%;
   height: 60px;
+
   border: 0;
   border-radius: 10px;
+
   color: #ffffff;
   background: #111111;
+
   font-size: 15px;
   font-weight: 700;
+
   cursor: pointer;
 }
 
 .confirm-button:disabled {
   opacity: 0.55;
+
   cursor: default;
 }
 
