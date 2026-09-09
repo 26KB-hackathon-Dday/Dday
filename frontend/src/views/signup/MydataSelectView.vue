@@ -28,6 +28,17 @@ onMounted(async () => {
 const banks = computed(() => institutions.value.filter((i) => i.category === 'BANK'))
 const cards = computed(() => institutions.value.filter((i) => i.category === 'CARD'))
 
+/** 처음엔 대표 기관 3개만 보여주고, "자세히 보기"를 눌러야 전체가 펼쳐진다. */
+const showAllBanks = ref(false)
+const showAllCards = ref(false)
+
+const visibleBanks = computed(() =>
+  showAllBanks.value ? banks.value : banks.value.filter((i) => i.popular),
+)
+const visibleCards = computed(() =>
+  showAllCards.value ? cards.value : cards.value.filter((i) => i.popular),
+)
+
 const allSelected = computed({
   get: () =>
     institutions.value.length > 0 &&
@@ -86,23 +97,39 @@ function next() {
         <section v-if="banks.length" class="group">
           <h2 class="group-title">은행</h2>
           <InstitutionItem
-            v-for="bank in banks"
+            v-for="bank in visibleBanks"
             :key="bank.institutionId"
             :institution="bank"
             :model-value="isSelected(bank.institutionId)"
             @update:model-value="signup.toggleInstitution(bank.institutionId)"
           />
+          <button
+            v-if="!showAllBanks && banks.length > visibleBanks.length"
+            type="button"
+            class="more-btn"
+            @click="showAllBanks = true"
+          >
+            은행 전체보기 ({{ banks.length }})
+          </button>
         </section>
 
         <section v-if="cards.length" class="group">
           <h2 class="group-title">카드</h2>
           <InstitutionItem
-            v-for="card in cards"
+            v-for="card in visibleCards"
             :key="card.institutionId"
             :institution="card"
             :model-value="isSelected(card.institutionId)"
             @update:model-value="signup.toggleInstitution(card.institutionId)"
           />
+          <button
+            v-if="!showAllCards && cards.length > visibleCards.length"
+            type="button"
+            class="more-btn"
+            @click="showAllCards = true"
+          >
+            카드 전체보기 ({{ cards.length }})
+          </button>
         </section>
       </template>
     </div>
@@ -221,6 +248,17 @@ function next() {
   margin-bottom: 4px;
   font-size: 13px;
   font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.more-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
   color: var(--color-secondary);
 }
 

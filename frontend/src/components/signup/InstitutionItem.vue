@@ -55,15 +55,17 @@ const emit = defineEmits<{
   justify-content: center;
   width: 40px;
   height: 40px;
+  padding: 6px;
   overflow: hidden;
-  background-color: var(--color-bg-soft);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
 }
 
 .logo img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .initial {

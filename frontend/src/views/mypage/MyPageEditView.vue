@@ -70,15 +70,21 @@ function resetPhoneVerification() {
   codeError.value = ''
 }
 
+/** 실제 문자 발송처럼 최소한의 로딩을 보여준다 — API가 즉시 응답해도 버튼이 깜빡이지 않게 */
+const minDelay = (ms = 900) => new Promise((resolve) => setTimeout(resolve, ms))
+
 async function sendCode() {
   if (phoneFormatError.value || !phoneDigits.value || sending.value) return
   sending.value = true
   codeError.value = ''
   try {
-    const result = await authApi.sendPhoneCode({
-      phone: toHyphenatedPhone(phoneDigits.value),
-      purpose: 'SIGNUP',
-    })
+    const [result] = await Promise.all([
+      authApi.sendPhoneCode({
+        phone: toHyphenatedPhone(phoneDigits.value),
+        purpose: 'SIGNUP',
+      }),
+      minDelay(),
+    ])
     expiresIn.value = result.expiresIn
     codeSent.value = true
     code.value = ''
@@ -157,7 +163,7 @@ async function submit() {
             :disabled="!!phoneFormatError || sending"
             @click="sendCode"
           >
-            {{ codeSent ? '재발송' : '인증번호 발송' }}
+            {{ sending ? '발송 중...' : codeSent ? '재발송' : '인증번호 발송' }}
           </button>
           <span v-else-if="phoneVerified" class="verified">인증완료</span>
         </div>

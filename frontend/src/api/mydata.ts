@@ -6,19 +6,32 @@
  *
  * ⚠️ 기관 목록(`findInstitutions`)은 아직 서버 API가 없어 Mock이다.
  *    화면에서 고른 기관과 무관하게 서버는 데모 계좌 전부를 붙인다.
+ *    다만 `institutionId`는 백엔드 `Institution` enum의 실제 기관코드와 맞춰뒀다 —
+ *    연결 해제(`disconnectInstitution`)가 이 id를 그대로 orgCode로 쓴다.
  */
 import { api } from '@/api/client'
+import logoKookmin from '@/assets/logos/kookmin.svg'
+import logoShinhan from '@/assets/logos/shinhan.svg'
+import logoWoori from '@/assets/logos/woori.svg'
+import logoHana from '@/assets/logos/hana.svg'
+import logoNonghyup from '@/assets/logos/nonghyup.svg'
+import logoKakaobank from '@/assets/logos/kakaobank.svg'
+import logoTossbank from '@/assets/logos/tossbank.svg'
+import logoHyundaiCard from '@/assets/logos/hyundai-card.svg'
+import logoSamsungCard from '@/assets/logos/samsung-card.png'
 
 export type InstitutionCategory = 'BANK' | 'CARD' | 'SECURITIES'
 
 export interface Institution {
-  /** 기관 코드. 연동 요청 때 이 값을 보낸다 */
+  /** 기관 코드(백엔드 `Institution` enum의 code). 연동·해제 요청 때 이 값을 보낸다 */
   institutionId: string
   /** 화면에 그대로 띄우는 이름. 서버가 내려주므로 프론트에 매핑표를 두지 않는다 */
   name: string
   category: InstitutionCategory
   /** 로고 이미지 URL. 없으면 화면에서 이니셜로 대체한다 */
   logoUrl?: string
+  /** 가장 많이 쓰는 대표 기관 3개 — 목록 화면이 기본으로 이것만 먼저 보여준다 */
+  popular?: boolean
 }
 
 export interface ConnectRequest {
@@ -73,16 +86,26 @@ export interface UserCard {
 
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/**
+ * 은행 7개 + 카드사 5개 — 백엔드 `Institution` enum과 코드를 맞췄다(대출 전용 기관인
+ * 현대캐피탈·SBI저축은행은 연동 화면에서 고를 대상이 아니라 뺐다).
+ *
+ * 대표 3개(`popular`)는 국내 이용자 수 기준 상위권 은행/카드사로 골랐다.
+ */
 const MOCK_INSTITUTIONS: Institution[] = [
-  { institutionId: 'KB', name: '국민은행', category: 'BANK' },
-  { institutionId: 'SHINHAN', name: '신한은행', category: 'BANK' },
-  { institutionId: 'WOORI', name: '우리은행', category: 'BANK' },
-  { institutionId: 'HANA', name: '하나은행', category: 'BANK' },
-  { institutionId: 'NH', name: '농협은행', category: 'BANK' },
-  { institutionId: 'KAKAO', name: '카카오뱅크', category: 'BANK' },
-  { institutionId: 'TOSS', name: '토스뱅크', category: 'BANK' },
-  { institutionId: 'HYUNDAI_CARD', name: '현대카드', category: 'CARD' },
-  { institutionId: 'SAMSUNG_CARD', name: '삼성카드', category: 'CARD' },
+  { institutionId: '004', name: '국민은행', category: 'BANK', logoUrl: logoKookmin, popular: true },
+  { institutionId: '090', name: '카카오뱅크', category: 'BANK', logoUrl: logoKakaobank, popular: true },
+  { institutionId: '088', name: '신한은행', category: 'BANK', logoUrl: logoShinhan, popular: true },
+  { institutionId: '020', name: '우리은행', category: 'BANK', logoUrl: logoWoori },
+  { institutionId: '081', name: '하나은행', category: 'BANK', logoUrl: logoHana },
+  { institutionId: '011', name: '농협은행', category: 'BANK', logoUrl: logoNonghyup },
+  { institutionId: '092', name: '토스뱅크', category: 'BANK', logoUrl: logoTossbank },
+
+  { institutionId: '0306', name: '신한카드', category: 'CARD', logoUrl: logoShinhan, popular: true },
+  { institutionId: '0301', name: 'KB국민카드', category: 'CARD', logoUrl: logoKookmin, popular: true },
+  { institutionId: '0303', name: '삼성카드', category: 'CARD', logoUrl: logoSamsungCard, popular: true },
+  { institutionId: '0302', name: '현대카드', category: 'CARD', logoUrl: logoHyundaiCard },
+  { institutionId: '0313', name: '우리카드', category: 'CARD', logoUrl: logoWoori },
 ]
 
 export const mydataApi = {
