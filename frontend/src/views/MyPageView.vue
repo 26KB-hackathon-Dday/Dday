@@ -7,16 +7,18 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showConfirmDialog, showToast } from 'vant'
+import { showToast } from 'vant'
 import { userApi, type Me } from '@/api/user'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import AppIcon from '@/components/AppIcon.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 
 const me = ref<Me | null>(null)
+const showLogoutConfirm = ref(false)
 
 onMounted(async () => {
   me.value = await userApi.fetchMe()
@@ -66,16 +68,6 @@ const sections = computed<{ label: string; items: MenuItem[] }[]>(() => [
 ])
 
 async function logout() {
-  try {
-    await showConfirmDialog({
-      title: '로그아웃',
-      message: '로그아웃하시겠어요?',
-      confirmButtonText: '로그아웃',
-      cancelButtonText: '취소',
-    })
-  } catch {
-    return // 취소
-  }
   await authApi.logout().catch(() => {}) // 서버는 무상태 — 실패해도 클라에서 지우면 끝
   auth.logout()
   router.replace('/landing')
@@ -124,7 +116,7 @@ async function logout() {
       <p class="group__label">계정 관리</p>
       <ul class="group__list">
         <li>
-          <button type="button" class="row" @click="logout">
+          <button type="button" class="row" @click="showLogoutConfirm = true">
             <span class="row__text">로그아웃</span>
             <AppIcon name="logout" :size="18" class="row__logout" />
           </button>
@@ -133,6 +125,15 @@ async function logout() {
     </section>
 
     <button type="button" class="withdraw" @click="notReady">회원탈퇴</button>
+
+    <ConfirmDialog
+      v-model="showLogoutConfirm"
+      title="로그아웃 하시겠습니까?"
+      description="언제든 다시 로그인할 수 있어요"
+      confirm-text="로그아웃"
+      cancel-text="취소"
+      @confirm="logout"
+    />
   </div>
 </template>
 
