@@ -18,9 +18,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PaymentType {
 
-    TELECOM("통신요금"),
     HEALTH_INSURANCE("건강보험료"),
-    NATIONAL_PENSION("국민연금");
+    NATIONAL_PENSION("국민연금"),
+    TELECOM("통신요금");
 
     private final String label;
 }

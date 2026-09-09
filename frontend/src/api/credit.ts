@@ -71,4 +71,43 @@ export interface ExpectedRates {
 export const creditApi = {
   fetchScoreHistory: () => api.get<CreditScoreHistory>('/api/credit/scores/recent'),
   fetchExpectedRates: () => api.get<ExpectedRates>('/api/credit/rates/expected'),
+  fetchPaymentHistory: () => api.get<PaymentHistory>('/api/credit/payments'),
+}
+
+// ── 비금융 납부 이력 (GET /api/credit/payments) ───────────────────────────
+
+export type PaymentType = 'HEALTH_INSURANCE' | 'NATIONAL_PENSION' | 'TELECOM'
+export type PaymentStatus = 'PAID' | 'LATE' | 'UNPAID'
+
+export interface PaymentRecord {
+  /** 청구월 "yyyy-MM". 납부한 달은 보통 그 다음 달이다. */
+  billingMonth: string
+  amount: number
+  dueDate: string
+  /** 실제 납부일. 미납이면 null. */
+  paidDate: string | null
+  status: PaymentStatus
+  /** 화면에 그대로 쓰는 상태 문구. 정본은 서버다. */
+  statusLabel: string
+}
+
+export interface PaymentTypeHistory {
+  paymentType: PaymentType
+  label: string
+  institutionName: string
+  latestBillingMonth: string
+  /** 최근부터 연속으로 제때 낸 개월 수. 연체가 나오면 거기서 끊긴다. */
+  onTimeStreak: number
+  lateCount: number
+  /** 최신 청구월부터. */
+  records: PaymentRecord[]
+}
+
+export interface PaymentHistory {
+  monthsCovered: number
+  onTimeCount: number
+  lateCount: number
+  unpaidCount: number
+  /** 건강보험료 → 국민연금 → 통신요금 순. 이력이 없는 종류는 빠진다. */
+  types: PaymentTypeHistory[]
 }

@@ -102,11 +102,12 @@ class NonFinancialPaymentServiceTest {
 
         PaymentHistoryResponse result = paymentService.findHistory(USER_ID);
 
-        // 유형 순서는 enum 선언 순서다 — 통신요금 → 건강보험료 → 국민연금.
+        // 유형 순서는 enum 선언 순서다 — 건강보험료 → 국민연금 → 통신요금.
         assertThat(result.getTypes()).extracting(PaymentTypeHistoryResponse::getPaymentType)
-                .containsExactly(PaymentType.TELECOM, PaymentType.NATIONAL_PENSION);
+                .containsExactly(PaymentType.NATIONAL_PENSION, PaymentType.TELECOM);
 
-        PaymentTypeHistoryResponse telecom = result.getTypes().get(0);
+        // 통신요금은 국민연금 뒤다.
+        PaymentTypeHistoryResponse telecom = result.getTypes().get(1);
         assertThat(telecom.getLatestBillingMonth()).isEqualTo("2026-09");
         assertThat(telecom.getRecords()).extracting("billingMonth")
                 .containsExactly("2026-09", "2026-08");

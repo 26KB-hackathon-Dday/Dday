@@ -322,6 +322,12 @@ const router = createRouter({
       meta: { title: '신용관리 하기', requiresAuth: true },
     },
     {
+      path: '/credit-manage/payments',
+      name: 'credit-payments',
+      component: () => import('@/views/credit/PaymentHistoryView.vue'),
+      meta: { title: '납부 기록', requiresAuth: true },
+    },
+    {
       // 하단 탭엔 없고 상단바 계정 아이콘으로만 들어온다.
       path: '/mypage',
       name: 'mypage',

@@ -7,10 +7,14 @@
  * 라벨에 대한 규칙이다.) 항목마다 실제 내 데이터를 보여주는 상세 화면은 아직 없다.
  */
 
+import { RouterLink } from 'vue-router'
+
 interface Topic {
   icon: 'bars' | 'alert' | 'card' | 'folder'
   title: string
   description: string
+  /** 상세 화면이 있는 항목만 채운다. 없으면 누를 수 없는 카드로 그린다. */
+  to?: string
 }
 
 const TOPICS: Topic[] = [
@@ -18,6 +22,7 @@ const TOPICS: Topic[] = [
     icon: 'bars',
     title: '매달 내는 요금도 점수가 될 수 있어요.',
     description: '통신요금·건강보험료·국민연금 납부 이력 확인',
+    to: '/credit-manage/payments',
   },
   {
     icon: 'alert',
@@ -56,29 +61,36 @@ const ICON_PATHS: Record<Topic['icon'], string[]> = {
     </header>
 
     <!--
-      아직 누를 곳이 없어 li로 둔다. 항목별 상세 화면이 생기면 RouterLink로 바꾼다.
-      화살표는 그때 실제 이동을 가리키게 된다.
+      상세 화면이 있는 항목만 링크다. 나머지는 아직 갈 곳이 없어 div로 둔다 —
+      화면이 생기면 TOPICS에 to만 채우면 링크가 된다.
     -->
     <ul class="topics">
-      <li v-for="topic in TOPICS" :key="topic.title" class="topic">
-        <span class="topic__badge" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path v-for="d in ICON_PATHS[topic.icon]" :key="d" :d="d" />
-          </svg>
-        </span>
+      <li v-for="topic in TOPICS" :key="topic.title">
+        <component
+          :is="topic.to ? RouterLink : 'div'"
+          v-bind="topic.to ? { to: topic.to } : {}"
+          class="topic"
+          :class="{ 'is-link': topic.to }"
+        >
+          <span class="topic__badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path v-for="d in ICON_PATHS[topic.icon]" :key="d" :d="d" />
+            </svg>
+          </span>
 
-        <div class="topic__body">
-          <p class="topic__title">{{ topic.title }}</p>
-          <p class="topic__desc">{{ topic.description }}</p>
-        </div>
+          <div class="topic__body">
+            <p class="topic__title">{{ topic.title }}</p>
+            <p class="topic__desc">{{ topic.description }}</p>
+          </div>
 
-        <span class="topic__chevron" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 5l7 7-7 7" />
-          </svg>
-        </span>
+          <span class="topic__chevron" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </component>
       </li>
     </ul>
   </div>
@@ -153,6 +165,10 @@ const ICON_PATHS: Record<Topic['icon'], string[]> = {
   margin-top: 4px;
   font-size: 13px;
   color: var(--c-text-3);
+}
+
+.topic.is-link {
+  cursor: pointer;
 }
 
 .topic__chevron {
