@@ -127,7 +127,7 @@ onMounted(async () => {
         </p>
         <span class="card__link">
           {{ card.linkText }}
-          <AppIcon name="arrow-right" :size="10" />
+          <span class="card__arrow"><AppIcon name="arrow-right" :size="10" /></span>
         </span>
       </RouterLink>
     </div>
@@ -135,7 +135,14 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/*
+ * 뉴모피즘 느낌만: 배경 판/색 없이 카드가 흰 페이지 위에서 그림자로만 떠 보인다.
+ * 흰 배경이라 밝은 쪽 그림자는 안 보이지만, 어두운 쪽(방향성) 그림자가 입체감을 만든다.
+ */
 .alerts {
+  --nm-shadow: rgba(163, 177, 198, 0.5);
+  --nm-light: rgba(255, 255, 255, 0.9);
+
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -150,35 +157,52 @@ onMounted(async () => {
 .alerts__list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  border-radius: 12px;
-  background: #f5f6f8;
+  padding: 18px 16px;
+  border-radius: 18px;
+  background: var(--c-bg);
+  box-shadow: 7px 7px 18px var(--nm-shadow), -7px -7px 18px var(--nm-light);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
+.card:active {
+  transform: scale(0.99);
+  box-shadow:
+    inset 5px 5px 10px var(--nm-shadow),
+    inset -5px -5px 10px var(--nm-light);
+}
+
 .card__label {
-  font-size: 12px;
-  font-weight: 500;
+  align-self: flex-start;
+  padding: 4px 11px;
+  border-radius: 999px;
+  box-shadow:
+    inset 2px 2px 4px var(--nm-shadow),
+    inset -1px -1px 2px var(--nm-light);
+  font-size: 11px;
+  font-weight: 600;
   line-height: 16px;
-  letter-spacing: 0.6px;
-  color: #8a8a8a;
+  letter-spacing: 0.4px;
+  color: #7a7f88;
 }
 .card__heading {
-  margin-top: 12px;
+  margin-top: 14px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 24px;
-  color: #171717;
+  color: #2b2f36;
 }
 .card__body {
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 12px;
   line-height: 20px;
-  color: #444748;
+  color: #6b7079;
 }
 .card__body span {
   display: block;
@@ -186,10 +210,22 @@ onMounted(async () => {
 .card__link {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 20px;
-  font-size: 14px;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 20px;
-  color: #444748;
+  color: #4a4f57;
+}
+.card__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--c-bg);
+  box-shadow: 2px 2px 5px var(--nm-shadow), -2px -2px 5px var(--nm-light);
+  color: #6b7079;
 }
 </style>
