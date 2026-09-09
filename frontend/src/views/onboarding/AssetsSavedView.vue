@@ -24,8 +24,11 @@ const accounts = ref<DisplayAccount[]>([])
 const loading = ref(true)
 const errorMessage = ref('')
 const submitting = ref(false)
+const connected = ref(false)
 
-onMounted(async () => {
+async function connectMydata() {
+  loading.value = true
+  errorMessage.value = ''
   try {
     const institutions = await mydataApi.findInstitutions()
     const bankInstitutions = institutions.filter((i: Institution) => i.category === 'BANK')
@@ -35,15 +38,21 @@ onMounted(async () => {
     // 기관 이름은 서버가 내려준 값을 그대로 쓴다. 프론트에서 코드를 이름으로 바꾸지 않는다.
     accounts.value = result.accounts
     onboarding.totalSaved = result.accounts.reduce((sum, account) => sum + account.balance, 0)
+    connected.value = true
   } catch (e) {
+    accounts.value = []
+    onboarding.totalSaved = 0
+    connected.value = false
     errorMessage.value = e instanceof ApiError ? e.message : '마이데이터 연동 정보를 불러오지 못했어요.'
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(connectMydata)
 
 async function next() {
-  if (submitting.value) return
+  if (!connected.value || submitting.value) return
   submitting.value = true
   errorMessage.value = ''
   try {
@@ -86,11 +95,16 @@ async function next() {
         </div>
       </template>
 
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <div v-if="errorMessage" class="connection-error" role="alert">
+        <p class="error">{{ errorMessage }}</p>
+        <button type="button" :disabled="loading" @click="connectMydata">다시 연결하기</button>
+      </div>
     </div>
 
     <div class="actions">
-      <PrimaryButton :disabled="loading" :loading="submitting" @click="next">다음</PrimaryButton>
+      <PrimaryButton :disabled="loading || !connected" :loading="submitting" @click="next">
+        다음
+      </PrimaryButton>
     </div>
   </div>
 </template>
@@ -144,6 +158,22 @@ async function next() {
   font-size: 14px;
   color: var(--color-secondary);
   text-align: center;
+}
+
+.connection-error {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.connection-error button {
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .total-card {
