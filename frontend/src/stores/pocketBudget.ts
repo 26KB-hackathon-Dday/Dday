@@ -2,10 +2,43 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import type { BudgetRecommendationResponse } from '@/api/budget'
+
 export type PocketType = 'essential' | 'free' | 'future' | 'emergency'
 
 export const usePocketBudgetStore = defineStore('pocketBudget', () => {
-  const toSafeAmount = (value: unknown) => {
+  const totalBudget = ref(0)
+
+  const essentialBudget = ref(0)
+
+  const freeBudget = ref(0)
+
+  const futureBudget = ref(0)
+
+  const emergencyBudget = ref(0)
+
+  /*
+   * 추천값을 이미 불러왔는지.
+   */
+  const initializedFromRecommendation = ref(false)
+
+  /*
+   * 추천 계산 근거.
+   *
+   * 화면에 당장 표시하지 않더라도
+   * 디버깅과 향후 "계산 기준 보기"에서 사용 가능.
+   */
+  const monthlyIncome = ref(0)
+
+  const monthlyHousingCost = ref(0)
+
+  const currentAsset = ref(0)
+
+  const emergencyReserveTarget = ref(0)
+
+  const emergencyReserveNeeded = ref(false)
+
+  const toSafeAmount = (value: unknown): number => {
     const numberValue = Number(value)
 
     if (!Number.isFinite(numberValue)) {
@@ -15,109 +48,129 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
     return Math.max(0, Math.round(numberValue))
   }
 
-  /*
-   * =========================
-   * 총 예산
-   * =========================
-   */
-
-  const totalBudget = ref(2_500_000)
-
-  /*
-   * =========================
-   * 포켓별 예산
-   * =========================
-   */
-
-  const essentialBudget = ref(1_050_000)
-
-  const freeBudget = ref(650_000)
-
-  const futureBudget = ref(500_000)
-
-  const emergencyBudget = ref(300_000)
-
-  /*
-   * 기존 화면 호환용.
-   *
-   * 실제 예상자산 화면에서는
-   * assetForecast API를 사용한다.
-   */
-  const previousAsset = ref(24_000_000)
-
-  const expectedAsset = computed(() => {
-    return Math.round(previousAsset.value + futureBudget.value * 14.4)
-  })
-
-  const difference = computed(() => {
-    return expectedAsset.value - previousAsset.value
-  })
-
   const allocatedTotal = computed(() => {
-    return (
-      toSafeAmount(essentialBudget.value) +
-      toSafeAmount(freeBudget.value) +
-      toSafeAmount(futureBudget.value) +
-      toSafeAmount(emergencyBudget.value)
-    )
+    return essentialBudget.value + freeBudget.value + futureBudget.value + emergencyBudget.value
   })
 
   const budgetGap = computed(() => {
-    return allocatedTotal.value - toSafeAmount(totalBudget.value)
+    return allocatedTotal.value - totalBudget.value
   })
 
   const isBudgetBalanced = computed(() => {
-    return budgetGap.value === 0 && totalBudget.value > 0
+    return totalBudget.value > 0 && budgetGap.value === 0
   })
+
+  /*
+   * =========================
+   * 추천 API 응답 적용
+   * =========================
+   */
+
+  const initializeFromRecommendation = (recommendation: BudgetRecommendationResponse) => {
+    totalBudget.value = toSafeAmount(recommendation.totalBudgetAmount)
+
+    monthlyIncome.value = toSafeAmount(recommendation.monthlyIncome)
+
+    monthlyHousingCost.value = toSafeAmount(recommendation.monthlyHousingCost)
+
+    currentAsset.value = toSafeAmount(recommendation.currentAsset)
+
+    emergencyReserveTarget.value = toSafeAmount(recommendation.emergencyReserveTarget)
+
+    emergencyReserveNeeded.value = Boolean(recommendation.emergencyReserveNeeded)
+
+    essentialBudget.value = 0
+
+    freeBudget.value = 0
+
+    futureBudget.value = 0
+
+    emergencyBudget.value = 0
+
+    const pockets = recommendation.pockets ?? []
+
+    pockets.forEach((pocket) => {
+      const amount = toSafeAmount(pocket.amount)
+
+      switch (pocket.pocketType) {
+        case 'ESSENTIAL':
+          essentialBudget.value = amount
+          break
+
+        case 'FREE':
+          freeBudget.value = amount
+          break
+
+        case 'FUTURE_ASSET':
+          futureBudget.value = amount
+          break
+
+        case 'EMERGENCY':
+          emergencyBudget.value = amount
+          break
+      }
+    })
+
+    /*
+     * 혹시 서버 반올림 등으로
+     * 1원 차이가 발생해도
+     * 마지막 비상금에 맞춘다.
+     */
+    const difference = totalBudget.value - allocatedTotal.value
+
+    if (difference !== 0) {
+      emergencyBudget.value = Math.max(0, emergencyBudget.value + difference)
+    }
+
+    initializedFromRecommendation.value = true
+  }
 
   const getPocketValue = (type: PocketType): number => {
     switch (type) {
       case 'essential':
-        return toSafeAmount(essentialBudget.value)
+        return essentialBudget.value
 
       case 'free':
-        return toSafeAmount(freeBudget.value)
+        return freeBudget.value
 
       case 'future':
-        return toSafeAmount(futureBudget.value)
+        return futureBudget.value
 
       case 'emergency':
-        return toSafeAmount(emergencyBudget.value)
+        return emergencyBudget.value
     }
   }
 
   const setPocketValue = (type: PocketType, value: number) => {
-    const normalizedValue = toSafeAmount(value)
+    const normalized = toSafeAmount(value)
 
     switch (type) {
       case 'essential':
-        essentialBudget.value = normalizedValue
+        essentialBudget.value = normalized
         break
 
       case 'free':
-        freeBudget.value = normalizedValue
+        freeBudget.value = normalized
         break
 
       case 'future':
-        futureBudget.value = normalizedValue
+        futureBudget.value = normalized
         break
 
       case 'emergency':
-        emergencyBudget.value = normalizedValue
+        emergencyBudget.value = normalized
         break
     }
   }
 
   const updatePocket = (type: PocketType, value: number) => {
-    const safeValue = toSafeAmount(value)
+    const normalized = Math.min(toSafeAmount(value), totalBudget.value)
 
-    const normalizedValue = Math.min(safeValue, toSafeAmount(totalBudget.value))
-
-    setPocketValue(type, normalizedValue)
+    setPocketValue(type, normalized)
   }
 
-  const setTotalBudget = (newTotal: number) => {
-    const normalized = toSafeAmount(newTotal)
+  const setTotalBudget = (value: number) => {
+    const normalized = toSafeAmount(value)
 
     if (normalized <= 0) {
       return
@@ -127,19 +180,26 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
   }
 
   const getOtherTypes = (fixedType: PocketType): PocketType[] => {
-    const allTypes: PocketType[] = ['essential', 'free', 'future', 'emergency']
+    const all: PocketType[] = ['essential', 'free', 'future', 'emergency']
 
-    return allTypes.filter((type) => type !== fixedType)
+    return all.filter((type) => type !== fixedType)
   }
 
+  /*
+   * 초기 조정 화면의
+   * 자동 맞추기 기능.
+   *
+   * 사용자가 건드린 포켓은 유지하고
+   * 나머지 포켓 비율을 유지하며 재배분.
+   */
   const autoBalance = (fixedType: PocketType) => {
     const fixedValue = getPocketValue(fixedType)
 
-    const remainingBudget = totalBudget.value - fixedValue
+    const remaining = totalBudget.value - fixedValue
 
     const otherTypes = getOtherTypes(fixedType)
 
-    if (remainingBudget < 0) {
+    if (remaining < 0) {
       setPocketValue(fixedType, totalBudget.value)
 
       otherTypes.forEach((type) => {
@@ -149,77 +209,65 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
       return
     }
 
-    const otherTotal = otherTypes.reduce((sum, type) => {
-      return sum + getPocketValue(type)
-    }, 0)
+    const previousOtherTotal = otherTypes.reduce((sum, type) => sum + getPocketValue(type), 0)
 
-    if (otherTotal === 0) {
+    if (previousOtherTotal <= 0) {
       otherTypes.forEach((type) => {
         setPocketValue(type, 0)
       })
 
-      const fallbackType = otherTypes.includes('emergency') ? 'emergency' : otherTypes[0]
+      const target = otherTypes.includes('emergency') ? 'emergency' : otherTypes[0]
 
-      if (fallbackType) {
-        setPocketValue(fallbackType, remainingBudget)
+      if (target) {
+        setPocketValue(target, remaining)
       }
 
       return
     }
 
-    let assignedAmount = 0
+    let assigned = 0
 
     otherTypes.forEach((type, index) => {
-      let nextValue = 0
+      let next = 0
 
       if (index === otherTypes.length - 1) {
-        nextValue = remainingBudget - assignedAmount
+        next = remaining - assigned
       } else {
-        const ratio = getPocketValue(type) / otherTotal
+        const ratio = getPocketValue(type) / previousOtherTotal
 
-        nextValue = Math.round(remainingBudget * ratio)
+        next = Math.round(remaining * ratio)
       }
 
-      nextValue = Math.max(0, nextValue)
+      next = Math.max(0, next)
 
-      setPocketValue(type, nextValue)
+      setPocketValue(type, next)
 
-      assignedAmount += nextValue
+      assigned += next
     })
-
-    normalizeTotal(fixedType)
-  }
-
-  const normalizeTotal = (fixedType: PocketType) => {
-    const gap = totalBudget.value - allocatedTotal.value
-
-    if (gap === 0) {
-      return
-    }
-
-    const candidates = getOtherTypes(fixedType)
-
-    const target = candidates.find((type) => {
-      return getPocketValue(type) + gap >= 0
-    })
-
-    if (!target) {
-      return
-    }
-
-    setPocketValue(target, getPocketValue(target) + gap)
   }
 
   const resetBudget = () => {
-    totalBudget.value = 2_500_000
+    totalBudget.value = 0
 
-    essentialBudget.value = 1_050_000
+    essentialBudget.value = 0
 
-    freeBudget.value = 650_000
+    freeBudget.value = 0
 
-    futureBudget.value = 500_000
+    futureBudget.value = 0
 
-    emergencyBudget.value = 300_000
+    emergencyBudget.value = 0
+
+    monthlyIncome.value = 0
+
+    monthlyHousingCost.value = 0
+
+    currentAsset.value = 0
+
+    emergencyReserveTarget.value = 0
+
+    emergencyReserveNeeded.value = false
+
+    initializedFromRecommendation.value = false
   }
 
   return {
@@ -234,13 +282,20 @@ export const usePocketBudgetStore = defineStore('pocketBudget', () => {
     budgetGap,
     isBudgetBalanced,
 
-    previousAsset,
-    expectedAsset,
-    difference,
+    monthlyIncome,
+    monthlyHousingCost,
+    currentAsset,
+    emergencyReserveTarget,
+    emergencyReserveNeeded,
+
+    initializedFromRecommendation,
+
+    initializeFromRecommendation,
 
     updatePocket,
     setTotalBudget,
     autoBalance,
+
     resetBudget,
   }
 })

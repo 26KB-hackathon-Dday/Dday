@@ -3,7 +3,8 @@
     <main class="allocate-content">
       <section class="intro-section">
         <h2 class="intro-title">
-          {{ formatCurrency(store.includedAmount) }}<br />
+          {{ formatCurrency(store.includedAmount) }}
+          <br />
           포켓에 배분하기
         </h2>
 
@@ -186,14 +187,15 @@ const handleConfirm = async () => {
   }
 
   /*
-   * 0원을 포함해도 백엔드에서
-   * 정상 처리 가능하지만,
-   * 총합은 반드시 includedAmount와
-   * 일치해야 한다.
+   * 포켓에 배분한 총액 계산.
    */
   const allocationTotal =
     store.essentialAmount + store.freeAmount + store.futureAmount + store.emergencyAmount
 
+  /*
+   * 선택한 추가 금액과
+   * 포켓별 배분 합계가 정확히 같아야 한다.
+   */
   if (allocationTotal !== store.includedAmount) {
     errorMessage.value = '포켓 배분 금액과 추가할 금액이 일치하지 않아요.'
 
@@ -233,8 +235,29 @@ const handleConfirm = async () => {
       ],
     })
 
-    store.resetAll()
+    /*
+     * 중요:
+     *
+     * 예전에는 여기서 resetAll()을 해서
+     * pending queue 전체가 날아갔다.
+     *
+     * 이제는 방금 처리한 거래만 제거한다.
+     */
+    store.removeCurrentIncome()
 
+    /*
+     * 현재 거래용 입력값만 초기화.
+     *
+     * 아직 남은 pending 거래는 그대로 유지된다.
+     */
+    store.resetDetectedIncome()
+
+    /*
+     * PocketView로 돌아가면
+     * 남아있는 queue가 있을 경우
+     * 서버를 다시 조회하지 않고
+     * 다음 거래 모달을 바로 띄운다.
+     */
     await router.push({
       name: 'pockets',
     })
@@ -249,6 +272,7 @@ const handleConfirm = async () => {
 <style scoped>
 .allocate-page {
   width: 100%;
+
   min-height: 100vh;
 
   background: #ffffff;
@@ -258,10 +282,13 @@ const handleConfirm = async () => {
 
 .allocate-content {
   display: flex;
+
   flex-direction: column;
 
   width: 100%;
+
   max-width: 430px;
+
   min-height: calc(100vh - 56px);
 
   margin: 0 auto;
@@ -273,7 +300,9 @@ const handleConfirm = async () => {
   margin: 0;
 
   font-size: 27px;
+
   font-weight: 700;
+
   line-height: 1.35;
 
   letter-spacing: -0.8px;
@@ -289,6 +318,7 @@ const handleConfirm = async () => {
 
 .pocket-list {
   display: flex;
+
   flex-direction: column;
 
   gap: 12px;
@@ -298,7 +328,9 @@ const handleConfirm = async () => {
 
 .pocket-row {
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
   min-height: 64px;
@@ -306,6 +338,7 @@ const handleConfirm = async () => {
   padding: 0 16px;
 
   border: 1px solid #e1e1e1;
+
   border-radius: 10px;
 
   background: #ffffff;
@@ -313,6 +346,7 @@ const handleConfirm = async () => {
 
 .pocket-info {
   display: flex;
+
   align-items: center;
 
   gap: 10px;
@@ -320,6 +354,7 @@ const handleConfirm = async () => {
 
 .pocket-dot {
   width: 10px;
+
   height: 10px;
 
   border-radius: 50%;
@@ -345,11 +380,13 @@ const handleConfirm = async () => {
   color: #171717;
 
   font-size: 14px;
+
   font-weight: 700;
 }
 
 .pocket-input-wrap {
   display: flex;
+
   align-items: center;
 
   max-width: 145px;
@@ -359,14 +396,17 @@ const handleConfirm = async () => {
   width: 100%;
 
   border: 0;
+
   outline: none;
 
   color: #171717;
+
   background: transparent;
 
   text-align: right;
 
   font-size: 15px;
+
   font-weight: 700;
 }
 
@@ -380,6 +420,7 @@ const handleConfirm = async () => {
 
 .allocation-status {
   display: flex;
+
   flex-direction: column;
 
   gap: 8px;
@@ -391,7 +432,9 @@ const handleConfirm = async () => {
 
 .allocation-status__row {
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
   color: #777777;
@@ -403,6 +446,7 @@ const handleConfirm = async () => {
   color: #171717;
 
   font-size: 18px;
+
   font-weight: 700;
 }
 
@@ -424,17 +468,21 @@ const handleConfirm = async () => {
 
 .confirm-button {
   width: 100%;
+
   height: 60px;
 
   margin-top: 22px;
 
   border: 0;
+
   border-radius: 10px;
 
   color: #ffffff;
+
   background: #111111;
 
   font-size: 15px;
+
   font-weight: 700;
 
   cursor: pointer;

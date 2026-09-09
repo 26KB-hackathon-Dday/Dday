@@ -2,7 +2,6 @@ package com.dday.domain.unexpectedincome.repository;
 
 import com.dday.domain.mydata.entity.FinancialTransaction;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +14,8 @@ public interface UnexpectedIncomeTransactionRepository
         extends JpaRepository<FinancialTransaction, Long> {
 
     /**
-     * 아직 사용자가 처리하지 않은 신규 입금을 오래된 순서대로 조회한다.
+     * 아직 사용자가 처리하지 않은 신규 입금을
+     * 오래된 순서대로 모두 조회한다.
      */
     @Query("""
             select t
@@ -32,12 +32,12 @@ public interface UnexpectedIncomeTransactionRepository
                      t.financialTransactionId asc
             """)
     List<FinancialTransaction> findPendingIncomes(
-            @Param("userId") Long userId,
-            Pageable pageable
+            @Param("userId") Long userId
     );
 
     /**
-     * 실제 예산 반영/제외 처리할 때 동시 수정 방지를 위해 잠금 조회.
+     * 실제 예산 반영/제외 처리할 때
+     * 동시 수정 방지를 위해 잠금 조회한다.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

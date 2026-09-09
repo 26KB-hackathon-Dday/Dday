@@ -18,6 +18,15 @@ export interface UnexpectedIncome {
   excessAmount: number
 }
 
+/**
+ * 미처리 입금 전체 조회 응답.
+ */
+export interface PendingUnexpectedIncomeResponse {
+  count: number
+  totalAmount: number
+  incomes: UnexpectedIncome[]
+}
+
 export interface UnexpectedIncomeAllocation {
   pocketType: UnexpectedIncomePocketType
   amount: number
@@ -45,13 +54,9 @@ export interface UnexpectedIncomeAddResponse {
 
 export const unexpectedIncomeApi = {
   /**
-   * 아직 처리하지 않은 입금 한 건 조회.
-   *
-   * 백엔드에서 이미
-   * NEW_INCOME / RECURRING_LIKELY / RECURRING_OVER
-   * 중 하나로 분류해서 내려준다.
+   * 아직 처리하지 않은 입금을 모두 조회한다.
    */
-  findPending: () => api.get<UnexpectedIncome | null>('/api/unexpected-incomes/pending'),
+  findPending: () => api.get<PendingUnexpectedIncomeResponse>('/api/unexpected-incomes/pending'),
 
   /**
    * 이번 달 예산에 포함하지 않기.

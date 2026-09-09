@@ -42,12 +42,12 @@
         min="0"
         :max="safeMax"
         :step="step"
-        :value="safeValue"
+        :value="displayValue"
         @input="handleSliderInput"
       />
 
       <div class="pocket-slider__range-labels">
-        <span> 0원 </span>
+        <span>0원</span>
 
         <span>
           {{ formatCurrency(safeMax) }}
@@ -72,30 +72,41 @@ interface Props {
   variant: PocketVariant
 
   /**
-   * 현재 포켓 할당액
+   * 현재 DB에 저장되어 있는 포켓 예산.
+   *
+   * 화면 진입 시에는 이 값을 그대로 표시한다.
    */
   value: number
 
   /**
-   * 실제로 내려갈 수 있는 최소값
+   * 사용자가 실제 조정할 때 적용되는 최소값.
+   *
+   * 필수 / 자유:
+   * 이미 사용한 금액
+   *
+   * 미래자산:
+   * 현재 달성액 또는 기존 목표액
+   *
+   * 비상금:
+   * 0
    */
   min?: number
 
   /**
-   * 화면에 표시되는 슬라이더의 오른쪽 끝.
+   * 슬라이더 UI 전체 범위.
    *
-   * 모든 포켓에서 총 예산.
+   * 모든 포켓에서 총예산.
    */
   max: number
 
   /**
-   * 실제로 사용자가 올릴 수 있는 최대값.
+   * 사용자가 실제 올릴 수 있는 최대값.
    *
    * 일반 포켓:
-   * 총 예산
+   * 총예산
    *
    * 비상금:
-   * 총예산 - 필수 - 자유 - 미래자산
+   * 총예산 - 나머지 세 포켓
    */
   allowedMax?: number
 
@@ -117,13 +128,6 @@ const inputError = ref('')
 
 const isEditing = ref(false)
 
-/**
- * 주의:
- *
- * watch immediate보다 먼저 정의해야 한다.
- * 이전 코드에서는 아래 함수가 watch 뒤에 있어서
- * 컴포넌트 setup 단계에서 에러가 발생했다.
- */
 function formatNumber(value: unknown): string {
   const numberValue = Number(value) || 0
 
@@ -134,27 +138,14 @@ function formatCurrency(value: unknown): string {
   return `${formatNumber(value)}원`
 }
 
-/**
- * 화면상 슬라이더 최대값.
- *
- * 항상 총예산.
- */
 const safeMax = computed(() => {
   return Math.max(0, Number(props.max) || 0)
 })
 
-/**
- * 실제 최소값.
- */
 const safeMin = computed(() => {
   return Math.min(safeMax.value, Math.max(0, Number(props.min) || 0))
 })
 
-/**
- * 실제 최대값.
- *
- * allowedMax가 없으면 총예산.
- */
 const safeAllowedMax = computed(() => {
   const rawMaximum = props.allowedMax === undefined ? safeMax.value : Number(props.allowedMax) || 0
 
@@ -162,23 +153,35 @@ const safeAllowedMax = computed(() => {
 })
 
 /**
- * 현재 동그라미 위치.
+ * 중요
  *
- * 최소값 아래로 내려갈 수 없고
- * 실제 최대값보다 올라갈 수 없다.
+ * 화면 진입 시에는 현재 DB 값을
+ * 최소값으로 강제 보정하지 않는다.
+ *
+ * 예:
+ *
+ * 현재 자유포켓 예산 = 600,000원
+ * 이미 사용한 금액 = 859,750원
+ *
+ * 기존:
+ * thumb가 자동으로 859,750원으로 이동
+ *
+ * 수정:
+ * 처음에는 600,000원 위치 그대로 표시
+ *
+ * 사용자가 실제로 슬라이더를 만지는 순간부터
+ * 859,750원 아래로는 내려갈 수 없다.
  */
-const safeValue = computed(() => {
+const displayValue = computed(() => {
   const rawValue = Number(props.value) || 0
 
-  return Math.min(safeAllowedMax.value, Math.max(safeMin.value, rawValue))
+  return Math.min(safeMax.value, Math.max(0, rawValue))
 })
 
 /**
- * 최소값까지의 구간 비율.
- *
- * 이 구간만 진한 색으로 보여준다.
+ * 왼쪽 최소 제한 영역.
  */
-const lockedPercent = computed(() => {
+const lockedMinPercent = computed(() => {
   if (safeMax.value <= 0 || safeMin.value <= 0) {
     return 0
   }
@@ -186,14 +189,32 @@ const lockedPercent = computed(() => {
   return Math.min(100, Math.max(0, (safeMin.value / safeMax.value) * 100))
 })
 
+/**
+ * 오른쪽 최대 제한 영역 시작 위치.
+ *
+ * 비상금 포켓에서 사용된다.
+ */
+const allowedMaxPercent = computed(() => {
+  if (safeMax.value <= 0) {
+    return 100
+  }
+
+  return Math.min(100, Math.max(0, (safeAllowedMax.value / safeMax.value) * 100))
+})
+
 const rangeStyle = computed(() => {
   return {
-    '--locked-percent': `${lockedPercent.value}%`,
+    '--locked-min-percent': `${lockedMinPercent.value}%`,
+
+    '--allowed-max-percent': `${allowedMaxPercent.value}%`,
   }
 })
 
 /**
- * 현재 할당액과 금액 입력칸 동기화.
+ * 부모에서 내려오는 현재 예산과
+ * 직접 입력창만 동기화한다.
+ *
+ * 여기서는 change emit을 절대 하지 않는다.
  */
 watch(
   () => props.value,
@@ -210,24 +231,20 @@ watch(
 )
 
 /**
- * 총예산이나 허용범위가 바뀌었을 때
- * 현재 값이 범위를 벗어나면 자동 보정.
+ * 주의:
+ *
+ * 이전에는 min/max가 변하면
+ * 여기에서 강제로 emit('change')를 호출했다.
+ *
+ * 그 때문에 화면에 진입하는 것만으로
+ *
+ * 자유포켓 600,000 → 859,750
+ * 비상금 2,200,000 → 1,940,250
+ *
+ * 로 자동 재배분됐다.
+ *
+ * 이제 자동 보정 watch는 사용하지 않는다.
  */
-watch(
-  [() => props.min, () => props.max, () => props.allowedMax],
-
-  () => {
-    if (props.value < safeMin.value) {
-      emit('change', safeMin.value)
-
-      return
-    }
-
-    if (props.value > safeAllowedMax.value) {
-      emit('change', safeAllowedMax.value)
-    }
-  },
-)
 
 const handleSliderInput = (event: Event) => {
   inputError.value = ''
@@ -237,18 +254,11 @@ const handleSliderInput = (event: Event) => {
   const rawValue = Number(target.value) || 0
 
   /**
-   * 슬라이더 전체 UI는
-   * 0 ~ 총예산.
-   *
-   * 하지만 실제 값은
-   * min ~ allowedMax 범위에서만 움직인다.
+   * 사용자가 실제로 슬라이더를 움직였을 때만
+   * min ~ allowedMax 범위를 적용한다.
    */
   const nextValue = Math.min(safeAllowedMax.value, Math.max(safeMin.value, rawValue))
 
-  /**
-   * 금지된 구간으로 드래그한 경우
-   * thumb를 즉시 허용 위치로 되돌린다.
-   */
   target.value = String(nextValue)
 
   amountInput.value = formatNumber(nextValue)
@@ -285,6 +295,10 @@ const applyAmountInput = () => {
     nextValue = Number(props.value) || 0
   }
 
+  /**
+   * 직접 금액을 입력한 경우에도
+   * 실제 조정이므로 최소값 적용.
+   */
   if (nextValue < safeMin.value) {
     inputError.value = `최소 ${formatCurrency(safeMin.value)} 이상으로 설정할 수 있어요.`
 
@@ -344,7 +358,9 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
 .pocket-slider__header {
   display: flex;
+
   align-items: flex-start;
+
   justify-content: space-between;
 
   gap: 16px;
@@ -352,6 +368,7 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
 .pocket-slider__info {
   display: flex;
+
   flex-direction: column;
 
   min-width: 0;
@@ -361,6 +378,7 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
 .pocket-slider__label {
   display: inline-flex;
+
   align-items: center;
 
   width: fit-content;
@@ -370,6 +388,7 @@ const handleAmountEnter = (event: KeyboardEvent) => {
   border-radius: 999px;
 
   font-size: 15px;
+
   font-weight: 700;
 
   white-space: nowrap;
@@ -377,26 +396,31 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
 .pocket-slider--essential .pocket-slider__label {
   color: #5c8dcc;
+
   background: #dceaff;
 }
 
 .pocket-slider--free .pocket-slider__label {
   color: #f18746;
+
   background: #ffe3cf;
 }
 
 .pocket-slider--future .pocket-slider__label {
   color: #c56df0;
+
   background: #efd8ff;
 }
 
 .pocket-slider--emergency .pocket-slider__label {
   color: #20aab5;
+
   background: #c7f1f2;
 }
 
 .pocket-slider__guide {
   font-size: 11px;
+
   line-height: 1.4;
 
   white-space: nowrap;
@@ -420,7 +444,9 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
 .pocket-slider__amount-wrap {
   display: flex;
+
   align-items: center;
+
   justify-content: flex-end;
 
   flex-shrink: 0;
@@ -432,19 +458,23 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
 .pocket-slider__amount-input {
   width: 100%;
+
   min-width: 0;
 
   padding: 4px 3px 10px;
 
   border: 0;
+
   outline: none;
 
   color: #151515;
+
   background: transparent;
 
   text-align: right;
 
   font-size: 20px;
+
   font-weight: 800;
 }
 
@@ -454,6 +484,7 @@ const handleAmountEnter = (event: KeyboardEvent) => {
   color: #151515;
 
   font-size: 16px;
+
   font-weight: 700;
 }
 
@@ -471,30 +502,39 @@ const handleAmountEnter = (event: KeyboardEvent) => {
   display: block;
 
   width: 100%;
+
   height: 7px;
 
   margin: 0;
 
   appearance: none;
+
   -webkit-appearance: none;
 
   border: 0;
+
   border-radius: 999px;
 
   outline: none;
 
   /*
-   * 최소값 왼쪽 구간만 진하게.
+   * 연한 빨강 = 조정 불가능 영역
    *
-   * 세로 잠금선이나
-   * 현재 달성액 텍스트는 표시하지 않는다.
+   * 일반 포켓:
+   * [빨강 최소 제한][회색 가능]
+   *
+   * 비상금:
+   * [회색 가능][빨강 최대 제한]
    */
   background: linear-gradient(
     to right,
-    #858c96 0%,
-    #858c96 var(--locked-percent),
-    #d9d9d9 var(--locked-percent),
-    #d9d9d9 100%
+
+    #ee8585 0%,
+    #ee8585 var(--locked-min-percent),
+    #d9d9d9 var(--locked-min-percent),
+    #d9d9d9 var(--allowed-max-percent),
+    #ee8585 var(--allowed-max-percent),
+    #ee8585 100%
   );
 
   cursor: pointer;
@@ -510,14 +550,17 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
 .pocket-slider__range::-webkit-slider-thumb {
   width: 26px;
+
   height: 26px;
 
   margin-top: -9.5px;
 
   appearance: none;
+
   -webkit-appearance: none;
 
   border: 0;
+
   border-radius: 50%;
 
   background: #111111;
@@ -538,18 +581,23 @@ const handleAmountEnter = (event: KeyboardEvent) => {
 
   background: linear-gradient(
     to right,
-    #858c96 0%,
-    #858c96 var(--locked-percent),
-    #d9d9d9 var(--locked-percent),
-    #d9d9d9 100%
+
+    #ee8585 0%,
+    #ee8585 var(--locked-min-percent),
+    #d9d9d9 var(--locked-min-percent),
+    #d9d9d9 var(--allowed-max-percent),
+    #ee8585 var(--allowed-max-percent),
+    #ee8585 100%
   );
 }
 
 .pocket-slider__range::-moz-range-thumb {
   width: 26px;
+
   height: 26px;
 
   border: 0;
+
   border-radius: 50%;
 
   background: #111111;
@@ -561,10 +609,13 @@ const handleAmountEnter = (event: KeyboardEvent) => {
   position: absolute;
 
   top: 18px;
+
   left: 0;
 
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
   width: 100%;
@@ -582,6 +633,7 @@ const handleAmountEnter = (event: KeyboardEvent) => {
   color: #e25454;
 
   font-size: 11px;
+
   line-height: 1.45;
 }
 </style>

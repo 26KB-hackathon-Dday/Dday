@@ -13,10 +13,7 @@
       <section class="usage-guide">
         <strong class="usage-guide__title"> 사용한 금액 아래로는 줄일 수 없어요. </strong>
 
-        <p class="usage-guide__description">
-          진하게 표시된 구간은 이미 사용하거나 달성한 금액이에요. 비상금은 자유롭게 다시 배분할 수
-          있어요.
-        </p>
+        <p class="usage-guide__description">빨간색 구간은 조정할 수 없는 영역이에요.</p>
       </section>
 
       <p v-if="loadError" class="load-error">
@@ -63,7 +60,6 @@
           <p v-if="totalBudgetSuccess" class="total-success">총 예산이 저장됐어요.</p>
         </section>
 
-        <!-- 포켓 안내 -->
         <section class="adjust-guide">
           <strong class="adjust-guide__title"> 포켓별 예산 </strong>
 
@@ -75,7 +71,15 @@
 
         <!-- 실시간 상태 -->
         <section class="budget-live-status" :class="liveStatusClass">
-          <template v-if="budgetGap > 0">
+          <template v-if="hasLockedAmountViolation">
+            <strong class="budget-live-status__title"> 조정이 필요한 포켓이 있어요 </strong>
+
+            <span class="budget-live-status__description">
+              이미 사용하거나 달성한 금액보다 낮은 포켓을 조정해 주세요.
+            </span>
+          </template>
+
+          <template v-else-if="budgetGap > 0">
             <strong class="budget-live-status__title">
               {{ formatCurrency(budgetGap) }}
               초과했어요
@@ -105,7 +109,7 @@
           </template>
         </section>
 
-        <!-- 슬라이더 -->
+        <!-- 포켓 슬라이더 -->
         <section class="slider-list">
           <PocketBudgetSlider
             label="필수 포켓"
@@ -152,19 +156,13 @@
           />
         </section>
 
-        <!--
-          기존
-          "이 비율로 조정하면"
-          BudgetForecastCard UI 삭제.
-        -->
-
         <button
           class="save-button"
           :class="{
-            'save-button--disabled': !isBalanced,
+            'save-button--disabled': !canSave,
           }"
           type="button"
-          :disabled="!isBalanced"
+          :disabled="!canSave"
           @click="handleSave"
         >
           이 비율로 저장하기
@@ -219,10 +217,6 @@ const isLoading = ref(true)
 
 const updatingTotalBudget = ref(false)
 
-/*
- * 화면에서는 예상자산 카드를 없앴지만
- * 확인 화면에 넘길 값 계산용으로 유지.
- */
 const currentAsset = ref(0)
 
 const remainingMonths = ref(0)
@@ -233,13 +227,37 @@ const toSafeNumber = (value: unknown): number => {
   return Number.isFinite(numberValue) ? numberValue : 0
 }
 
+/**
+ * 이미 사용/달성한 금액을 기준으로
+ * 총예산이 내려갈 수 있는 최소값.
+ */
 const minimumTotalBudget = computed(() => {
   return lockedAmounts.essential + lockedAmounts.free + lockedAmounts.future
 })
 
+/**
+ * 현재 필수 / 자유 / 미래자산 금액을 기준으로
+ * 비상금이 가질 수 있는 최대 금액.
+ */
 const emergencyMax = computed(() => {
   return Math.max(0, totalBudget.value - budgets.essential - budgets.free - budgets.future)
 })
+
+/**
+ * 비상금이 허용 최대값을 넘었다면
+ * 최대값으로 자동 조정한다.
+ *
+ * 중요한 점:
+ * 비상금이 최대값보다 작은 경우에는 건드리지 않는다.
+ *
+ * 즉 사용자가 회색 영역 안에서
+ * 직접 비상금을 줄이는 것은 가능하다.
+ */
+const clampEmergencyToMax = () => {
+  if (budgets.emergency > emergencyMax.value) {
+    budgets.emergency = emergencyMax.value
+  }
+}
 
 const allocatedTotal = computed(() => {
   return budgets.essential + budgets.free + budgets.future + budgets.emergency
@@ -253,12 +271,24 @@ const isBalanced = computed(() => {
   return totalBudget.value > 0 && budgetGap.value === 0
 })
 
+const hasLockedAmountViolation = computed(() => {
+  return (
+    budgets.essential < lockedAmounts.essential ||
+    budgets.free < lockedAmounts.free ||
+    budgets.future < lockedAmounts.future
+  )
+})
+
+const canSave = computed(() => {
+  return isBalanced.value && !hasLockedAmountViolation.value
+})
+
 const expectedAsset = computed(() => {
   return currentAsset.value + budgets.future * remainingMonths.value
 })
 
 const liveStatusClass = computed(() => {
-  if (budgetGap.value > 0) {
+  if (hasLockedAmountViolation.value || budgetGap.value > 0) {
     return 'budget-live-status--over'
   }
 
@@ -283,10 +313,9 @@ const toLocalPocketType = (type: BudgetAdjustmentPocketType): PocketType => {
   return map[type]
 }
 
-const clampEmergency = () => {
-  budgets.emergency = Math.min(Math.max(0, budgets.emergency), emergencyMax.value)
-}
-
+/**
+ * 현재 예산 조회.
+ */
 const loadCurrentBudget = async () => {
   const response = await budgetAdjustmentApi.findCurrent()
 
@@ -313,46 +342,37 @@ const loadCurrentBudget = async () => {
 
     const usedAmount = Math.max(0, toSafeNumber(pocket.usedAmount))
 
+    /**
+     * 현재 DB 값을 먼저 그대로 표시.
+     */
     budgets[type] = targetAmount
 
-    /*
-     * 비상금
-     */
     if (type === 'emergency') {
       lockedAmounts.emergency = 0
 
       return
     }
 
-    /*
-     * 미래자산
-     *
-     * 현재 달성액이 0으로 와도
-     * 현재 할당액보다 낮아지지 않도록 처리.
-     */
     if (type === 'future') {
       lockedAmounts.future = Math.max(usedAmount, targetAmount)
-
-      budgets.future = Math.max(targetAmount, lockedAmounts.future)
 
       return
     }
 
-    /*
-     * 필수 / 자유
-     */
     lockedAmounts[type] = usedAmount
-
-    budgets[type] = Math.max(targetAmount, usedAmount)
   })
 
-  clampEmergency()
+  /**
+   * 단, 비상금은 현재 다른 세 포켓을 기준으로
+   * 허용 최대값을 넘어갈 수 없으므로
+   * 화면 진입 시 최대값까지만 자동으로 내린다.
+   *
+   * 이렇게 하면 thumb가 빨간 영역에
+   * 위치하는 일이 없다.
+   */
+  clampEmergencyToMax()
 }
 
-/*
- * 확인화면 예상자산 값 계산용.
- * 실패해도 현재 조정 화면은 정상 사용 가능.
- */
 const loadForecast = async () => {
   try {
     const response = await assetForecastApi.find()
@@ -437,7 +457,12 @@ const applyTotalBudget = async () => {
 
     totalBudgetInput.value = totalBudget.value.toLocaleString('ko-KR')
 
-    clampEmergency()
+    /**
+     * 총예산이 줄어서
+     * 기존 비상금이 최대 허용값을 넘게 되면
+     * 비상금만 자동으로 경계까지 이동.
+     */
+    clampEmergencyToMax()
 
     totalBudgetSuccess.value = true
   } catch (error) {
@@ -452,22 +477,45 @@ const applyTotalBudget = async () => {
   }
 }
 
+/**
+ * 포켓 조정.
+ *
+ * 필수 / 자유 / 미래자산은
+ * 사용자가 직접 변경한다.
+ *
+ * 대신 이 세 포켓 때문에
+ * 비상금 최대 가능 금액이 내려가면
+ * 비상금만 자동으로 최대값까지 줄인다.
+ */
 const handlePocketChange = (type: PocketType, value: number) => {
   const safeValue = Math.max(0, toSafeNumber(value))
 
+  /**
+   * 비상금 자체를 움직이는 경우.
+   *
+   * 회색 허용 영역 안에서만 움직인다.
+   */
   if (type === 'emergency') {
     budgets.emergency = Math.min(emergencyMax.value, safeValue)
 
     return
   }
 
+  /**
+   * 필수 / 자유 / 미래자산.
+   */
   budgets[type] = Math.max(lockedAmounts[type], safeValue)
 
-  clampEmergency()
+  /**
+   * 다른 포켓이 증가해서
+   * 비상금 최대 가능액이 줄었다면
+   * 기존 비상금을 최대 경계까지 자동으로 이동.
+   */
+  clampEmergencyToMax()
 }
 
 const handleSave = () => {
-  if (!isBalanced.value) {
+  if (!canSave.value) {
     return
   }
 
@@ -503,6 +551,7 @@ onMounted(load)
   min-height: 100vh;
 
   background: #ffffff;
+
   color: #171717;
 }
 
@@ -575,6 +624,7 @@ onMounted(load)
   color: #777777;
 
   font-size: 13px;
+
   text-align: center;
 }
 
@@ -597,6 +647,7 @@ onMounted(load)
   padding: 22px 18px;
 
   border: 1px solid #e5e5e5;
+
   border-radius: 16px;
 
   box-sizing: border-box;
@@ -611,6 +662,7 @@ onMounted(load)
 
 .total-label {
   font-size: 17px;
+
   font-weight: 700;
 }
 
@@ -622,11 +674,13 @@ onMounted(load)
 
 .total-input-wrap {
   display: flex;
+
   align-items: center;
 
   padding: 0 16px;
 
   border: 1px solid #dedede;
+
   border-radius: 12px;
 
   background: #f7f7f7;
@@ -636,9 +690,11 @@ onMounted(load)
   flex: 1;
 
   min-width: 0;
+
   height: 56px;
 
   border: 0;
+
   outline: none;
 
   background: transparent;
@@ -646,6 +702,7 @@ onMounted(load)
   text-align: right;
 
   font-size: 22px;
+
   font-weight: 800;
 }
 
@@ -653,20 +710,25 @@ onMounted(load)
   margin-left: 5px;
 
   font-size: 18px;
+
   font-weight: 700;
 }
 
 .total-register-button {
   width: 100%;
+
   height: 50px;
 
   border: 0;
+
   border-radius: 10px;
 
   color: #ffffff;
+
   background: #111111;
 
   font-size: 15px;
+
   font-weight: 700;
 
   cursor: pointer;
@@ -684,6 +746,7 @@ onMounted(load)
   color: #e05252;
 
   font-size: 12px;
+
   line-height: 1.5;
 }
 
@@ -693,11 +756,13 @@ onMounted(load)
   color: #168867;
 
   font-size: 12px;
+
   font-weight: 600;
 }
 
 .adjust-guide {
   margin-top: 32px;
+
   margin-bottom: 14px;
 }
 
@@ -705,6 +770,7 @@ onMounted(load)
   display: block;
 
   font-size: 18px;
+
   font-weight: 700;
 }
 
@@ -714,6 +780,7 @@ onMounted(load)
   color: #777777;
 
   font-size: 13px;
+
   line-height: 1.55;
 }
 
@@ -721,20 +788,25 @@ onMounted(load)
   position: sticky;
 
   top: 78px;
+
   z-index: 20;
 
   display: flex;
+
   flex-direction: column;
 
   gap: 4px;
 
   margin-bottom: 14px;
+
   padding: 13px 16px;
 
   border: 1px solid transparent;
+
   border-radius: 12px;
 
   backdrop-filter: blur(8px);
+
   -webkit-backdrop-filter: blur(8px);
 
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
@@ -766,15 +838,19 @@ onMounted(load)
 
 .budget-live-status__title {
   font-size: 14px;
+
   font-weight: 800;
 }
 
 .budget-live-status__description {
   font-size: 12px;
+
+  line-height: 1.5;
 }
 
 .slider-list {
   display: flex;
+
   flex-direction: column;
 
   gap: 14px;
@@ -782,17 +858,21 @@ onMounted(load)
 
 .save-button {
   width: 100%;
+
   height: 64px;
 
   margin-top: 28px;
 
   border: 0;
+
   border-radius: 10px;
 
   color: #ffffff;
+
   background: #111111;
 
   font-size: 17px;
+
   font-weight: 700;
 
   cursor: pointer;

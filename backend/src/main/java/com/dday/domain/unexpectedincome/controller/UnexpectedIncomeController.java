@@ -2,7 +2,7 @@ package com.dday.domain.unexpectedincome.controller;
 
 import com.dday.domain.unexpectedincome.dto.UnexpectedIncomeSuccessCode;
 import com.dday.domain.unexpectedincome.dto.request.UnexpectedIncomeAddRequest;
-import com.dday.domain.unexpectedincome.dto.response.UnexpectedIncomeResponse;
+import com.dday.domain.unexpectedincome.dto.response.PendingUnexpectedIncomeResponse;
 import com.dday.domain.unexpectedincome.service.UnexpectedIncomeService;
 import com.dday.global.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,21 +23,22 @@ public class UnexpectedIncomeController {
     private final UnexpectedIncomeService unexpectedIncomeService;
 
     /**
-     * 아직 사용자가 처리하지 않은 신규 입금 1건 조회
+     * 아직 사용자가 처리하지 않은 신규 입금을 모두 조회한다.
      *
-     * 응답 type:
+     * 각 입금은 백엔드에서
+     *
      * - NEW_INCOME
      * - RECURRING_LIKELY
      * - RECURRING_OVER
+     *
+     * 중 하나로 분류된다.
      */
     @GetMapping("/pending")
-    public ResponseEntity<ApiResponse<UnexpectedIncomeResponse>> findPending(
+    public ResponseEntity<ApiResponse<PendingUnexpectedIncomeResponse>> findPending(
             @AuthenticationPrincipal Long userId
     ) {
-        UnexpectedIncomeResponse response =
-                unexpectedIncomeService.findPending(
-                        userId
-                );
+        PendingUnexpectedIncomeResponse response =
+                unexpectedIncomeService.findPending(userId);
 
         return ApiResponse.of(
                 UnexpectedIncomeSuccessCode.PENDING_INCOME_FOUND,
@@ -46,7 +47,7 @@ public class UnexpectedIncomeController {
     }
 
     /**
-     * 이번 달 예산에 포함하지 않기
+     * 이번 달 예산에 포함하지 않기.
      */
     @PatchMapping("/{transactionId}/exclude")
     public ResponseEntity<ApiResponse<Void>> exclude(
@@ -65,7 +66,7 @@ public class UnexpectedIncomeController {
 
     /**
      * 신규 입금의 일부 또는 전부를
-     * 이번 달 포켓 예산에 추가
+     * 이번 달 포켓 예산에 추가한다.
      */
     @PatchMapping("/{transactionId}/add-to-budget")
     public ResponseEntity<ApiResponse<Void>> addToBudget(
