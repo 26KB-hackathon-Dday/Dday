@@ -114,6 +114,22 @@ public class OnboardingController {
                 onboardingService.addIncome(userId, request));
     }
 
+    @Operation(summary = "정기수입 수정", description = """
+            PATCH다. **보내지 않은 필드는 바뀌지 않는다.** 마이페이지의 금융정보 수정 화면이 부른다.
+
+            | HTTP | code | message |
+            |---|---|---|
+            | 404 | INCOME_NOT_FOUND | 정기수입을 찾을 수 없습니다. |
+            """)
+    @PatchMapping("/incomes/{incomeId}")
+    public ResponseEntity<ApiResponse<IncomeSaveResponse>> updateIncome(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "정기수입 ID") @PathVariable Long incomeId,
+            @Valid @RequestBody IncomeUpdateRequest request) {
+        return ApiResponse.of(OnboardingSuccessCode.INCOME_UPDATED,
+                onboardingService.updateIncome(userId, incomeId, request));
+    }
+
     @Operation(summary = "정기수입 삭제", description = """
             본인 것만 지울 수 있다. 남의 수입이든 없는 id든 **같은 404**를 준다
             (구분해 주면 어떤 id가 존재하는지 알려주는 꼴이 된다).

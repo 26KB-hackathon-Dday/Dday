@@ -71,7 +71,7 @@ public class MydataConnectService {
 
         // 동기화가 끝난 뒤 읽어야 이번에 새로 붙은 계좌까지 응답에 담긴다.
         return MydataConnectResponse.of(
-                userAccountRepository.findAllByUserUserId(userId),
+                userAccountRepository.findAllByUserUserIdOrderByAccountIdAsc(userId),
                 sync.getInsertedTransactionCount());
     }
 }
