@@ -34,6 +34,9 @@
 --    `IllegalArgumentException: 'script' must not be null or empty`를 던진다.
 --    그래서 아래 무해한 한 줄을 남겨둔다. 실제 시드를 넣은 뒤에도 지우지 말 것
 --    (전부 지웠다가 이 함정을 다시 밟는다).
+-- Spring은 application.yml의 UTF-8 설정으로 읽지만, mysql CLI로 직접 적용할 때도
+-- 한글을 같은 문자셋으로 해석하도록 세션 문자셋을 명시한다.
+SET NAMES utf8mb4;
 SELECT 1;
 
 -- ── 데모 계정 ─────────────────────────────────────────────────────────────
@@ -363,6 +366,7 @@ INSERT INTO mock_mydata_account_transaction (
     (9011, 9001, 'KB-TX-202609-01', '2026-09-01 07:40:00', 'EXPENSE',   12900, '넷플릭스',     NULL, '넷플릭스', NULL, '구독료',   'NORMAL', '2026-09-01 07:40:00', '2026-09-01 07:40:00'),
     (9012, 9001, 'KB-TX-202609-02', '2026-09-05 19:22:00', 'EXPENSE',   35000, '이친구',       '088-3333-444455', NULL, NULL, '회비',     'NORMAL', '2026-09-05 19:22:00', '2026-09-05 19:22:00'),
     (9013, 9001, 'KB-TX-202609-03', '2026-09-06 13:10:00', 'INCOME',    30000, '이친구',       '088-3333-444455', NULL, NULL, '정산 입금', 'NORMAL', '2026-09-06 13:10:00', '2026-09-06 13:10:00'),
+    (9014, 9001, 'KB-TX-202609-04', '2026-09-08 09:00:00', 'EXPENSE',  450000, 'LH청년행복주택', NULL, 'LH청년행복주택', '1298200036', '9월 월세', 'NORMAL', '2026-09-08 09:00:00', '2026-09-08 09:00:00'),
     -- 신한 비상금 — 거의 안 건드리는 계좌라 이자만 붙는다
     (9021, 9003, 'SH-TX-202608-01', '2026-08-31 23:50:00', 'INCOME',     1250, '신한은행',     NULL, NULL, NULL, '이자',     'NORMAL', '2026-08-31 23:50:00', '2026-08-31 23:50:00'),
     -- 적금 계좌로 들어온 자동이체 (위 9006의 상대편)
@@ -528,6 +532,9 @@ SELECT u.user_id, r.merchant_key, r.merchant_regno, r.merchant_name, c.category_
 FROM users u
 JOIN pocket p ON p.user_id = u.user_id
 JOIN (
+    -- 주거비
+    SELECT 'REGNO:1298200036' AS merchant_key, '1298200036' AS merchant_regno, 'LH청년행복주택' AS merchant_name, 'HOUSING' AS category_code
+    UNION ALL
     -- 식비
     SELECT 'REGNO:2201234567' AS merchant_key, '2201234567' AS merchant_regno, '김밥천국 강남점'     AS merchant_name, 'FOOD'         AS category_code
     UNION ALL SELECT 'REGNO:1208147521', '1208147521', '배달의민족',          'FOOD'
@@ -664,8 +671,17 @@ LEFT JOIN user_merchant_rule rule
      END
 WHERE u.email = 'user1@test.com'
 ON DUPLICATE KEY UPDATE
-    -- 사용자가 나중에 바꾼 포켓·카테고리 분류를 앱 재기동 시 시드가 덮어쓰지 않는다.
-    source_transaction_id = VALUES(source_transaction_id);
+    -- 포켓·카테고리 분류와 확인 상태는 보존하고 MyData 원본 표시값만 복구한다.
+    transaction_at = VALUES(transaction_at),
+    synced_at = VALUES(synced_at),
+    transaction_type = VALUES(transaction_type),
+    transaction_status = VALUES(transaction_status),
+    amount = VALUES(amount),
+    merchant_name = VALUES(merchant_name),
+    merchant_regno = VALUES(merchant_regno),
+    trans_memo = VALUES(trans_memo),
+    counterparty_account_id = VALUES(counterparty_account_id),
+    updated_at = VALUES(updated_at);
 
 -- 카드 거래는 MyData 동기화 서비스가 모두 EXPENSE로 저장한다.
 INSERT INTO financial_transaction (
@@ -707,8 +723,14 @@ LEFT JOIN user_merchant_rule rule
      END
 WHERE u.email = 'user1@test.com'
 ON DUPLICATE KEY UPDATE
-    -- 거래는 불변 원본으로 취급하고, 수동 분류·새 자금 확인 상태를 그대로 보존한다.
-    source_transaction_id = VALUES(source_transaction_id);
+    -- 수동 분류·새 자금 확인 상태는 보존하고 MyData 원본 표시값만 복구한다.
+    transaction_at = VALUES(transaction_at),
+    synced_at = VALUES(synced_at),
+    transaction_status = VALUES(transaction_status),
+    amount = VALUES(amount),
+    merchant_name = VALUES(merchant_name),
+    merchant_regno = VALUES(merchant_regno),
+    updated_at = VALUES(updated_at);
 
 -- 취소·환불 행의 원거래 FK는 양쪽 행이 모두 생긴 다음 외부 거래 ID로 연결한다.
 UPDATE financial_transaction canceled
