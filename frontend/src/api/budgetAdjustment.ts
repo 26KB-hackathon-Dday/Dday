@@ -1,58 +1,93 @@
-import { api } from './client'
+import { api } from '@/api/client'
 
 export type BudgetAdjustmentPocketType = 'ESSENTIAL' | 'FREE' | 'EMERGENCY' | 'FUTURE_ASSET'
 
-export interface BudgetAdjustmentPocket {
+export interface PocketAdjustmentResponse {
   pocketId: number
+
   pocketType: BudgetAdjustmentPocketType
+
   pocketName: string
 
-  /** 현재 설정된 포켓 예산 */
+  /*
+   * 현재 포켓 할당액
+   */
   targetAmount: number
 
-  /** 이번 달 실제 사용액 */
+  /*
+   * 실제 소비 금액.
+   *
+   * 미래자산 / 비상금은
+   * 화면 잠금 기준으로 사용하지 않는다.
+   */
   spentAmount: number
 
-  /** 재조정 시 설정할 수 있는 최소 금액 */
+  /*
+   * 실제로 내려갈 수 있는 최소값.
+   *
+   * ESSENTIAL = 실제 사용액
+   * FREE = 실제 사용액
+   * FUTURE_ASSET = 실제 달성액
+   * EMERGENCY = 0
+   */
   minimumAmount: number
 
-  /** 현재 예산 - 사용액 */
   remainingAmount: number
 }
 
-export interface CurrentBudgetAdjustmentResponse {
+export interface BudgetAdjustmentResponse {
   monthlyBudgetId: number
+
   budgetMonth: string
 
-  /** 이번 달 총 예산 */
   totalBudgetAmount: number
 
-  /** 이미 사용한 금액 합계 */
+  /*
+   * 필수 실제 사용액
+   * + 자유 실제 사용액
+   * + 미래자산 달성액
+   *
+   * 비상금 제외.
+   */
   minimumTotalBudget: number
 
-  pockets: BudgetAdjustmentPocket[]
+  pockets: PocketAdjustmentResponse[]
 }
 
-export interface BudgetAdjustmentPocketRequest {
+export interface PocketAdjustmentRequest {
   pocketType: BudgetAdjustmentPocketType
+
   amount: number
 }
 
-export interface UpdateBudgetAdjustmentRequest {
+export interface BudgetAdjustmentRequest {
   totalBudgetAmount: number
-  pockets: BudgetAdjustmentPocketRequest[]
+
+  /*
+   * 중요:
+   * 백엔드 DTO 이름과 동일하게 pockets.
+   */
+  pockets: PocketAdjustmentRequest[]
+
   changeReason?: string
 }
 
-export const budgetAdjustmentApi = {
-  /**
-   * 진행 중인 이번 달 확정 예산 조회
-   */
-  getCurrent: () => api.get<CurrentBudgetAdjustmentResponse>('/api/budget-adjustments/current'),
+export interface TotalBudgetUpdateResponse {
+  budgetMonth: string
 
-  /**
-   * 진행 중인 이번 달 예산 재조정
-   */
-  updateCurrent: (request: UpdateBudgetAdjustmentRequest) =>
-    api.patch<CurrentBudgetAdjustmentResponse>('/api/budget-adjustments/current', request),
+  totalBudgetAmount: number
+
+  minimumTotalBudget: number
+}
+
+export const budgetAdjustmentApi = {
+  findCurrent: () => api.get<BudgetAdjustmentResponse>('/api/budget-adjustments/current'),
+
+  updateTotalBudget: (totalBudgetAmount: number) =>
+    api.patch<TotalBudgetUpdateResponse>('/api/budget-adjustments/current/total-budget', {
+      totalBudgetAmount,
+    }),
+
+  adjustCurrent: (request: BudgetAdjustmentRequest) =>
+    api.patch<BudgetAdjustmentResponse>('/api/budget-adjustments/current', request),
 }

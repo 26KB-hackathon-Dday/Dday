@@ -112,4 +112,10 @@ public class MonthlyBudget {
     public boolean isConfirmed() {
         return this.budgetStatus == BudgetStatus.CONFIRMED;
     }
+
+
+
+    public void updateTotalBudgetAmount(Long totalBudgetAmount) {
+        this.totalBudgetAmount = totalBudgetAmount;
+    }
 }

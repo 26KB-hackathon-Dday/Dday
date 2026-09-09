@@ -109,9 +109,7 @@ import { computed, ref } from 'vue'
 
 import { useRoute, useRouter } from 'vue-router'
 
-import { budgetAdjustmentApi } from '@/api/budgetAdjustment'
-
-import { ApiError } from '@/api/types'
+import { budgetAdjustmentApi, type BudgetAdjustmentRequest } from '@/api/budgetAdjustment'
 
 const route = useRoute()
 const router = useRouter()
@@ -180,11 +178,11 @@ const handleConfirm = async () => {
     return
   }
 
-  saving.value = true
   errorMessage.value = ''
+  saving.value = true
 
   try {
-    await budgetAdjustmentApi.updateCurrent({
+    const request: BudgetAdjustmentRequest = {
       totalBudgetAmount: totalBudget.value,
 
       pockets: [
@@ -197,28 +195,25 @@ const handleConfirm = async () => {
           amount: freeBudget.value,
         },
         {
-          pocketType: 'EMERGENCY',
-          amount: emergencyBudget.value,
-        },
-        {
           pocketType: 'FUTURE_ASSET',
           amount: futureBudget.value,
+        },
+        {
+          pocketType: 'EMERGENCY',
+          amount: emergencyBudget.value,
         },
       ],
 
       changeReason: '사용자 포켓 예산 재조정',
-    })
+    }
 
-    /*
-     * PATCH 성공 후 실제 내 포켓 화면으로 이동.
-     *
-     * replace를 사용해서 뒤로가기를 눌렀을 때
-     * 방금 확정한 확인 화면으로 다시 돌아오지 않게 한다.
-     */
-    router.replace('/pockets')
+    await budgetAdjustmentApi.adjustCurrent(request)
+
+    await router.push({
+      name: 'pockets',
+    })
   } catch (error) {
-    errorMessage.value =
-      error instanceof ApiError ? error.message : '예산 변경 내용을 저장하지 못했어요.'
+    errorMessage.value = error instanceof Error ? error.message : '예산 저장 중 오류가 발생했어요.'
   } finally {
     saving.value = false
   }

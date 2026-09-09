@@ -1,5 +1,9 @@
 package com.dday.domain.budgetadjustment.service;
 
+import com.dday.domain.asset.entity.ExecutionStatus;
+import com.dday.domain.asset.entity.InvestmentActionType;
+import com.dday.domain.budget.dto.request.TotalBudgetUpdateRequest;
+import com.dday.domain.budget.dto.response.TotalBudgetUpdateResponse;
 import com.dday.domain.budget.entity.BudgetChangeDetail;
 import com.dday.domain.budget.entity.BudgetChangeHistory;
 import com.dday.domain.budget.entity.BudgetChangeType;
@@ -12,6 +16,7 @@ import com.dday.domain.budgetadjustment.dto.response.BudgetAdjustmentResponse;
 import com.dday.domain.budgetadjustment.dto.response.PocketAdjustmentResponse;
 import com.dday.domain.budgetadjustment.repository.BudgetAdjustmentDetailRepository;
 import com.dday.domain.budgetadjustment.repository.BudgetAdjustmentHistoryRepository;
+import com.dday.domain.budgetadjustment.repository.BudgetAdjustmentInvestmentRepository;
 import com.dday.domain.budgetadjustment.repository.BudgetAdjustmentMonthlyBudgetRepository;
 import com.dday.domain.budgetadjustment.repository.BudgetAdjustmentMonthlyPocketBudgetRepository;
 import com.dday.domain.budgetadjustment.repository.BudgetAdjustmentTransactionRepository;
@@ -19,7 +24,9 @@ import com.dday.domain.mydata.entity.TransactionStatus;
 import com.dday.domain.mydata.entity.TransactionType;
 import com.dday.domain.pocket.entity.PocketType;
 import com.dday.global.exception.BusinessException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,14 +50,14 @@ public class BudgetAdjustmentService {
 
     private final BudgetAdjustmentTransactionRepository transactionRepository;
 
+    private final BudgetAdjustmentInvestmentRepository investmentRepository;
+
     private final BudgetAdjustmentHistoryRepository historyRepository;
 
     private final BudgetAdjustmentDetailRepository detailRepository;
 
     /**
-     * 진행 중인 이번 달 예산 조정 정보 조회.
-     *
-     * 확정된 월 예산만 대상으로 한다.
+     * 이번 달 예산 재조정 정보 조회.
      */
     @Transactional(readOnly = true)
     public BudgetAdjustmentResponse findCurrent(
@@ -79,7 +86,117 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 진행 중인 이번 달 예산 재조정.
+     * 총 예산만 단독 수정.
+     */
+    @Transactional
+    public TotalBudgetUpdateResponse updateTotalBudget(
+            Long userId,
+            TotalBudgetUpdateRequest request
+    ) {
+        LocalDate budgetMonth =
+                LocalDate.now()
+                        .withDayOfMonth(1);
+
+        MonthlyBudget monthlyBudget =
+                findConfirmedBudget(
+                        userId,
+                        budgetMonth
+                );
+
+        List<MonthlyPocketBudget> pocketBudgets =
+                findPocketBudgets(
+                        monthlyBudget
+                );
+
+        LocalDateTime from =
+                budgetMonth.atStartOfDay();
+
+        LocalDateTime to =
+                budgetMonth
+                        .plusMonths(1)
+                        .atStartOfDay();
+
+        Map<PocketType, Long> minimumAmounts =
+                calculateMinimumAmounts(
+                        userId,
+                        pocketBudgets,
+                        from,
+                        to
+                );
+
+        long minimumTotalBudget =
+                calculateMinimumTotalBudget(
+                        minimumAmounts
+                );
+
+        long newTotalBudget =
+                request.getTotalBudgetAmount();
+
+        if (
+                newTotalBudget
+                        < minimumTotalBudget
+        ) {
+            throw new BusinessException(
+                    BudgetAdjustmentErrorCode
+                            .TOTAL_BUDGET_BELOW_MINIMUM
+            );
+        }
+
+        long previousTotalBudget =
+                monthlyBudget
+                        .getTotalBudgetAmount();
+
+        /*
+         * 실제로 금액이 달라질 때만
+         * 변경 이력을 기록한다.
+         */
+        if (
+                previousTotalBudget
+                        != newTotalBudget
+        ) {
+            historyRepository.save(
+                    BudgetChangeHistory.builder()
+                            .monthlyBudget(
+                                    monthlyBudget
+                            )
+                            .previousTotalBudget(
+                                    previousTotalBudget
+                            )
+                            .changedTotalBudget(
+                                    newTotalBudget
+                            )
+                            .changeType(
+                                    BudgetChangeType.USER_EDIT
+                            )
+                            .changeReason(
+                                    "총 예산 수정"
+                            )
+                            .build()
+            );
+
+            monthlyBudget.changeTotalAmount(
+                    newTotalBudget
+            );
+        }
+
+        return TotalBudgetUpdateResponse
+                .builder()
+                .budgetMonth(
+                        monthlyBudget
+                                .getBudgetMonth()
+                )
+                .totalBudgetAmount(
+                        monthlyBudget
+                                .getTotalBudgetAmount()
+                )
+                .minimumTotalBudget(
+                        minimumTotalBudget
+                )
+                .build();
+    }
+
+    /**
+     * 포켓 재배분 최종 저장.
      */
     @Transactional
     public BudgetAdjustmentResponse adjustCurrent(
@@ -118,8 +235,8 @@ public class BudgetAdjustmentService {
                         request
                 );
 
-        Map<PocketType, Long> spentAmounts =
-                calculateSpentAmounts(
+        Map<PocketType, Long> minimumAmounts =
+                calculateMinimumAmounts(
                         userId,
                         pocketBudgets,
                         from,
@@ -132,17 +249,20 @@ public class BudgetAdjustmentService {
 
         validateMinimumAmounts(
                 requestedAmounts,
-                spentAmounts
+                minimumAmounts
         );
 
         long previousTotalBudget =
-                monthlyBudget.getTotalBudgetAmount();
+                monthlyBudget
+                        .getTotalBudgetAmount();
 
         long changedTotalBudget =
-                request.getTotalBudgetAmount();
+                request
+                        .getTotalBudgetAmount();
 
         BudgetChangeType changeType =
-                previousTotalBudget == changedTotalBudget
+                previousTotalBudget
+                        == changedTotalBudget
                         ? BudgetChangeType.REALLOCATION
                         : BudgetChangeType.USER_EDIT;
 
@@ -162,7 +282,8 @@ public class BudgetAdjustmentService {
                                         changeType
                                 )
                                 .changeReason(
-                                        request.getChangeReason()
+                                        request
+                                                .getChangeReason()
                                 )
                                 .build()
                 );
@@ -177,26 +298,29 @@ public class BudgetAdjustmentService {
                             .getPocketType();
 
             Long previousAmount =
-                    pocketBudget.getTargetAmount();
+                    pocketBudget
+                            .getTargetAmount();
 
             Long changedAmount =
-                    requestedAmounts.get(
-                            pocketType
-                    );
+                    requestedAmounts
+                            .get(
+                                    pocketType
+                            );
 
-            /*
-             * 금액이 실제로 바뀐 포켓만
-             * 변경 상세에 기록한다.
-             */
-            if (!previousAmount.equals(changedAmount)) {
-
+            if (
+                    !previousAmount
+                            .equals(
+                                    changedAmount
+                            )
+            ) {
                 detailRepository.save(
                         BudgetChangeDetail.builder()
                                 .budgetChangeHistory(
                                         history
                                 )
                                 .pocket(
-                                        pocketBudget.getPocket()
+                                        pocketBudget
+                                                .getPocket()
                                 )
                                 .previousAmount(
                                         previousAmount
@@ -230,7 +354,7 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 이번 달 CONFIRMED 예산 조회.
+     * 현재 사용자의 이번 달 CONFIRMED 예산 조회.
      */
     private MonthlyBudget findConfirmedBudget(
             Long userId,
@@ -251,7 +375,7 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 월 예산에 연결된 포켓별 예산 4개 조회.
+     * 월 예산에 연결된 포켓 4개 조회.
      */
     private List<MonthlyPocketBudget> findPocketBudgets(
             MonthlyBudget monthlyBudget
@@ -296,14 +420,19 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 요청에 포켓 4개가 정확히 한 번씩 들어왔는지 검증.
+     * 요청 구조 검증.
      */
     private void validateRequestStructure(
             BudgetAdjustmentRequest request
     ) {
         if (
-                request.getTotalBudgetAmount() == null
-                        || request.getTotalBudgetAmount() <= 0
+                request
+                        .getTotalBudgetAmount()
+                        == null
+                        ||
+                        request
+                                .getTotalBudgetAmount()
+                                <= 0
         ) {
             throw new BusinessException(
                     BudgetAdjustmentErrorCode
@@ -312,8 +441,13 @@ public class BudgetAdjustmentService {
         }
 
         if (
-                request.getPockets() == null
-                        || request.getPockets().size() != 4
+                request.getPockets()
+                        == null
+                        ||
+                        request
+                                .getPockets()
+                                .size()
+                                != 4
         ) {
             throw new BusinessException(
                     BudgetAdjustmentErrorCode
@@ -331,8 +465,11 @@ public class BudgetAdjustmentService {
                 : request.getPockets()
         ) {
             if (
-                    pocket.getPocketType() == null
-                            || pocket.getAmount() == null
+                    pocket.getPocketType()
+                            == null
+                            ||
+                            pocket.getAmount()
+                                    == null
             ) {
                 throw new BusinessException(
                         BudgetAdjustmentErrorCode
@@ -342,7 +479,8 @@ public class BudgetAdjustmentService {
 
             if (
                     !types.add(
-                            pocket.getPocketType()
+                            pocket
+                                    .getPocketType()
                     )
             ) {
                 throw new BusinessException(
@@ -367,13 +505,14 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 네 포켓 합이 총 예산과 정확히 일치해야 저장 가능.
+     * 네 포켓의 합이 총 예산과 같은지 검증.
      */
     private void validateBudgetSum(
             BudgetAdjustmentRequest request
     ) {
         long allocatedTotal =
-                request.getPockets()
+                request
+                        .getPockets()
                         .stream()
                         .mapToLong(
                                 BudgetAdjustmentRequest
@@ -384,7 +523,8 @@ public class BudgetAdjustmentService {
 
         if (
                 allocatedTotal
-                        != request.getTotalBudgetAmount()
+                        != request
+                        .getTotalBudgetAmount()
         ) {
             throw new BusinessException(
                     BudgetAdjustmentErrorCode
@@ -394,39 +534,55 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 이미 사용한 금액 아래로 예산을 내릴 수 없다.
+     * 각 포켓의 재조정 최소 금액 검증.
+     *
+     * ESSENTIAL:
+     * 실제 사용액
+     *
+     * FREE:
+     * 실제 사용액
+     *
+     * FUTURE_ASSET:
+     * 실제 투자/저축 달성액
+     *
+     * EMERGENCY:
+     * 0
      */
     private void validateMinimumAmounts(
             Map<PocketType, Long> requestedAmounts,
-            Map<PocketType, Long> spentAmounts
+            Map<PocketType, Long> minimumAmounts
     ) {
         for (
                 PocketType pocketType
                 : PocketType.values()
         ) {
             long requested =
-                    requestedAmounts.getOrDefault(
-                            pocketType,
-                            0L
-                    );
+                    requestedAmounts
+                            .getOrDefault(
+                                    pocketType,
+                                    0L
+                            );
 
-            long spent =
-                    spentAmounts.getOrDefault(
-                            pocketType,
-                            0L
-                    );
+            long minimum =
+                    minimumAmounts
+                            .getOrDefault(
+                                    pocketType,
+                                    0L
+                            );
 
-            if (requested < spent) {
+            if (
+                    requested
+                            < minimum
+            ) {
                 throw new BusinessException(
                         BudgetAdjustmentErrorCode
-                                .BELOW_SPENT_AMOUNT
+                                .BELOW_MINIMUM_AMOUNT
                 );
             }
         }
     }
 
-    private Map<PocketType, Long>
-    createRequestedAmountMap(
+    private Map<PocketType, Long> createRequestedAmountMap(
             BudgetAdjustmentRequest request
     ) {
         Map<PocketType, Long> result =
@@ -439,8 +595,10 @@ public class BudgetAdjustmentService {
                 : request.getPockets()
         ) {
             result.put(
-                    pocket.getPocketType(),
-                    pocket.getAmount()
+                    pocket
+                            .getPocketType(),
+                    pocket
+                            .getAmount()
             );
         }
 
@@ -448,10 +606,9 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 각 포켓의 이번 달 실제 사용액 집계.
+     * 이번 달 소비 거래 집계.
      */
-    private Map<PocketType, Long>
-    calculateSpentAmounts(
+    private Map<PocketType, Long> calculateSpentAmounts(
             Long userId,
             List<MonthlyPocketBudget> pocketBudgets,
             LocalDateTime from,
@@ -466,6 +623,30 @@ public class BudgetAdjustmentService {
                 MonthlyPocketBudget pocketBudget
                 : pocketBudgets
         ) {
+            PocketType pocketType =
+                    pocketBudget
+                            .getPocket()
+                            .getPocketType();
+
+            /*
+             * 미래자산과 비상금은
+             * 소비 금액을 최소값으로 사용하지 않는다.
+             */
+            if (
+                    pocketType
+                            == PocketType.FUTURE_ASSET
+                            ||
+                            pocketType
+                                    == PocketType.EMERGENCY
+            ) {
+                result.put(
+                        pocketType,
+                        0L
+                );
+
+                continue;
+            }
+
             Long spent =
                     transactionRepository
                             .sumSpentAmount(
@@ -480,10 +661,10 @@ public class BudgetAdjustmentService {
                             );
 
             result.put(
-                    pocketBudget
-                            .getPocket()
-                            .getPocketType(),
-                    spent == null ? 0L : spent
+                    pocketType,
+                    spent == null
+                            ? 0L
+                            : spent
             );
         }
 
@@ -491,7 +672,141 @@ public class BudgetAdjustmentService {
     }
 
     /**
-     * 프론트에 내려줄 재조정 화면 데이터 생성.
+     * 미래자산의 이번 달 실제 달성액.
+     *
+     * BUY / DEPOSIT은 증가,
+     * SELL / WITHDRAW는 감소로 계산한다.
+     */
+    private long calculateFutureAssetAchievedAmount(
+            Long userId,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        Long increasedAmount =
+                investmentRepository
+                        .sumAmountByActions(
+                                userId,
+                                from,
+                                to,
+                                ExecutionStatus.EXECUTED,
+                                Set.of(
+                                        InvestmentActionType.BUY,
+                                        InvestmentActionType.DEPOSIT
+                                )
+                        );
+
+        Long decreasedAmount =
+                investmentRepository
+                        .sumAmountByActions(
+                                userId,
+                                from,
+                                to,
+                                ExecutionStatus.EXECUTED,
+                                Set.of(
+                                        InvestmentActionType.SELL,
+                                        InvestmentActionType.WITHDRAW
+                                )
+                        );
+
+        long increased =
+                increasedAmount == null
+                        ? 0L
+                        : increasedAmount;
+
+        long decreased =
+                decreasedAmount == null
+                        ? 0L
+                        : decreasedAmount;
+
+        return Math.max(
+                increased - decreased,
+                0L
+        );
+    }
+
+    /**
+     * 각 포켓의 최소 조정 가능 금액 계산.
+     */
+    private Map<PocketType, Long> calculateMinimumAmounts(
+            Long userId,
+            List<MonthlyPocketBudget> pocketBudgets,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        Map<PocketType, Long> spentAmounts =
+                calculateSpentAmounts(
+                        userId,
+                        pocketBudgets,
+                        from,
+                        to
+                );
+
+        long futureAchieved =
+                calculateFutureAssetAchievedAmount(
+                        userId,
+                        from,
+                        to
+                );
+
+        Map<PocketType, Long> result =
+                new EnumMap<>(
+                        PocketType.class
+                );
+
+        result.put(
+                PocketType.ESSENTIAL,
+                spentAmounts
+                        .getOrDefault(
+                                PocketType.ESSENTIAL,
+                                0L
+                        )
+        );
+
+        result.put(
+                PocketType.FREE,
+                spentAmounts
+                        .getOrDefault(
+                                PocketType.FREE,
+                                0L
+                        )
+        );
+
+        result.put(
+                PocketType.FUTURE_ASSET,
+                futureAchieved
+        );
+
+        /*
+         * 비상금은 언제든 다른 포켓으로
+         * 재배분 가능하므로 최소 0원.
+         */
+        result.put(
+                PocketType.EMERGENCY,
+                0L
+        );
+
+        return result;
+    }
+
+    /**
+     * 설정 가능한 최소 총 예산.
+     *
+     * 비상금은 0원이므로 자동 제외된다.
+     */
+    private long calculateMinimumTotalBudget(
+            Map<PocketType, Long> minimumAmounts
+    ) {
+        return minimumAmounts
+                .values()
+                .stream()
+                .mapToLong(
+                        Long::longValue
+                )
+                .sum();
+    }
+
+    /**
+     * 프론트 재조정 화면 응답 생성.
      */
     private BudgetAdjustmentResponse createResponse(
             Long userId,
@@ -499,10 +814,12 @@ public class BudgetAdjustmentService {
             List<MonthlyPocketBudget> pocketBudgets
     ) {
         LocalDate budgetMonth =
-                monthlyBudget.getBudgetMonth();
+                monthlyBudget
+                        .getBudgetMonth();
 
         LocalDateTime from =
-                budgetMonth.atStartOfDay();
+                budgetMonth
+                        .atStartOfDay();
 
         LocalDateTime to =
                 budgetMonth
@@ -511,6 +828,14 @@ public class BudgetAdjustmentService {
 
         Map<PocketType, Long> spentAmounts =
                 calculateSpentAmounts(
+                        userId,
+                        pocketBudgets,
+                        from,
+                        to
+                );
+
+        Map<PocketType, Long> minimumAmounts =
+                calculateMinimumAmounts(
                         userId,
                         pocketBudgets,
                         from,
@@ -531,19 +856,36 @@ public class BudgetAdjustmentService {
                         )
                         .map(
                                 pocketBudget -> {
-                                    long spent =
-                                            spentAmounts
-                                                    .getOrDefault(
-                                                            pocketBudget
-                                                                    .getPocket()
-                                                                    .getPocketType(),
-                                                            0L
-                                                    );
+                                    PocketType pocketType =
+                                            pocketBudget
+                                                    .getPocket()
+                                                    .getPocketType();
 
                                     long target =
                                             pocketBudget
                                                     .getTargetAmount();
 
+                                    long minimum =
+                                            minimumAmounts
+                                                    .getOrDefault(
+                                                            pocketType,
+                                                            0L
+                                                    );
+
+                                    long spent =
+                                            spentAmounts
+                                                    .getOrDefault(
+                                                            pocketType,
+                                                            0L
+                                                    );
+
+                                    /*
+                                     * 화면에서는 spentAmount보다
+                                     * minimumAmount를 잠금선 기준으로 사용한다.
+                                     *
+                                     * 미래자산은 minimumAmount가
+                                     * 실제 달성액이다.
+                                     */
                                     return PocketAdjustmentResponse
                                             .builder()
                                             .pocketId(
@@ -552,9 +894,7 @@ public class BudgetAdjustmentService {
                                                             .getPocketId()
                                             )
                                             .pocketType(
-                                                    pocketBudget
-                                                            .getPocket()
-                                                            .getPocketType()
+                                                    pocketType
                                             )
                                             .pocketName(
                                                     pocketBudget
@@ -568,11 +908,11 @@ public class BudgetAdjustmentService {
                                                     spent
                                             )
                                             .minimumAmount(
-                                                    spent
+                                                    minimum
                                             )
                                             .remainingAmount(
                                                     Math.max(
-                                                            target - spent,
+                                                            target - minimum,
                                                             0L
                                                     )
                                             )
@@ -582,12 +922,9 @@ public class BudgetAdjustmentService {
                         .toList();
 
         long minimumTotalBudget =
-                pockets.stream()
-                        .mapToLong(
-                                PocketAdjustmentResponse
-                                        ::getSpentAmount
-                        )
-                        .sum();
+                calculateMinimumTotalBudget(
+                        minimumAmounts
+                );
 
         return BudgetAdjustmentResponse
                 .builder()

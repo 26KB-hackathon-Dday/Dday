@@ -1,29 +1,78 @@
 package com.dday.domain.mydata.repository;
 
 import com.dday.domain.mydata.entity.UserAccount;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
 
-/** 동기화 과정에서 사용자 계좌를 외부 복합 식별자로 찾고 저장한다. */
-public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
+/**
+ * 마이데이터 사용자 계좌 Repository.
+ */
+public interface UserAccountRepository
+        extends JpaRepository<UserAccount, Long> {
 
-    Optional<UserAccount> findByUserUserIdAndOrgCodeAndAccountNum(
-            Long userId, String orgCode, String accountNum);
-
-    /** 표시 순서가 화면에서 바뀌면 안 되니 등록 순서(id)로 고정한다. */
-    List<UserAccount> findAllByUserUserIdOrderByAccountIdAsc(Long userId);
+    Optional<UserAccount>
+    findByUserUserIdAndOrgCodeAndAccountNum(
+            Long userId,
+            String orgCode,
+            String accountNum
+    );
 
     /**
-     * <b>id만으로 찾지 않고 소유자를 함께 건다.</b> 마이페이지에서 계좌 선택여부를 바꿀 때
-     * 이 메서드를 쓰면 남의 계좌를 건드리는 요청이 조회 단계에서 빈 값이 되어 애초에 진행되지 않는다.
+     * 표시 순서가 화면에서 바뀌지 않도록
+     * 등록 순서(accountId) 기준으로 조회한다.
      */
-    Optional<UserAccount> findByAccountIdAndUserUserId(Long accountId, Long userId);
+    List<UserAccount>
+    findAllByUserUserIdOrderByAccountIdAsc(
+            Long userId
+    );
 
-    /** 기관 연결 해제 대상을 찾는다. 같은 기관 계좌가 여러 개일 수 있어 리스트다. */
-    List<UserAccount> findAllByUserUserIdAndOrgCode(Long userId, String orgCode);
+    /**
+     * 계좌 id + 사용자 id로 함께 조회.
+     */
+    Optional<UserAccount>
+    findByAccountIdAndUserUserId(
+            Long accountId,
+            Long userId
+    );
 
-    /** 회원의 마이데이터 연결이 전부 끊겼는지 판단할 때 쓴다. */
-    boolean existsByUserUserIdAndActiveTrue(Long userId);
+    /**
+     * 특정 기관에 연결된 사용자의 모든 계좌.
+     */
+    List<UserAccount>
+    findAllByUserUserIdAndOrgCode(
+            Long userId,
+            String orgCode
+    );
+
+    /**
+     * 사용자의 활성 계좌 존재 여부.
+     */
+    boolean existsByUserUserIdAndActiveTrue(
+            Long userId
+    );
+
+    /**
+     * 예상 자산 계산용.
+     *
+     * 사용자가 예산 계산 대상으로 선택했고,
+     * 현재 활성 상태인 계좌의 잔액을 모두 더한다.
+     *
+     * 선택된 계좌가 없으면 0이 반환된다.
+     */
+    @Query("""
+            select coalesce(sum(a.balance), 0)
+            from UserAccount a
+            where a.user.userId = :userId
+              and a.selected = true
+              and a.active = true
+            """)
+    Long sumSelectedActiveBalance(
+            @Param("userId")
+            Long userId
+    );
 }
