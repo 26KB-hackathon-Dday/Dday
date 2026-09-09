@@ -69,6 +69,17 @@ export interface ConnectResponse {
   institutions: ConnectedInstitution[]
 }
 
+export interface MydataSyncResponse {
+  accountCount: number
+  cardCount: number
+  accountTransactionCount: number
+  cardTransactionCount: number
+  insertedTransactionCount: number
+  skippedTransactionCount: number
+  linkedCancellationCount: number
+  syncedAt: string
+}
+
 export type AccountType = 'DEPOSIT' | 'SAVINGS' | 'LOAN' | 'INVESTMENT' | 'ETC'
 
 /** 연동 계좌 한 건. 기관 이름은 안 내려온다 — orgCode만으로 표시해야 하면 서버에 필드 추가가 필요하다 */
@@ -166,4 +177,7 @@ export const mydataApi = {
 
   /** 연동된 카드 목록. 마이페이지 금융정보 관리 화면이 쓴다 */
   fetchCards: () => api.get<{ cards: UserCard[] }>('/api/mydata/cards'),
+
+  /** 최신 계좌·카드·거래를 다시 동기화한다. */
+  sync: () => api.post<MydataSyncResponse>('/api/mydata/sync'),
 }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import PocketStatusCard from '@/components/pocket/PocketStatusCard.vue'
 import FutureAssetPocketCard from '@/components/pocket/FutureAssetPocketCard.vue'
 import EmergencyPocketCard from '@/components/pocket/EmergencyPocketCard.vue'
+import MydataRefreshStatus from '@/components/pocket/MydataRefreshStatus.vue'
 
 import UnexpectedIncomeModal from '@/components/pocket/UnexpectedIncomeModal.vue'
 import RecurringIncomeMatchModal from '@/components/pocket/RecurringIncomeMatchModal.vue'
@@ -18,6 +19,7 @@ import { ApiError } from '@/api/types'
 import { formatWon } from '@/utils/format'
 
 import { useUnexpectedIncomeStore } from '@/stores/unexpectedIncome'
+import { useMydataRefresh } from '@/composables/useMydataRefresh'
 
 const route = useRoute()
 const router = useRouter()
@@ -292,12 +294,30 @@ const load = async () => {
   }
 }
 
-watch(currentMonth, load, { immediate: true })
+const { lastSyncedAt, refreshing, refreshError, loadLastSyncedAt, refresh } = useMydataRefresh(load)
+
+const initialize = async () => {
+  const synced = await refresh()
+  if (!synced) {
+    await Promise.all([loadLastSyncedAt(), load()])
+  }
+}
+
+onMounted(initialize)
+watch(currentMonth, load)
 </script>
 
 <template>
   <main class="page">
-    <h1 v-if="response">{{ monthNumber }}월 포켓</h1>
+    <div v-if="response" class="page-heading">
+      <h1>{{ monthNumber }}월 포켓</h1>
+      <MydataRefreshStatus
+        :last-synced-at="lastSyncedAt"
+        :refreshing="refreshing"
+        :error="refreshError"
+        @refresh="refresh"
+      />
+    </div>
 
     <p v-if="loading" class="state" role="status">포켓 현황을 불러오는 중…</p>
 
@@ -397,6 +417,12 @@ h1 {
   font-weight: 700;
 
   letter-spacing: -0.5px;
+}
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .state {
