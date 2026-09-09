@@ -5,6 +5,7 @@ import com.dday.domain.auth.dto.request.SignupRequest;
 import com.dday.domain.auth.entity.PhoneVerification;
 import com.dday.domain.auth.entity.VerificationPurpose;
 import com.dday.domain.auth.repository.PhoneVerificationRepository;
+import com.dday.domain.credit.service.CreditDemoProvisioner;
 import com.dday.domain.user.entity.User;
 import com.dday.domain.user.repository.UserRepository;
 import com.dday.global.common.jwt.JwtTokenProvider;
@@ -49,6 +50,8 @@ class AuthServiceTest {
     private PhoneVerificationRepository phoneVerificationRepository;
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+    @Mock
+    private CreditDemoProvisioner creditDemoProvisioner;
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -56,8 +59,8 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(
-                userRepository, phoneVerificationRepository, passwordEncoder, jwtTokenProvider);
+        authService = new AuthService(userRepository, phoneVerificationRepository, passwordEncoder,
+                jwtTokenProvider, creditDemoProvisioner);
 
         given(userRepository.existsByEmail(any())).willReturn(false);
         given(userRepository.save(any())).willAnswer(inv -> {
@@ -108,6 +111,31 @@ class AuthServiceTest {
 
         assertThat(response.getUserId()).isEqualTo(1L);
         assertThat(response.getAccessToken()).isEqualTo("access");
+    }
+
+    /**
+     * 신용관리 화면(신용점수 이력·납부 이력)은 가입 시점에 채워지지 않으면 빈 채로 뜬다.
+     * 마이데이터 연동은 계좌·카드만 가져오므로 그쪽에 기댈 수 없다.
+     */
+    @Test
+    void 가입하면_신용_데모_데이터가_붙는다() {
+        givenVerification(VerificationPurpose.SIGNUP, LocalDateTime.now().minusMinutes(5));
+
+        authService.signup(signupRequest());
+
+        verify(creditDemoProvisioner).provision(1L);
+    }
+
+    @Test
+    void 휴대폰_인증에_실패하면_신용_데모_데이터를_붙이지_않는다() {
+        given(phoneVerificationRepository
+                .findTopByPhoneAndPurposeAndVerifiedTrueOrderByVerificationIdDesc(any(), any()))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.signup(signupRequest()))
+                .isInstanceOf(BusinessException.class);
+
+        verify(creditDemoProvisioner, never()).provision(any());
     }
 
     @Test

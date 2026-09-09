@@ -6,6 +6,7 @@ import com.dday.domain.auth.dto.response.*;
 import com.dday.domain.auth.entity.PhoneVerification;
 import com.dday.domain.auth.entity.VerificationPurpose;
 import com.dday.domain.auth.repository.PhoneVerificationRepository;
+import com.dday.domain.credit.service.CreditDemoProvisioner;
 import com.dday.domain.user.entity.User;
 import com.dday.domain.user.entity.UserStatus;
 import com.dday.domain.user.repository.UserRepository;
@@ -52,6 +53,9 @@ public class AuthService {
     private final PhoneVerificationRepository phoneVerificationRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+
+    /** ⚠️ 시연용이다. 실제 신용평가사가 붙으면 이 의존과 {@link #signup} 안의 호출을 지운다. */
+    private final CreditDemoProvisioner creditDemoProvisioner;
 
     // ── 휴대폰 인증 ──────────────────────────────────────────────────────────
 
@@ -131,6 +135,16 @@ public class AuthService {
                 .termsAgreedAt(LocalDateTime.now())
                 .agreedLocation(request.isAgreedLocation())
                 .build());
+
+        /*
+         * ⚠️ 시연용. 신용점수 이력과 비금융 납부 이력(통신요금·건강보험료·국민연금)을
+         * 데모 계정에서 복제해 붙인다. 이 둘은 마이데이터 연동으로도 생기지 않아서
+         * (연동은 계좌·카드만 가져온다) 가입 시점에 넣지 않으면 신용관리 화면이 빈 채로 뜬다.
+         *
+         * 마이데이터 연동을 건너뛴 회원도 화면을 볼 수 있어야 해서 연동이 아니라 가입에 건다.
+         * 원본 시드가 없으면 조용히 건너뛰므로 가입 자체는 실패하지 않는다.
+         */
+        creditDemoProvisioner.provision(user.getUserId());
 
         return SignupResponse.builder()
                 .userId(user.getUserId())

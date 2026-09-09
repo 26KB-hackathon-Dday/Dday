@@ -1,5 +1,6 @@
 package com.dday.domain.mydata.service;
 
+import com.dday.domain.credit.service.CreditDemoProvisioner;
 import com.dday.domain.mockmydata.service.MockMydataProvisioner;
 import com.dday.domain.mydata.dto.response.MydataConnectResponse;
 import com.dday.domain.mydata.repository.UserAccountRepository;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 /**
  * 마이데이터 연결. 온보딩의 "기관 선택 → 연동" 화면이 부른다.
  *
- * <p>네 가지를 한 번에 끝낸다. 화면에서는 버튼 하나라 왕복을 나누면 중간에 실패했을 때
+ * <p>다섯 가지를 한 번에 끝낸다. 화면에서는 버튼 하나라 왕복을 나누면 중간에 실패했을 때
  * "동의는 됐는데 데이터는 없는" 어중간한 상태가 남는다.
  *
  * <ol>
@@ -27,13 +28,17 @@ import java.time.LocalDateTime;
  *       '자유 포켓'을 찾지 못해 404로 끝난다. 가입만으로는 포켓이 생기지 않는다.</li>
  *   <li><b>첫 동기화</b> — 목 서버의 거래를 우리 테이블로 옮긴다. 여기까지 해야
  *       연동 직후 화면에 소비 내역이 뜬다.</li>
+ *   <li><b>신용 데모 데이터 보정</b> — 신용점수·비금융 납부 이력은 가입 때 붙지만
+ *       ({@code AuthService.signup}), 그 전에 가입한 회원과 시드로 만든 계정은 비어 있다.
+ *       여기서 한 번 더 불러 메운다 ({@link CreditDemoProvisioner}는 멱등하다).</li>
  * </ol>
  *
  * <p>클래스에 {@code @Transactional}을 붙이지 않는다. 마지막 단계가 외부 공급자 호출을
  * 포함해 오래 걸리기 때문이다({@link MydataService} 주석 참고). 쓰기 원자성은 각 단계의
  * 짧은 트랜잭션이 맡는다.
  *
- * <p><b>⚠️ 2번은 해커톤 시연 전용이다.</b> 실제 마이데이터를 붙이면 그 단계만 빼면 된다.
+ * <p><b>⚠️ 2번과 5번은 해커톤 시연 전용이다.</b> 실제 마이데이터·신용평가사를 붙이면
+ * 그 두 단계만 빼면 된다.
  */
 @Slf4j
 @Service
@@ -48,6 +53,7 @@ public class MydataConnectService {
 
     private final MydataConsentWriter consentWriter;
     private final MockMydataProvisioner mockMydataProvisioner;
+    private final CreditDemoProvisioner creditDemoProvisioner;
     private final MydataService mydataService;
     private final UserAccountRepository userAccountRepository;
     private final UserCardRepository userCardRepository;
@@ -69,7 +75,12 @@ public class MydataConnectService {
 
         MydataSyncResponse sync = mydataService.sync(userId, null, null);
 
-        log.info("마이데이터 연결: userId={}, 목데이터 복제={}", userId, provisioned);
+        // 가입 때 이미 붙었으면 아무 일도 하지 않는다. 이 호출은 그 전에 가입한 회원과
+        // 시드로 만든 계정처럼 신용 이력이 비어 있는 경우를 메우려고 남겨둔다.
+        boolean creditProvisioned = creditDemoProvisioner.provision(userId);
+
+        log.info("마이데이터 연결: userId={}, 목데이터 복제={}, 신용 데모 복제={}",
+                userId, provisioned, creditProvisioned);
 
         // 동기화가 끝난 뒤 읽어야 이번에 새로 붙은 계좌까지 응답에 담긴다.
         // 비활성 계좌·카드는 뺀다 — 기관을 정리한 뒤에도 예전에 연동했던 회원은 죽은
