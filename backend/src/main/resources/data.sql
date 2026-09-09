@@ -279,17 +279,28 @@ ON DUPLICATE KEY UPDATE
     name = VALUES(name);
 
 -- 계좌 3개: KB 주거래 + KB 청년적금 + 신한 비상금
+-- 대출 계좌는 balance가 남은 원금이고 interest_rate에 연 이자율이 들어간다.
+-- 예금·적금은 이자율이 NULL이다.
+--
+-- ⚠️ 새 행은 현재 AUTO_INCREMENT보다 큰 id를 써야 한다 (mock_mydata_card와 같은 이유).
+-- MockMydataProvisioner가 연동 때마다 행을 만들어 낮은 번호를 소진한다.
 INSERT INTO mock_mydata_account (
     mock_account_id, mock_user_id, external_account_id, org_code, account_num,
     account_name, product_name, account_type, balance, available_balance,
-    is_active, created_at, updated_at
+    interest_rate, is_active, created_at, updated_at
 ) VALUES
     (9001, 9001, 'KB-ACC-0001', '004', '110-2345-678901',
-     'KB국민 주거래통장', 'KB마이핏통장', 'DEPOSIT',  842000,  842000, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+     'KB국민 주거래통장', 'KB마이핏통장', 'DEPOSIT',  842000,  842000, NULL, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
     (9002, 9001, 'KB-ACC-0002', '004', '110-2345-678902',
-     'KB국민 청년적금',   'KB청년도약적금', 'SAVINGS', 3600000,       0, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+     'KB국민 청년적금',   'KB청년도약적금', 'SAVINGS', 3600000,       0, NULL, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
     (9003, 9001, 'SH-ACC-0001', '088', '110-9876-543210',
-     '신한 비상금통장',   '신한 쏠편한통장', 'DEPOSIT', 1500000, 1500000, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00')
+     '신한 비상금통장',   '신한 쏠편한통장', 'DEPOSIT', 1500000, 1500000, NULL, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+    -- 제1금융권 대출 한 건, 제2금융권 대출 한 건. 같은 금액이라도 어디서 빌렸는지가
+    -- 점수를 가르므로 두 권역이 다 있어야 화면이 의미를 가진다.
+    (99001, 9001, 'SH-LOAN-0001', '088', '110-9876-500001',
+     '신한 신용대출',     '쏠편한 직장인대출', 'LOAN', 8000000, NULL, 5.40, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00'),
+    (99002, 9001, 'HC-LOAN-0001', '0602', '620-1234-500002',
+     '현대캐피탈 신용대출', '현대캐피탈 다이렉트론', 'LOAN', 3000000, NULL, 15.40, 1, '2026-09-01 00:00:00', '2026-09-01 00:00:00')
 ON DUPLICATE KEY UPDATE
     org_code = VALUES(org_code),
     account_num = VALUES(account_num),
@@ -298,6 +309,7 @@ ON DUPLICATE KEY UPDATE
     account_type = VALUES(account_type),
     balance = VALUES(balance),
     available_balance = VALUES(available_balance),
+    interest_rate = VALUES(interest_rate),
     is_active = VALUES(is_active);
 
 -- 현대카드 1장 (체크카드 — 자립준비청년이 신용카드를 만들기 어려운 현실을 반영)

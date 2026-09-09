@@ -1,6 +1,8 @@
 package com.dday.domain.mockmydata.service;
 
+import com.dday.domain.mockmydata.entity.MockAccountType;
 import com.dday.domain.mockmydata.entity.MockCardType;
+import com.dday.domain.mockmydata.entity.MockMydataAccount;
 import com.dday.domain.mockmydata.entity.MockMydataCard;
 import com.dday.domain.mockmydata.entity.MockMydataUser;
 import com.dday.domain.mockmydata.repository.MockMydataAccountRepository;
@@ -19,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,8 +62,11 @@ class MockMydataProvisionerTest {
     @Captor
     private ArgumentCaptor<MockMydataCard> savedCard;
 
-    @Test
-    void 카드를_복제할_때_한도를_함께_옮긴다() {
+    @Captor
+    private ArgumentCaptor<MockMydataAccount> savedAccount;
+
+    /** 원본 회원이 있고 대상 회원은 아직 없는 상태. 복제가 실제로 도는 조건이다. */
+    private MockMydataUser givenTemplate() {
         User templateUser = User.builder().build();
         ReflectionTestUtils.setField(templateUser, "userId", TEMPLATE_USER_ID);
         given(serviceUserRepository.findByEmail(MockMydataProvisioner.TEMPLATE_EMAIL))
@@ -74,6 +80,40 @@ class MockMydataProvisionerTest {
         given(userRepository.findByServiceUserId(TEMPLATE_USER_ID)).willReturn(Optional.of(template));
         given(userRepository.save(any(MockMydataUser.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
+        return template;
+    }
+
+    @Test
+    void 대출_계좌를_복제할_때_금리를_함께_옮긴다() {
+        MockMydataUser template = givenTemplate();
+
+        given(accountRepository.findAllByMockUserServiceUserIdAndActiveTrueOrderByMockAccountId(
+                TEMPLATE_USER_ID)).willReturn(List.of(MockMydataAccount.builder()
+                .mockUser(template)
+                .externalAccountId("SH-LOAN-0001")
+                .orgCode("088")
+                .accountNum("110-1111-222222")
+                .accountName("신한 신용대출")
+                .productName("쏠편한 직장인대출")
+                .accountType(MockAccountType.LOAN)
+                .balance(8_000_000L)
+                .interestRate(new BigDecimal("5.40"))
+                .build()));
+        given(accountRepository.save(any(MockMydataAccount.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(cardRepository.findAllByMockUserServiceUserIdAndActiveTrueOrderByMockCardId(
+                TEMPLATE_USER_ID)).willReturn(List.of());
+
+        provisioner.provision(TARGET_USER_ID, "복제본");
+
+        then(accountRepository).should().save(savedAccount.capture());
+        assertThat(savedAccount.getValue().getInterestRate()).isEqualByComparingTo("5.40");
+        assertThat(savedAccount.getValue().getAccountType()).isEqualTo(MockAccountType.LOAN);
+    }
+
+    @Test
+    void 카드를_복제할_때_한도를_함께_옮긴다() {
+        MockMydataUser template = givenTemplate();
 
         given(accountRepository.findAllByMockUserServiceUserIdAndActiveTrueOrderByMockAccountId(
                 TEMPLATE_USER_ID)).willReturn(List.of());
