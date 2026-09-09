@@ -588,10 +588,12 @@ ON DUPLICATE KEY UPDATE
 -- 같은 유니크 키를 사용하므로 POST /api/mydata/connect를 다시 호출해도 중복되지 않는다.
 INSERT INTO user_account (
     user_id, org_code, account_num, account_name, product_name, account_type,
-    balance, available_balance, is_active, is_selected, last_synced_at, created_at, updated_at
+    balance, available_balance, interest_rate,
+    is_active, is_selected, last_synced_at, created_at, updated_at
 )
 SELECT u.user_id, ma.org_code, ma.account_num, ma.account_name, ma.product_name, ma.account_type,
-       ma.balance, ma.available_balance, ma.is_active, 1, ma.updated_at, ma.created_at, ma.updated_at
+       ma.balance, ma.available_balance, ma.interest_rate,
+       ma.is_active, 1, ma.updated_at, ma.created_at, ma.updated_at
 FROM users u
 JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
 JOIN mock_mydata_account ma ON ma.mock_user_id = mu.mock_user_id
@@ -602,15 +604,16 @@ ON DUPLICATE KEY UPDATE
     account_type = VALUES(account_type),
     balance = VALUES(balance),
     available_balance = VALUES(available_balance),
+    interest_rate = VALUES(interest_rate),
     is_active = VALUES(is_active),
     last_synced_at = VALUES(last_synced_at),
     updated_at = VALUES(updated_at);
 
 INSERT INTO user_card (
-    user_id, org_code, card_identifier, card_name, card_type,
+    user_id, org_code, card_identifier, card_name, card_type, credit_limit,
     is_active, is_selected, last_synced_at, created_at, updated_at
 )
-SELECT u.user_id, mc.org_code, mc.external_card_id, mc.card_name, mc.card_type,
+SELECT u.user_id, mc.org_code, mc.external_card_id, mc.card_name, mc.card_type, mc.credit_limit,
        mc.is_active, 1, mc.updated_at, mc.created_at, mc.updated_at
 FROM users u
 JOIN mock_mydata_user mu ON mu.service_user_id = u.user_id
@@ -619,6 +622,7 @@ WHERE u.email = 'user1@test.com'
 ON DUPLICATE KEY UPDATE
     card_name = VALUES(card_name),
     card_type = VALUES(card_type),
+    credit_limit = VALUES(credit_limit),
     is_active = VALUES(is_active),
     last_synced_at = VALUES(last_synced_at),
     updated_at = VALUES(updated_at);
@@ -830,3 +834,83 @@ ON DUPLICATE KEY UPDATE
     amount = VALUES(amount),
     source_type = VALUES(source_type),
     description = VALUES(description);
+
+-- ── 신용점수 이력 (credit_score) ──────────────────────────────────────────
+--
+-- 신용관리 홈과 예상 금리 화면이 전부 이 표에서 나온다. 없으면 두 화면이 빈 채로 뜬다.
+--
+-- 여섯 달을 넣는 이유는 화면이 다섯 줄을 보여주기 때문이다. 가장 오래된 줄의 증감을
+-- 계산하려면 목록 밖에 기록이 한 건 더 있어야 한다 (없으면 그 줄만 '-'로 뜬다).
+--
+-- ⚠️ 이 표에는 (user_id, updated_at) 유일 제약이 없다. 고정 id를 박지 않으면 앱을
+-- 다시 띄울 때마다 같은 이력이 새로 쌓인다. id는 현재 AUTO_INCREMENT보다 큰 대역을 쓴다
+-- (mock_mydata_card와 같은 이유 — 낮은 번호는 런타임에 생긴 행과 부딪힌다).
+INSERT INTO credit_score (credit_score_id, user_id, agency, score, created_at, updated_at)
+SELECT t.credit_score_id, u.user_id, 'KCB', t.score, t.at, t.at
+FROM users u
+JOIN (
+    SELECT 99001 AS credit_score_id, 798 AS score, '2026-04-01 09:00:00' AS at
+    UNION ALL SELECT 99002, 802, '2026-05-01 09:00:00'
+    UNION ALL SELECT 99003, 809, '2026-06-01 09:00:00'
+    UNION ALL SELECT 99004, 807, '2026-07-01 09:00:00'
+    UNION ALL SELECT 99005, 810, '2026-08-01 09:00:00'
+    UNION ALL SELECT 99006, 815, '2026-09-01 09:00:00'
+) t
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    agency = VALUES(agency),
+    score = VALUES(score),
+    updated_at = VALUES(updated_at);
+
+-- ── 비금융 납부 이력 (nonfinancial_payment) ───────────────────────────────
+--
+-- 통신요금·건강보험료·국민연금을 제때 냈는지. 납부 기록 화면이 이 표에서 나온다.
+--
+-- 세 항목 모두 **익월 납부**다 (통신 25일, 건강보험·국민연금 10일). 그래서 아직 납부일이
+-- 오지 않은 달은 넣지 않는다 — 미래에 낸 기록이 화면에 뜨면 그게 더 이상하다.
+-- 2026-08분(기한 9/10·9/25)은 그래서 빠져 있다.
+--
+-- 통신요금 2026-03분만 연체다. 전부 정상이면 화면이 연체 상태를 한 번도 못 그린다.
+-- 그 결과 통신요금은 "4개월 연속", 나머지 둘은 "6개월 연속"이 된다.
+--
+-- (user_id, payment_type, billing_month) 유일 제약이 있어 고정 id 없이도 멱등하다.
+INSERT INTO nonfinancial_payment (
+    user_id, payment_type, institution_name, billing_month, amount,
+    due_date, paid_date, status, created_at, updated_at
+)
+SELECT u.user_id, t.payment_type, t.institution_name, t.billing_month, t.amount,
+       t.due_date, t.paid_date, t.status, '2026-09-01 00:00:00', '2026-09-01 00:00:00'
+FROM users u
+JOIN (
+    -- 통신요금 (SK텔레콤, 익월 25일)
+    SELECT 'TELECOM' AS payment_type, 'SK텔레콤' AS institution_name,
+           '2026-02-01' AS billing_month, 38500 AS amount,
+           '2026-03-25' AS due_date, '2026-03-24' AS paid_date, 'PAID' AS status
+    UNION ALL SELECT 'TELECOM', 'SK텔레콤', '2026-03-01', 38500, '2026-04-25', '2026-05-01', 'LATE'
+    UNION ALL SELECT 'TELECOM', 'SK텔레콤', '2026-04-01', 38500, '2026-05-25', '2026-05-24', 'PAID'
+    UNION ALL SELECT 'TELECOM', 'SK텔레콤', '2026-05-01', 38500, '2026-06-25', '2026-06-24', 'PAID'
+    UNION ALL SELECT 'TELECOM', 'SK텔레콤', '2026-06-01', 38500, '2026-07-25', '2026-07-24', 'PAID'
+    UNION ALL SELECT 'TELECOM', 'SK텔레콤', '2026-07-01', 38500, '2026-08-25', '2026-08-24', 'PAID'
+    -- 건강보험료 (국민건강보험공단, 익월 10일)
+    UNION ALL SELECT 'HEALTH_INSURANCE', '국민건강보험공단', '2026-02-01', 68200, '2026-03-10', '2026-03-09', 'PAID'
+    UNION ALL SELECT 'HEALTH_INSURANCE', '국민건강보험공단', '2026-03-01', 68200, '2026-04-10', '2026-04-09', 'PAID'
+    UNION ALL SELECT 'HEALTH_INSURANCE', '국민건강보험공단', '2026-04-01', 68200, '2026-05-10', '2026-05-09', 'PAID'
+    UNION ALL SELECT 'HEALTH_INSURANCE', '국민건강보험공단', '2026-05-01', 68200, '2026-06-10', '2026-06-09', 'PAID'
+    UNION ALL SELECT 'HEALTH_INSURANCE', '국민건강보험공단', '2026-06-01', 68200, '2026-07-10', '2026-07-09', 'PAID'
+    UNION ALL SELECT 'HEALTH_INSURANCE', '국민건강보험공단', '2026-07-01', 68200, '2026-08-10', '2026-08-09', 'PAID'
+    -- 국민연금 (국민연금공단, 익월 10일)
+    UNION ALL SELECT 'NATIONAL_PENSION', '국민연금공단', '2026-02-01', 90000, '2026-03-10', '2026-03-09', 'PAID'
+    UNION ALL SELECT 'NATIONAL_PENSION', '국민연금공단', '2026-03-01', 90000, '2026-04-10', '2026-04-09', 'PAID'
+    UNION ALL SELECT 'NATIONAL_PENSION', '국민연금공단', '2026-04-01', 90000, '2026-05-10', '2026-05-09', 'PAID'
+    UNION ALL SELECT 'NATIONAL_PENSION', '국민연금공단', '2026-05-01', 90000, '2026-06-10', '2026-06-09', 'PAID'
+    UNION ALL SELECT 'NATIONAL_PENSION', '국민연금공단', '2026-06-01', 90000, '2026-07-10', '2026-07-09', 'PAID'
+    UNION ALL SELECT 'NATIONAL_PENSION', '국민연금공단', '2026-07-01', 90000, '2026-08-10', '2026-08-09', 'PAID'
+) t
+WHERE u.email = 'user1@test.com'
+ON DUPLICATE KEY UPDATE
+    institution_name = VALUES(institution_name),
+    amount = VALUES(amount),
+    due_date = VALUES(due_date),
+    paid_date = VALUES(paid_date),
+    status = VALUES(status),
+    updated_at = VALUES(updated_at);
