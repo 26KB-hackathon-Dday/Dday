@@ -32,25 +32,16 @@ public enum BudgetAdjustmentErrorCode
             "총 예산을 확인해주세요."
     ),
 
-<<<<<<< HEAD
     TOTAL_BUDGET_BELOW_MINIMUM(
             HttpStatus.BAD_REQUEST,
             "이미 사용하거나 달성한 금액보다 총 예산을 낮게 설정할 수 없습니다."
     ),
 
-    BUDGET_SUM_MISMATCH(
-=======
     INVALID_ALLOCATION(
->>>>>>> main
             HttpStatus.BAD_REQUEST,
             "네 개 포켓의 배분 금액을 모두 확인해주세요."
     ),
 
-<<<<<<< HEAD
-    BELOW_MINIMUM_AMOUNT(
-            HttpStatus.BAD_REQUEST,
-            "이미 사용하거나 달성한 금액보다 포켓 예산을 낮출 수 없습니다."
-=======
     DUPLICATED_POCKET_TYPE(
             HttpStatus.BAD_REQUEST,
             "같은 포켓을 중복해서 배분할 수 없습니다."
@@ -61,10 +52,19 @@ public enum BudgetAdjustmentErrorCode
             "포켓 배분 금액의 합계가 총 예산과 일치하지 않습니다."
     ),
 
+    BUDGET_SUM_MISMATCH(
+            HttpStatus.BAD_REQUEST,
+            "포켓 예산 합계가 총 예산과 일치하지 않습니다."
+    ),
+
     BUDGET_BELOW_SPENT_AMOUNT(
             HttpStatus.BAD_REQUEST,
             "이미 사용한 금액보다 예산을 낮게 설정할 수 없습니다."
->>>>>>> main
+    ),
+
+    BELOW_MINIMUM_AMOUNT(
+            HttpStatus.BAD_REQUEST,
+            "이미 사용하거나 달성한 금액보다 포켓 예산을 낮출 수 없습니다."
     );
 
     private final HttpStatus status;
