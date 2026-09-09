@@ -334,6 +334,12 @@ const router = createRouter({
       meta: { title: '카드 사용 현황', requiresAuth: true },
     },
     {
+      path: '/credit-manage/loans',
+      name: 'credit-loans',
+      component: () => import('@/views/credit/LoanStatusView.vue'),
+      meta: { title: '대출 현황', requiresAuth: true },
+    },
+    {
       // 하단 탭엔 없고 상단바 계정 아이콘으로만 들어온다.
       path: '/mypage',
       name: 'mypage',
