@@ -21,7 +21,7 @@ public class AuthController {
     private final AuthService authService;
 
     @Operation(summary = "휴대폰 인증번호 발송", description = """
-            실제 SMS는 보내지 않는다. 인증번호는 항상 `000000`이고 3분 뒤 만료된다.
+            실제 SMS는 보내지 않는다. 인증번호는 항상 `371829`이고 3분 뒤 만료된다.
             """)
     @PostMapping("/phone/send")
     public ResponseEntity<ApiResponse<PhoneSendResponse>> sendPhoneCode(
