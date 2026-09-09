@@ -7,10 +7,11 @@ import com.dday.domain.budget.entity.MonthlyPocketBudget;
 import com.dday.domain.mydata.entity.AccountType;
 import com.dday.domain.onboarding.service.OnboardingCalculator;
 import com.dday.domain.pocket.entity.PocketType;
+import com.dday.domain.user.dto.UserErrorCode;
 import com.dday.domain.user.entity.User;
 import com.dday.domain.user.repository.UserRepository;
 import com.dday.global.exception.BusinessException;
-import com.dday.global.exception.ErrorCode;
+import com.dday.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,8 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AssetForecastService {
 
-    private final UserRepository userRepository;
+    private final UserRepository
+            userRepository;
 
     private final AssetForecastAccountRepository
             assetForecastAccountRepository;
@@ -32,63 +34,68 @@ public class AssetForecastService {
             assetForecastPocketBudgetRepository;
 
     /**
-     * 지원 종료 시 예상 총자산을 계산한다.
+     * 지원 종료 시 예상 총자산 조회.
      *
      * 현재 미래자산
-     * = 활성 SAVINGS + INVESTMENT 계좌 잔액
+     * = SAVINGS + INVESTMENT 계좌 잔액
      *
-     * 앞으로 추가될 미래자산
-     * = 이번 달 FUTURE_ASSET 배정액
+     * 앞으로 쌓일 예상 자산
+     * = 현재 월 FUTURE_ASSET 포켓 배정액
      *   × 지원 종료까지 남은 개월 수
      *
      * 예상 총자산
      * = 현재 미래자산
-     *   + 앞으로 추가될 미래자산
+     *   + 앞으로 쌓일 예상 자산
      *
      * 투자 수익률은 반영하지 않는다.
      */
-    public AssetForecastResponse getForecast(Long userId) {
+    public AssetForecastResponse getForecast(
+            Long userId
+    ) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new BusinessException(
-                                ErrorCode.USER_NOT_FOUND
-                        )
-                );
+        User user =
+                userRepository.findById(userId)
+                        .orElseThrow(
+                                () ->
+                                        new BusinessException(
+                                                UserErrorCode.USER_NOT_FOUND
+                                        )
+                        );
 
-        LocalDate today = LocalDate.now();
+        LocalDate today =
+                LocalDate.now();
 
         LocalDate protectionEndDate =
                 user.getProtectionEndDate();
 
         /*
-         * 보호종료일이 없으면 지원 종료일을 계산할 수 없다.
-         *
-         * 현재 전역 ErrorCode에 이 기능 전용 코드가 없으므로
-         * 기존 검증 오류를 사용한다.
+         * 보호종료일이 없으면
+         * 지원 종료일과 남은 개월 수를
+         * 계산할 수 없다.
          */
         if (protectionEndDate == null) {
+
             throw new BusinessException(
-                    ErrorCode.INVALID_INPUT
+                    CommonErrorCode.INVALID_INPUT_VALUE
             );
         }
 
         LocalDate supportEndDate =
-                OnboardingCalculator.supportEndDate(
-                        protectionEndDate
-                );
+                OnboardingCalculator
+                        .supportEndDate(
+                                protectionEndDate
+                        );
 
         long calculatedRemainingMonths =
-                OnboardingCalculator.remainingMonths(
-                        protectionEndDate,
-                        today
-                );
+                OnboardingCalculator
+                        .remainingMonths(
+                                protectionEndDate,
+                                today
+                        );
 
         /*
-         * 지원 기간이 이미 끝났다면 앞으로 적립할 개월 수는 0.
-         *
-         * OnboardingCalculator 자체는 음수를 반환하도록
-         * 설계되어 있으므로 예상자산 계산 단계에서만 0으로 보정한다.
+         * 이미 지원 기간이 끝난 경우
+         * 앞으로 적립 가능한 개월 수는 0으로 본다.
          */
         long remainingMonths =
                 Math.max(
@@ -99,7 +106,8 @@ public class AssetForecastService {
         /*
          * 현재 미래자산:
          *
-         * SAVINGS + INVESTMENT
+         * 활성 SAVINGS +
+         * 활성 INVESTMENT 계좌 잔액.
          */
         Long currentAsset =
                 assetForecastAccountRepository
@@ -116,7 +124,8 @@ public class AssetForecastService {
         }
 
         /*
-         * 이번 달 기준 FUTURE_ASSET 포켓 배정액 조회.
+         * 이번 달 FUTURE_ASSET
+         * 포켓 배정액 조회.
          */
         LocalDate budgetMonth =
                 today.withDayOfMonth(1);
@@ -134,9 +143,8 @@ public class AssetForecastService {
                         .orElse(0L);
 
         /*
-         * 앞으로 추가될 예상 미래자산.
-         *
-         * 투자 수익률은 반영하지 않는다.
+         * 지원 종료까지 추가될
+         * 예상 자산.
          */
         long expectedAdditionalAsset =
                 monthlyFutureAmount
@@ -149,7 +157,8 @@ public class AssetForecastService {
                 currentAsset
                         + expectedAdditionalAsset;
 
-        return AssetForecastResponse.builder()
+        return AssetForecastResponse
+                .builder()
                 .currentAsset(
                         currentAsset
                 )

@@ -283,91 +283,6 @@
           예상 자산 정보를 불러오지 못했어요.
         </section>
 
-              <input
-                class="pocket-slider"
-                type="range"
-                :min="usedAmounts.emergency"
-                :max="totalBudget"
-                :step="STEP"
-                :value="budgets.emergency"
-                :style="getSliderStyle(budgets.emergency, usedAmounts.emergency)"
-                @input="handlePocketInput('emergency', $event)"
-              />
-
-              <p class="used-amount">
-                🔒 현재 사용액
-                {{ formatCurrency(usedAmounts.emergency) }}
-              </p>
-            </section>
-          </div>
-        </section>
-
-        <!-- 현재 배분 상태 -->
-        <section class="budget-status" :class="statusClass">
-          <div class="budget-status__row">
-            <span> 현재 배분 </span>
-
-            <strong>
-              {{ formatCurrency(allocatedTotal) }}
-            </strong>
-          </div>
-
-          <div class="budget-status__row">
-            <span> 총 예산 </span>
-
-            <strong>
-              {{ formatCurrency(totalBudget) }}
-            </strong>
-          </div>
-
-          <div class="budget-status__divider" />
-
-          <div v-if="budgetGap > 0" class="status-message status-message--error">
-            <strong>
-              총 예산보다
-              {{ formatCurrency(budgetGap) }}
-              많아요.
-            </strong>
-
-            <span> 다른 포켓의 예산을 줄여주세요. </span>
-          </div>
-
-          <div v-else-if="budgetGap < 0" class="status-message">
-            <strong>
-              아직
-              {{ formatCurrency(Math.abs(budgetGap)) }}
-              남았어요.
-            </strong>
-
-            <span> 원하는 포켓에 더 배분해 주세요. </span>
-          </div>
-
-          <div v-else class="status-message status-message--success">
-            <strong> 총 예산에 맞게 배분됐어요. </strong>
-          </div>
-
-          <button
-            v-if="budgetGap !== 0 && lastChangedPocket"
-            class="auto-button"
-            type="button"
-            @click="autoBalance"
-          >
-            자동으로 맞추기
-          </button>
-
-          <p v-if="autoBalanceError" class="auto-error">
-            {{ autoBalanceError }}
-          </p>
-        </section>
-
-        <!-- 예상 자산 -->
-        <BudgetForecastCard
-          :expected-asset="expectedAsset"
-          :previous-asset="previousAsset"
-          :difference="assetDifference"
-          :future-budget="budgets.future"
-        />
-
         <!-- 저장 -->
         <button
           class="save-button"
@@ -637,8 +552,6 @@ const autoBalance = () => {
         continue
       }
 
-      const reducible = Math.max(budgets[type] - usedAmounts[type], 0)
-
       const decrease = Math.min(reducible, remaining)
 
       budgets[type] -= decrease
@@ -679,9 +592,8 @@ const autoBalance = () => {
   if (otherTotal === 0) {
     const fallback = otherTypes.includes('emergency') ? 'emergency' : otherTypes[0]
 
-  for (const type of otherTypes) {
-    if (amountToAdd <= 0) {
-      break
+    if (fallback) {
+      budgets[fallback] += amountToAdd
     }
 
     return

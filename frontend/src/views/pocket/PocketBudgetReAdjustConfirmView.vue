@@ -89,15 +89,15 @@
         </strong>
       </section>
 
-      <p v-if="errorMessage" class="error-message">
-        {{ errorMessage }}
+      <p v-if="saveError" class="error-message">
+        {{ saveError }}
       </p>
 
       <section class="bottom-area">
         <div class="bottom-divider" />
 
-        <button class="confirm-button" type="button" :disabled="saving" @click="handleConfirm">
-          {{ saving ? '변경 내용을 저장하고 있어요' : `${monthLabel} 계획 변경하기` }}
+        <button class="confirm-button" type="button" :disabled="isSaving" @click="handleConfirm">
+          {{ isSaving ? '변경 내용을 저장하고 있어요' : `${monthLabel} 계획 변경하기` }}
         </button>
       </section>
     </main>
@@ -117,6 +117,11 @@ const router = useRouter()
 const isSaving = ref(false)
 
 const saveError = ref('')
+
+const monthLabel = computed(() => {
+  const now = new Date()
+  return `${now.getMonth() + 1}월`
+})
 
 const getQueryNumber = (value: unknown, fallback: number): number => {
   let rawValue: unknown = value

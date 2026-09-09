@@ -23,16 +23,21 @@ import OnboardingIntroView from '@/views/onboarding/OnboardingIntroView.vue'
 import ProtectionDateView from '@/views/onboarding/ProtectionDateView.vue'
 import ProtectionDateConfirmView from '@/views/onboarding/ProtectionDateConfirmView.vue'
 import ProtectionDateCheckpointView from '@/views/onboarding/ProtectionDateCheckpointView.vue'
+
 import RegionView from '@/views/onboarding/RegionView.vue'
 import RegionDistrictView from '@/views/onboarding/RegionDistrictView.vue'
 import RegionConfirmView from '@/views/onboarding/RegionConfirmView.vue'
+
 import HousingTypeView from '@/views/onboarding/HousingTypeView.vue'
 import HousingCostView from '@/views/onboarding/HousingCostView.vue'
 import HousingCheckpointView from '@/views/onboarding/HousingCheckpointView.vue'
+
 import IncomeListView from '@/views/onboarding/IncomeListView.vue'
 import IncomeNewView from '@/views/onboarding/IncomeNewView.vue'
+
 import AssetsSettlementView from '@/views/onboarding/AssetsSettlementView.vue'
 import AssetsSavedView from '@/views/onboarding/AssetsSavedView.vue'
+
 import ReviewView from '@/views/onboarding/ReviewView.vue'
 import ProcessingView from '@/views/onboarding/ProcessingView.vue'
 import OnboardingDoneView from '@/views/onboarding/OnboardingDoneView.vue'
@@ -49,18 +54,25 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
 
   scrollBehavior: (_to, _from, savedPosition) => {
-    return savedPosition ?? { top: 0 }
+    return (
+      savedPosition ?? {
+        top: 0,
+      }
+    )
   },
 
   routes: [
-    // ─────────────────────────────
-    // 로그인 전
-    // ─────────────────────────────
+    /*
+     * =========================
+     * 로그인 전
+     * =========================
+     */
 
     {
       path: '/landing',
       name: 'landing',
       component: LandingView,
+
       meta: {
         hideChrome: true,
       },
@@ -70,14 +82,17 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+
       meta: {
         hideChrome: true,
       },
     },
 
-    // ─────────────────────────────
-    // 회원가입
-    // ─────────────────────────────
+    /*
+     * =========================
+     * 회원가입
+     * =========================
+     */
 
     {
       path: '/signup',
@@ -88,6 +103,7 @@ const router = createRouter({
       path: '/signup/start',
       name: 'signup-start',
       component: SignupStartView,
+
       meta: {
         hideChrome: true,
       },
@@ -97,6 +113,7 @@ const router = createRouter({
       path: '/signup/name',
       name: 'signup-name',
       component: SignupNameView,
+
       meta: {
         hideChrome: true,
       },
@@ -106,6 +123,7 @@ const router = createRouter({
       path: '/signup/phone',
       name: 'signup-phone',
       component: SignupPhoneView,
+
       meta: {
         hideChrome: true,
       },
@@ -113,8 +131,11 @@ const router = createRouter({
 
     {
       path: '/signup/phone/verify',
+
       name: 'signup-phone-verify',
+
       component: SignupPhoneVerifyView,
+
       meta: {
         hideChrome: true,
       },
@@ -124,6 +145,7 @@ const router = createRouter({
       path: '/signup/email',
       name: 'signup-email',
       component: SignupEmailView,
+
       meta: {
         hideChrome: true,
       },
@@ -133,6 +155,7 @@ const router = createRouter({
       path: '/signup/password',
       name: 'signup-password',
       component: SignupPasswordView,
+
       meta: {
         hideChrome: true,
       },
@@ -142,6 +165,7 @@ const router = createRouter({
       path: '/signup/terms',
       name: 'signup-terms',
       component: SignupTermsView,
+
       meta: {
         hideChrome: true,
       },
@@ -151,19 +175,23 @@ const router = createRouter({
       path: '/signup/done',
       name: 'signup-done',
       component: SignupDoneView,
+
       meta: {
         hideChrome: true,
       },
     },
 
-    // ─────────────────────────────
-    // 마이데이터
-    // ─────────────────────────────
+    /*
+     * =========================
+     * 마이데이터 가입
+     * =========================
+     */
 
     {
       path: '/mydata',
       name: 'mydata-intro',
       component: MydataIntroView,
+
       meta: {
         hideChrome: true,
       },
@@ -173,6 +201,7 @@ const router = createRouter({
       path: '/mydata/consent',
       name: 'mydata-consent',
       component: MydataConsentView,
+
       meta: {
         hideChrome: true,
       },
@@ -182,6 +211,7 @@ const router = createRouter({
       path: '/mydata/select',
       name: 'mydata-select',
       component: MydataSelectView,
+
       meta: {
         hideChrome: true,
       },
@@ -191,145 +221,272 @@ const router = createRouter({
       path: '/mydata/done',
       name: 'mydata-done',
       component: MydataDoneView,
+
       meta: {
         hideChrome: true,
       },
     },
 
-    // ─────────────────────────────
-    // 홈
-    // ─────────────────────────────
+    /*
+     * =========================
+     * 온보딩
+     * =========================
+     */
+
+    {
+      path: '/onboarding',
+      redirect: '/onboarding/intro',
+    },
+
+    {
+      path: '/onboarding/intro',
+
+      name: 'onboarding-intro',
+
+      component: OnboardingIntroView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/protection-date',
+
+      name: 'onboarding-protection-date',
+
+      component: ProtectionDateView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/protection-date/confirm',
+
+      name: 'onboarding-protection-date-confirm',
+
+      component: ProtectionDateConfirmView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/protection-date/checkpoint',
+
+      name: 'onboarding-protection-date-checkpoint',
+
+      component: ProtectionDateCheckpointView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/region',
+
+      name: 'onboarding-region',
+
+      component: RegionView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/region/district',
+
+      name: 'onboarding-region-district',
+
+      component: RegionDistrictView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/region/confirm',
+
+      name: 'onboarding-region-confirm',
+
+      component: RegionConfirmView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/housing-type',
+
+      name: 'onboarding-housing-type',
+
+      component: HousingTypeView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/housing-cost',
+
+      name: 'onboarding-housing-cost',
+
+      component: HousingCostView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/housing-checkpoint',
+
+      name: 'onboarding-housing-checkpoint',
+
+      component: HousingCheckpointView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/income',
+
+      name: 'onboarding-income',
+
+      component: IncomeListView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/income/new',
+
+      name: 'onboarding-income-new',
+
+      component: IncomeNewView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/assets/settlement',
+
+      name: 'onboarding-assets-settlement',
+
+      component: AssetsSettlementView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/assets/saved',
+
+      name: 'onboarding-assets-saved',
+
+      component: AssetsSavedView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/review',
+
+      name: 'onboarding-review',
+
+      component: ReviewView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/processing',
+
+      name: 'onboarding-processing',
+
+      component: ProcessingView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/onboarding/done',
+
+      name: 'onboarding-done',
+
+      component: OnboardingDoneView,
+
+      meta: {
+        hideChrome: true,
+        requiresAuth: true,
+      },
+    },
+
+    /*
+     * =========================
+     * 홈
+     * =========================
+     */
 
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/PlaceholderView.vue'),
+
+      component: () => import('@/views/HomeView.vue'),
 
       meta: {
         title: '홈',
         requiresAuth: true,
       },
-    // 온보딩(자립 계획 생성) — 회원가입 완료 또는 onboardingCompleted=false 로그인 시 가드가 여기로 보낸다.
-    { path: '/onboarding', redirect: '/onboarding/intro' },
-    {
-      path: '/onboarding/intro',
-      name: 'onboarding-intro',
-      component: OnboardingIntroView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/protection-date',
-      name: 'onboarding-protection-date',
-      component: ProtectionDateView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/protection-date/confirm',
-      name: 'onboarding-protection-date-confirm',
-      component: ProtectionDateConfirmView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/protection-date/checkpoint',
-      name: 'onboarding-protection-date-checkpoint',
-      component: ProtectionDateCheckpointView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/region',
-      name: 'onboarding-region',
-      component: RegionView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/region/district',
-      name: 'onboarding-region-district',
-      component: RegionDistrictView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/region/confirm',
-      name: 'onboarding-region-confirm',
-      component: RegionConfirmView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/housing-type',
-      name: 'onboarding-housing-type',
-      component: HousingTypeView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/housing-cost',
-      name: 'onboarding-housing-cost',
-      component: HousingCostView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/housing-checkpoint',
-      name: 'onboarding-housing-checkpoint',
-      component: HousingCheckpointView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/income',
-      name: 'onboarding-income',
-      component: IncomeListView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/income/new',
-      name: 'onboarding-income-new',
-      component: IncomeNewView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/assets/settlement',
-      name: 'onboarding-assets-settlement',
-      component: AssetsSettlementView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/assets/saved',
-      name: 'onboarding-assets-saved',
-      component: AssetsSavedView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/review',
-      name: 'onboarding-review',
-      component: ReviewView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/processing',
-      name: 'onboarding-processing',
-      component: ProcessingView,
-      meta: { hideChrome: true, requiresAuth: true },
-    },
-    {
-      path: '/onboarding/done',
-      name: 'onboarding-done',
-      component: OnboardingDoneView,
-      meta: { hideChrome: true, requiresAuth: true },
     },
 
-    // ── 앱 화면 (로그인 후) — 하단 탭 순서와 같다 ─────────────────────────
-    {
-      path: '/',
-      name: 'home',
-      component: () => import('@/views/HomeView.vue'),
-      // 로그인 전에 여기로 들어오면 가드가 랜딩으로 보낸다. 하단바의 '홈' 탭이 이 경로다.
-      meta: { title: '홈', requiresAuth: true },
-    },
-
-    // ─────────────────────────────
-    // 포켓
-    // ─────────────────────────────
+    /*
+     * =========================
+     * 포켓
+     * =========================
+     */
 
     {
       path: '/pockets',
       name: 'pockets',
+
       component: () => import('@/views/PocketView.vue'),
 
       meta: {
@@ -340,7 +497,9 @@ const router = createRouter({
 
     {
       path: '/pockets/budget-initial',
+
       name: 'pocket-budget-initial',
+
       component: () => import('@/views/pocket/PocketBudgetInitialView.vue'),
 
       meta: {
@@ -351,7 +510,9 @@ const router = createRouter({
 
     {
       path: '/pockets/budget-adjust',
+
       name: 'pocket-budget-adjust',
+
       component: () => import('@/views/pocket/PocketBudgetAdjustView.vue'),
 
       meta: {
@@ -360,13 +521,15 @@ const router = createRouter({
       },
     },
 
-    // ─────────────────────────────
-    // 예산 재조정
-    // ─────────────────────────────
+    /*
+     * 진행 중 예산 재조정
+     */
 
     {
       path: '/pockets/budget-readjust',
+
       name: 'pocket-budget-readjust',
+
       component: () => import('@/views/pocket/PocketBudgetReAdjustView.vue'),
 
       meta: {
@@ -388,9 +551,9 @@ const router = createRouter({
       },
     },
 
-    // ─────────────────────────────
-    // 예상 밖 수입
-    // ─────────────────────────────
+    /*
+     * 예상 밖 수입
+     */
 
     {
       path: '/pockets/unexpected-income-test',
@@ -416,83 +579,6 @@ const router = createRouter({
         title: '추가할 금액 지정',
         requiresAuth: true,
       },
-      path: '/credit-manage',
-      name: 'credit-manage',
-      component: () => import('@/views/credit/CreditHomeView.vue'),
-      meta: { title: '신용 관리', requiresAuth: true },
-    },
-    {
-      path: '/credit-manage/rates',
-      name: 'credit-expected-rates',
-      component: () => import('@/views/credit/ExpectedRateView.vue'),
-      meta: { title: '예상 금리', requiresAuth: true },
-    },
-    {
-      path: '/credit-manage/learn',
-      name: 'credit-learn',
-      component: () => import('@/views/credit/CreditLearnView.vue'),
-      meta: { title: '신용관리 하기', requiresAuth: true },
-    },
-    {
-      path: '/credit-manage/payments',
-      name: 'credit-payments',
-      component: () => import('@/views/credit/PaymentHistoryView.vue'),
-      meta: { title: '납부 기록', requiresAuth: true },
-    },
-    {
-      path: '/credit-manage/card-usage',
-      name: 'credit-card-usage',
-      component: () => import('@/views/credit/CardUsageView.vue'),
-      meta: { title: '카드 사용 현황', requiresAuth: true },
-    },
-    {
-      path: '/credit-manage/loans',
-      name: 'credit-loans',
-      component: () => import('@/views/credit/LoanStatusView.vue'),
-      meta: { title: '대출 현황', requiresAuth: true },
-    },
-    {
-      // 하단 탭엔 없고 상단바 계정 아이콘으로만 들어온다.
-      path: '/mypage',
-      name: 'mypage',
-      component: () => import('@/views/MyPageView.vue'),
-      meta: { title: '마이페이지', requiresAuth: true },
-    },
-    {
-      path: '/mypage/edit',
-      name: 'mypage-edit',
-      component: () => import('@/views/mypage/MyPageEditView.vue'),
-      meta: { title: '기본 정보 수정', requiresAuth: true },
-    },
-    {
-      path: '/mypage/password',
-      name: 'mypage-password',
-      component: () => import('@/views/mypage/PasswordChangeView.vue'),
-      meta: { title: '보안 및 비밀번호', requiresAuth: true },
-    },
-    {
-      path: '/mypage/terms',
-      name: 'mypage-terms',
-      component: () => import('@/views/mypage/TermsView.vue'),
-      meta: { title: '이용약관', requiresAuth: true },
-    },
-    {
-      path: '/mypage/privacy',
-      name: 'mypage-privacy',
-      component: () => import('@/views/mypage/PrivacyPolicyView.vue'),
-      meta: { title: '개인정보처리방침', requiresAuth: true },
-    },
-    {
-      path: '/mypage/mydata',
-      name: 'mypage-mydata',
-      component: () => import('@/views/mypage/MydataManageView.vue'),
-      meta: { title: '금융정보 연결 관리', requiresAuth: true },
-    },
-    {
-      path: '/mypage/withdraw',
-      name: 'mypage-withdraw',
-      component: () => import('@/views/mypage/WithdrawView.vue'),
-      meta: { title: '회원탈퇴', requiresAuth: true },
     },
 
     {
@@ -508,17 +594,64 @@ const router = createRouter({
       },
     },
 
-    // ─────────────────────────────
-    // 지원금
-    // ─────────────────────────────
+    /*
+     * 포켓 상세.
+     *
+     * budget-* 같은 정적 경로보다
+     * 반드시 아래에 있어야 한다.
+     */
+    {
+      path: '/pockets/:pocketType',
+
+      name: 'pocket-detail',
+
+      component: () => import('@/views/pocket/PocketDetailView.vue'),
+
+      meta: {
+        title: '필수 포켓',
+        requiresAuth: true,
+      },
+
+      beforeEnter: (to) => {
+        const titles: Record<string, string> = {
+          ESSENTIAL: '필수 포켓',
+
+          FREE: '자유 포켓',
+
+          EMERGENCY: '비상금 포켓',
+        }
+
+        const pocketType = typeof to.params.pocketType === 'string' ? to.params.pocketType : ''
+
+        if (!titles[pocketType]) {
+          return {
+            name: 'pockets',
+
+            query: {
+              month: to.query.month,
+            },
+          }
+        }
+
+        to.meta.title = titles[pocketType]
+      },
+    },
+
+    /*
+     * =========================
+     * 지원금
+     * =========================
+     */
 
     {
       path: '/grants',
       name: 'grants',
+
       component: GrantMatchHomeView,
 
       meta: {
         title: '지원금 매칭',
+        requiresAuth: true,
       },
     },
 
@@ -530,6 +663,7 @@ const router = createRouter({
 
       meta: {
         title: '전체 지원제도',
+        requiresAuth: true,
       },
     },
 
@@ -542,18 +676,22 @@ const router = createRouter({
       meta: {
         title: '지원 상세',
         hideChrome: true,
+        requiresAuth: true,
       },
     },
 
-    // ─────────────────────────────
-    // 신용 관리
-    // ─────────────────────────────
+    /*
+     * =========================
+     * 신용 관리
+     * =========================
+     */
 
     {
       path: '/credit-manage',
+
       name: 'credit-manage',
 
-      component: () => import('@/views/PlaceholderView.vue'),
+      component: () => import('@/views/credit/CreditHomeView.vue'),
 
       meta: {
         title: '신용 관리',
@@ -561,34 +699,174 @@ const router = createRouter({
       },
     },
 
-    // ─────────────────────────────
-    // 반드시 마지막
-    // ─────────────────────────────
+    {
+      path: '/credit-manage/rates',
 
+      name: 'credit-expected-rates',
+
+      component: () => import('@/views/credit/ExpectedRateView.vue'),
+
+      meta: {
+        title: '예상 금리',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/credit-manage/learn',
+
+      name: 'credit-learn',
+
+      component: () => import('@/views/credit/CreditLearnView.vue'),
+
+      meta: {
+        title: '신용관리 하기',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/credit-manage/payments',
+
+      name: 'credit-payments',
+
+      component: () => import('@/views/credit/PaymentHistoryView.vue'),
+
+      meta: {
+        title: '납부 기록',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/credit-manage/card-usage',
+
+      name: 'credit-card-usage',
+
+      component: () => import('@/views/credit/CardUsageView.vue'),
+
+      meta: {
+        title: '카드 사용 현황',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/credit-manage/loans',
+
+      name: 'credit-loans',
+
+      component: () => import('@/views/credit/LoanStatusView.vue'),
+
+      meta: {
+        title: '대출 현황',
+        requiresAuth: true,
+      },
+    },
+
+    /*
+     * =========================
+     * 마이페이지
+     * =========================
+     */
+
+    {
+      path: '/mypage',
+      name: 'mypage',
+
+      component: () => import('@/views/MyPageView.vue'),
+
+      meta: {
+        title: '마이페이지',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/mypage/edit',
+
+      name: 'mypage-edit',
+
+      component: () => import('@/views/mypage/MyPageEditView.vue'),
+
+      meta: {
+        title: '기본 정보 수정',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/mypage/password',
+
+      name: 'mypage-password',
+
+      component: () => import('@/views/mypage/PasswordChangeView.vue'),
+
+      meta: {
+        title: '보안 및 비밀번호',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/mypage/terms',
+
+      name: 'mypage-terms',
+
+      component: () => import('@/views/mypage/TermsView.vue'),
+
+      meta: {
+        title: '이용약관',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/mypage/privacy',
+
+      name: 'mypage-privacy',
+
+      component: () => import('@/views/mypage/PrivacyPolicyView.vue'),
+
+      meta: {
+        title: '개인정보처리방침',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/mypage/mydata',
+
+      name: 'mypage-mydata',
+
+      component: () => import('@/views/mypage/MydataManageView.vue'),
+
+      meta: {
+        title: '금융정보 연결 관리',
+        requiresAuth: true,
+      },
+    },
+
+    {
+      path: '/mypage/withdraw',
+
+      name: 'mypage-withdraw',
+
+      component: () => import('@/views/mypage/WithdrawView.vue'),
+
+      meta: {
+        title: '회원탈퇴',
+        requiresAuth: true,
+      },
+    },
+
+    /*
+     * 반드시 마지막.
+     */
     {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },
-    {
-      // 모든 정적 /pockets/* 경로 뒤에 둬 budget-* 화면을 pocketType으로 오인하지 않게 한다.
-      path: '/pockets/:pocketType',
-      name: 'pocket-detail',
-      component: () => import('@/views/pocket/PocketDetailView.vue'),
-      meta: { title: '필수 포켓', requiresAuth: true },
-      beforeEnter: (to) => {
-        const titles: Record<string, string> = {
-          ESSENTIAL: '필수 포켓',
-          FREE: '자유 포켓',
-          EMERGENCY: '비상금 포켓',
-        }
-        const pocketType = typeof to.params.pocketType === 'string' ? to.params.pocketType : ''
-        if (!titles[pocketType]) return { name: 'pockets', query: { month: to.query.month } }
-        // 공용 AppTopBar가 화면 렌더링 전부터 올바른 포켓 제목을 표시하도록 한다.
-        to.meta.title = titles[pocketType]
-      },
-    },
-    // 없는 주소는 홈으로. SPA라 새로고침으로도 들어올 수 있다
-    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
 
@@ -601,15 +879,15 @@ router.beforeEach((to) => {
     }
   }
 
-  // 로그인은 했지만 온보딩(자립 계획 생성)을 안 끝낸 사용자는 온보딩 화면으로 보낸다.
-  // 온보딩 화면 자체는 무한 리다이렉트를 막기 위해 제외한다.
   if (
     to.meta.requiresAuth &&
     isLoggedIn &&
     localStorage.getItem('onboardingCompleted') !== 'true' &&
     !to.path.startsWith('/onboarding')
   ) {
-    return { name: 'onboarding-intro' }
+    return {
+      name: 'onboarding-intro',
+    }
   }
 })
 
