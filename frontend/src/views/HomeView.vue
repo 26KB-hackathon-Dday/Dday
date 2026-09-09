@@ -225,29 +225,19 @@ const assetText = computed(() => {
   letter-spacing: -0.2px;
   color: #171717;
 }
-/* 프로스티드 글래스 카드 — iOS 날씨 위젯 톤.
-   따뜻한 회색(greige) 반투명 레이어 위에 짙은 배후 블러, 큰 둥근 모서리,
-   왼쪽 위에서 비치는 옅은 하이라이트 림, 부드럽게 번지는 그림자. */
+/* 차콜 뉴모피즘 — 카드 자체가 부드럽게 솟은 듯한 입체감.
+   바깥: 우하단 짙은 그림자 + 좌상단 옅은 빛. 안쪽: 상단 하이라이트 / 하단 음영으로 돔 형태. */
 .proj__card {
   display: flex;
   flex-direction: column;
-  padding: 26px 26px 22px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 26px;
-  background:
-    linear-gradient(
-      155deg,
-      rgba(150, 142, 146, 0.34) 0%,
-      rgba(96, 89, 93, 0.4) 45%,
-      rgba(74, 68, 72, 0.46) 100%
-    ),
-    rgba(58, 54, 57, 0.55);
-  -webkit-backdrop-filter: blur(32px) saturate(135%);
-  backdrop-filter: blur(32px) saturate(135%);
+  padding: 26px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #34343a, #29292f);
   box-shadow:
-    0 16px 38px rgba(60, 52, 55, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    8px 8px 20px rgba(20, 20, 23, 0.5),
+    -8px -8px 20px rgba(90, 90, 104, 0.12),
+    inset 1px 1px 1px rgba(255, 255, 255, 0.06),
+    inset -2px -3px 5px rgba(0, 0, 0, 0.35);
 }
 .proj__amount {
   font-family: var(--font-num);
@@ -262,7 +252,7 @@ const assetText = computed(() => {
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.62);
 }
 .proj__link {
   display: flex;
@@ -270,10 +260,10 @@ const assetText = computed(() => {
   gap: 4px;
   margin-top: 24px;
   padding-top: 17px;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
 }
 </style>
