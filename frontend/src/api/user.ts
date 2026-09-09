@@ -34,6 +34,11 @@ export interface PasswordChangeRequest {
   newPassword: string
 }
 
+export interface UserWithdrawRequest {
+  /** 100자 이하. 선택 입력이라 안 보내도 된다 */
+  reason?: string
+}
+
 export const userApi = {
   /**
    * 로그인한 회원 정보.
@@ -49,4 +54,7 @@ export const userApi = {
   /** 비밀번호 변경. 현재 비밀번호를 알아야 한다 */
   changePassword: (body: PasswordChangeRequest) =>
     api.patch<void>('/api/users/me/password', body),
+
+  /** 회원 탈퇴. 데이터를 지우지 않고 상태만 WITHDRAWN으로 바꾼다. 사유는 선택 */
+  withdraw: (body?: UserWithdrawRequest) => api.delete<void>('/api/users/me', body),
 }

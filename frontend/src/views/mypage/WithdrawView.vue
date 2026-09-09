@@ -2,8 +2,13 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { userApi } from '@/api/user'
+import { authApi } from '@/api/auth'
+import { ApiError } from '@/api/types'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const auth = useAuthStore()
 
 type Reason = 'RARELY_USED' | 'MISSING_FEATURE' | 'FREQUENT_ERROR' | 'ETC'
 
@@ -14,22 +19,35 @@ const REASONS: { value: Reason; label: string }[] = [
   { value: 'ETC', label: '기타' },
 ]
 
-/** UI 퍼블리싱 단계 — 아직 백엔드로 보내지 않는다. */
 const selectedReason = ref<Reason | null>(null)
 const isAgreed = ref(false)
+const submitting = ref(false)
 
-const canWithdraw = computed(() => isAgreed.value)
+const canWithdraw = computed(() => isAgreed.value && !submitting.value)
 
 function selectReason(value: Reason) {
   selectedReason.value = value
 }
 
-function withdraw() {
+async function withdraw() {
   if (!isAgreed.value) {
     showToast('최종 확인에 동의해주세요')
     return
   }
-  showToast('준비 중이에요')
+  if (submitting.value) return
+
+  submitting.value = true
+  try {
+    const reason = REASONS.find((r) => r.value === selectedReason.value)?.label
+    await userApi.withdraw(reason ? { reason } : undefined)
+    await authApi.logout().catch(() => {}) // 서버는 무상태 — 실패해도 클라에서 지우면 끝
+    auth.logout()
+    router.replace('/landing')
+  } catch (e) {
+    showToast(e instanceof ApiError ? e.message : '탈퇴에 실패했습니다.')
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
