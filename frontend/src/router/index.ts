@@ -316,6 +316,12 @@ const router = createRouter({
       meta: { title: '예상 금리', requiresAuth: true },
     },
     {
+      path: '/credit-manage/learn',
+      name: 'credit-learn',
+      component: () => import('@/views/credit/CreditLearnView.vue'),
+      meta: { title: '신용관리 하기', requiresAuth: true },
+    },
+    {
       // 하단 탭엔 없고 상단바 계정 아이콘으로만 들어온다.
       path: '/mypage',
       name: 'mypage',

@@ -162,12 +162,9 @@ const LENDER_COLORS: Record<LenderType, string> = {
           </div>
         </section>
 
-        <!--
-          "신용 점수 올리는 방법" 화면은 아직 없다. 죽은 링크를 만들지 않으려고 비활성으로 둔다.
-        -->
-        <button type="button" class="cta" disabled>
-          신용 점수 올리는 방법 <span aria-hidden="true">→</span>
-        </button>
+        <RouterLink to="/credit-manage/learn" class="cta">
+          신용관리 하기 <span aria-hidden="true">→</span>
+        </RouterLink>
       </template>
     </template>
   </div>
@@ -350,9 +347,5 @@ const LENDER_COLORS: Record<LenderType, string> = {
   color: #fff;
   font-size: 16px;
   font-weight: 600;
-}
-
-.cta:disabled {
-  cursor: default;
 }
 </style>
