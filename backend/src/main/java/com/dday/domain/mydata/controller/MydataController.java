@@ -1,22 +1,25 @@
 package com.dday.domain.mydata.controller;
 
 import com.dday.domain.mydata.dto.MydataSuccessCode;
+import com.dday.domain.mydata.dto.request.AccountSelectionRequest;
 import com.dday.domain.mydata.dto.response.MydataConnectResponse;
 import com.dday.domain.mydata.dto.response.MydataSyncResponse;
+import com.dday.domain.mydata.dto.response.UserAccountListResponse;
+import com.dday.domain.mydata.dto.response.UserAccountResponse;
 import com.dday.domain.mydata.service.MydataConnectService;
 import com.dday.domain.mydata.service.MydataService;
+import com.dday.domain.mydata.service.UserAccountService;
 import com.dday.global.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
@@ -29,6 +32,7 @@ public class MydataController {
 
     private final MydataService mydataService;
     private final MydataConnectService mydataConnectService;
+    private final UserAccountService userAccountService;
 
     @Operation(summary = "MyData 연동", description = """
             온보딩의 기관 선택 화면이 부른다. 동의 기록 → 데모 목데이터 준비 → 첫 동기화를
@@ -57,5 +61,31 @@ public class MydataController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         return ApiResponse.of(MydataSuccessCode.MYDATA_SYNCED,
                 mydataService.sync(userId, from, to));
+    }
+
+    @Operation(summary = "연동 계좌 목록 조회", description = """
+            마이페이지의 금융정보 관리 화면이 부른다. 온보딩에서 연동한 계좌를 등록 순서대로 준다.
+            """)
+    @GetMapping("/accounts")
+    public ResponseEntity<ApiResponse<UserAccountListResponse>> getAccounts(
+            @AuthenticationPrincipal Long userId) {
+        return ApiResponse.of(MydataSuccessCode.ACCOUNTS_FOUND, userAccountService.getAccounts(userId));
+    }
+
+    @Operation(summary = "계좌 선택 여부 변경", description = """
+            이 계좌를 예산 계산에 포함할지 고른다. 계좌 자체를 추가·해지하는 기능은 아니다 —
+            그건 `/api/mydata/connect`·`/api/mydata/sync`의 몫이다.
+
+            | HTTP | code | message |
+            |---|---|---|
+            | 404 | ACCOUNT_NOT_FOUND | 연동된 계좌를 찾을 수 없습니다. |
+            """)
+    @PatchMapping("/accounts/{accountId}/selection")
+    public ResponseEntity<ApiResponse<UserAccountResponse>> updateAccountSelection(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "연동 계좌 ID") @PathVariable Long accountId,
+            @Valid @RequestBody AccountSelectionRequest request) {
+        return ApiResponse.of(MydataSuccessCode.ACCOUNT_SELECTION_UPDATED,
+                userAccountService.updateSelection(userId, accountId, request.getSelected()));
     }
 }

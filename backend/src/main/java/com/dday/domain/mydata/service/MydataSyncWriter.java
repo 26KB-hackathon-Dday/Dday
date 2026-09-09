@@ -57,7 +57,7 @@ public class MydataSyncWriter {
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         Set<String> accountKeys = accountData.stream().map(this::accountKey).collect(Collectors.toSet());
-        accountRepository.findAllByUserUserId(userId).stream()
+        accountRepository.findAllByUserUserIdOrderByAccountIdAsc(userId).stream()
                 .filter(account -> !accountKeys.contains(accountKey(account)))
                 .forEach(UserAccount::deactivate);
 
