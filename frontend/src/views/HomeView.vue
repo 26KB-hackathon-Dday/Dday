@@ -225,21 +225,21 @@ const assetText = computed(() => {
   letter-spacing: -0.2px;
   color: #171717;
 }
-/* 옅은 회색 빛이 도는 글래스모피즘 — 반투명 배경 + 배후 블러 + 위쪽에서 비치는 하이라이트. */
+/* 뿌연 회색 글래스모피즘 — 짙은 배후 블러 + 반투명 회색 레이어 + 옅은 상단 하이라이트. */
 .proj__card {
   display: flex;
   flex-direction: column;
   padding: 24px 25px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 16px;
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.6), rgba(240, 241, 243, 0.28) 55%),
-    rgba(235, 236, 238, 0.55);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  backdrop-filter: blur(14px) saturate(140%);
+    linear-gradient(150deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.06) 60%),
+    rgba(168, 168, 173, 0.5);
+  -webkit-backdrop-filter: blur(28px) saturate(115%);
+  backdrop-filter: blur(28px) saturate(115%);
   box-shadow:
-    0 8px 24px rgba(17, 17, 17, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    0 10px 30px rgba(17, 17, 17, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 .proj__amount {
   font-family: var(--font-num);
