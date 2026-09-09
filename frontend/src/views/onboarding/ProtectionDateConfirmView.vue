@@ -40,6 +40,14 @@ function next() {
         <span class="card-label">지원 종료까지</span>
         <strong class="card-value">{{ onboarding.remainingMonths }}개월 남았어요</strong>
       </div>
+
+      <!-- 보호종료일이 아직 오지 않은(=아직 자립하지 않은) 회원이다.
+           카운트다운(D-1825)의 기준일이 보호종료일이라, 그날이 오기 전까지는 홈 화면에
+           1825일짜리 카운트다운이 아니라 이 안내만 보인다 — 홈 화면 구현은 이번 범위 밖이다. -->
+      <p v-if="onboarding.protectionStatus === 'IN_PROTECTION'" class="notice">
+        아직 보호 중이라 카운트다운은 시작 전이에요. 보호종료일이 되어 D-1825일이 되는 날부터
+        홈 화면에서 카운트다운이 시작돼요.
+      </p>
     </div>
 
     <div class="actions">
@@ -115,6 +123,16 @@ function next() {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-primary);
+}
+
+.notice {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--color-bg-soft);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-secondary);
 }
 
 .actions {
