@@ -7,8 +7,82 @@ export type IncomePocketType = 'essential' | 'free' | 'future' | 'emergency'
 
 export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
   /*
-   * 현재 처리 중인 입금 거래.
+   * =========================
+   * 미처리 입금 Queue
+   * =========================
    */
+
+  const pendingIncomes = ref<UnexpectedIncome[]>([])
+
+  const currentIncomeIndex = ref(0)
+
+  const hasPendingIncomes = computed(() => {
+    return pendingIncomes.value.length > 0
+  })
+
+  const pendingCount = computed(() => {
+    return pendingIncomes.value.length
+  })
+
+  const currentPosition = computed(() => {
+    if (!hasPendingIncomes.value) {
+      return 0
+    }
+
+    return currentIncomeIndex.value + 1
+  })
+
+  const currentIncome = computed<UnexpectedIncome | null>(() => {
+    return pendingIncomes.value[currentIncomeIndex.value] ?? null
+  })
+
+  const remainingIncomeCount = computed(() => {
+    if (!hasPendingIncomes.value) {
+      return 0
+    }
+
+    return Math.max(pendingIncomes.value.length - currentIncomeIndex.value - 1, 0)
+  })
+
+  const totalPendingAmount = computed(() => {
+    return pendingIncomes.value.reduce((sum, income) => sum + income.amount, 0)
+  })
+
+  const setPendingIncomes = (incomes: UnexpectedIncome[]) => {
+    pendingIncomes.value = [...incomes]
+    currentIncomeIndex.value = 0
+  }
+
+  /*
+   * 현재 거래를 Queue에서 제거한다.
+   *
+   * 처리 완료된 거래가 빠지기 때문에
+   * index는 그대로 두면 다음 거래가
+   * 같은 index 위치로 올라온다.
+   */
+  const removeCurrentIncome = () => {
+    if (!hasPendingIncomes.value) {
+      return
+    }
+
+    pendingIncomes.value.splice(currentIncomeIndex.value, 1)
+
+    if (currentIncomeIndex.value >= pendingIncomes.value.length) {
+      currentIncomeIndex.value = Math.max(pendingIncomes.value.length - 1, 0)
+    }
+  }
+
+  const clearPendingIncomes = () => {
+    pendingIncomes.value = []
+    currentIncomeIndex.value = 0
+  }
+
+  /*
+   * =========================
+   * 현재 처리 중인 입금
+   * =========================
+   */
+
   const detectedTransactionId = ref<number | null>(null)
 
   const detectedAmount = ref(0)
@@ -104,11 +178,22 @@ export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
   }
 
   /*
+   * Queue의 현재 거래를
+   * 처리 대상으로 세팅한다.
+   */
+  const setCurrentPendingIncome = () => {
+    if (!currentIncome.value) {
+      resetDetectedIncome()
+      return
+    }
+
+    setDetectedIncome(currentIncome.value)
+  }
+
+  /*
    * RECURRING_LIKELY / RECURRING_OVER에서
    * "고정수입이 아니에요" 선택 시
    * 같은 거래를 일반 새 입금으로 전환.
-   *
-   * 백엔드 상태는 아직 바꾸지 않는다.
    */
   const convertToNewIncome = () => {
     incomeType.value = 'NEW_INCOME'
@@ -181,7 +266,11 @@ export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
     emergencyAmount.value = 0
   }
 
-  const resetAll = () => {
+  /*
+   * 현재 처리 중인 거래 정보만 초기화한다.
+   * Queue는 유지한다.
+   */
+  const resetDetectedIncome = () => {
     detectedTransactionId.value = null
 
     detectedAmount.value = 0
@@ -203,7 +292,36 @@ export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
     resetAllocation()
   }
 
+  /*
+   * Queue까지 전부 초기화.
+   */
+  const resetAll = () => {
+    clearPendingIncomes()
+    resetDetectedIncome()
+  }
+
   return {
+    /*
+     * Queue
+     */
+    pendingIncomes,
+    currentIncomeIndex,
+
+    hasPendingIncomes,
+    pendingCount,
+    currentPosition,
+    currentIncome,
+    remainingIncomeCount,
+    totalPendingAmount,
+
+    setPendingIncomes,
+    removeCurrentIncome,
+    clearPendingIncomes,
+    setCurrentPendingIncome,
+
+    /*
+     * 현재 거래
+     */
     detectedTransactionId,
     detectedAmount,
     senderName,
@@ -237,6 +355,7 @@ export const useUnexpectedIncomeStore = defineStore('unexpectedIncome', () => {
     setPocketAmount,
 
     resetAllocation,
+    resetDetectedIncome,
     resetAll,
   }
 })

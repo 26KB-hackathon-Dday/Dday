@@ -85,17 +85,6 @@
         </div>
       </section>
 
-      <!-- 예상 자산 -->
-      <section class="forecast-card">
-        <div class="forecast-icon">↗</div>
-
-        <span class="forecast-label"> 예상 지원 종료 시 자산 </span>
-
-        <strong class="forecast-amount">
-          {{ formatShortCurrency(expectedAsset) }}
-        </strong>
-      </section>
-
       <!-- 저장 에러 -->
       <p v-if="saveError" class="error-message">
         {{ saveError }}
@@ -103,8 +92,6 @@
 
       <!-- 저장 버튼 -->
       <section class="bottom-area">
-        <div class="bottom-divider" />
-
         <button class="confirm-button" type="button" :disabled="isSaving" @click="handleConfirm">
           {{ isSaving ? '변경 내용을 저장하고 있어요' : `${monthLabel} 계획 변경하기` }}
         </button>
@@ -160,8 +147,6 @@ const futureBudget = computed(() => getQueryNumber(route.query.future, 0))
 
 const emergencyBudget = computed(() => getQueryNumber(route.query.emergency, 0))
 
-const expectedAsset = computed(() => getQueryNumber(route.query.expectedAsset, 0))
-
 const getPercentage = (amount: number): number => {
   if (totalBudget.value <= 0) {
     return 0
@@ -174,32 +159,16 @@ const formatCurrency = (value: number): string => {
   return `${Math.round(value).toLocaleString('ko-KR')}원`
 }
 
-const formatShortCurrency = (value: number): string => {
-  if (value >= 10_000) {
-    const manwon = Math.round(value / 10_000)
-
-    return `${manwon.toLocaleString('ko-KR')}만원`
-  }
-
-  return formatCurrency(value)
-}
-
 const handleConfirm = async () => {
   if (isSaving.value) {
     return
   }
 
   saveError.value = ''
+
   isSaving.value = true
 
   try {
-    /**
-     * 중요
-     *
-     * 백엔드 BudgetAdjustmentRequest가
-     * allocations 필드를 받으므로
-     * 반드시 allocations로 전송.
-     */
     const request: BudgetAdjustmentRequest = {
       totalBudgetAmount: totalBudget.value,
 
@@ -444,46 +413,6 @@ const handleConfirm = async () => {
 .pocket-percent--emergency {
   color: #22a9ad;
   background: #d1f1f1;
-}
-
-.forecast-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  margin-top: 34px;
-
-  padding: 26px 16px;
-
-  border-radius: 12px;
-
-  background: #f5f6ff;
-}
-
-.forecast-icon {
-  margin-bottom: 8px;
-
-  color: #111111;
-
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.forecast-label {
-  color: #777777;
-
-  font-size: 12px;
-}
-
-.forecast-amount {
-  margin-top: 6px;
-
-  color: #111111;
-
-  font-size: 25px;
-  font-weight: 800;
-
-  letter-spacing: -0.8px;
 }
 
 .error-message {
