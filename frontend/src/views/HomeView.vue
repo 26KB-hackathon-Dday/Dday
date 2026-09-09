@@ -225,29 +225,36 @@ const assetText = computed(() => {
   letter-spacing: -0.2px;
   color: #171717;
 }
-/* 뿌연 회색 글래스모피즘 — 짙은 배후 블러 + 반투명 회색 레이어 + 옅은 상단 하이라이트.
-   흰 글씨가 읽히도록 회색 레이어를 중간 톤으로 잡는다. */
+/* 프로스티드 글래스 카드 — iOS 날씨 위젯 톤.
+   따뜻한 회색(greige) 반투명 레이어 위에 짙은 배후 블러, 큰 둥근 모서리,
+   왼쪽 위에서 비치는 옅은 하이라이트 림, 부드럽게 번지는 그림자. */
 .proj__card {
   display: flex;
   flex-direction: column;
-  padding: 24px 25px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 16px;
+  padding: 26px 26px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 26px;
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 60%),
-    rgba(70, 72, 80, 0.58);
-  -webkit-backdrop-filter: blur(28px) saturate(115%);
-  backdrop-filter: blur(28px) saturate(115%);
+    linear-gradient(
+      155deg,
+      rgba(150, 142, 146, 0.34) 0%,
+      rgba(96, 89, 93, 0.4) 45%,
+      rgba(74, 68, 72, 0.46) 100%
+    ),
+    rgba(58, 54, 57, 0.55);
+  -webkit-backdrop-filter: blur(32px) saturate(135%);
+  backdrop-filter: blur(32px) saturate(135%);
   box-shadow:
-    0 10px 30px rgba(17, 17, 17, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    0 16px 38px rgba(60, 52, 55, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 .proj__amount {
   font-family: var(--font-num);
   font-weight: 700;
-  font-size: 24px;
-  line-height: 32px;
-  letter-spacing: -0.48px;
+  font-size: 26px;
+  line-height: 34px;
+  letter-spacing: -0.52px;
   color: #fff;
 }
 .proj__desc {
@@ -255,7 +262,7 @@ const assetText = computed(() => {
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.72);
 }
 .proj__link {
   display: flex;
@@ -263,10 +270,10 @@ const assetText = computed(() => {
   gap: 4px;
   margin-top: 24px;
   padding-top: 17px;
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.9);
 }
 </style>
