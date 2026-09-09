@@ -77,7 +77,7 @@ const isActive = (to: string) =>
 }
 /* 활성 탭 아이콘은 살짝 키운다. */
 .bottomnav__tab.is-active .bottomnav__iconbox :deep(.app-icon) {
-  transform: scale(1.3);
+  transform: scale(1.24);
 }
 
 .bottomnav__label {
