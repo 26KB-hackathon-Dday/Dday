@@ -225,20 +225,26 @@ const assetText = computed(() => {
   letter-spacing: -0.2px;
   color: #171717;
 }
+/* 차콜 뉴모피즘 — 카드 자체가 부드럽게 솟은 듯한 입체감.
+   바깥: 우하단 짙은 그림자 + 좌상단 옅은 빛. 안쪽: 상단 하이라이트 / 하단 음영으로 돔 형태. */
 .proj__card {
   display: flex;
   flex-direction: column;
-  padding: 24px 25px;
-  border: 1px solid #848484;
-  border-radius: 16px;
-  background: #000;
+  padding: 26px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #34343a, #29292f);
+  box-shadow:
+    8px 8px 20px rgba(20, 20, 23, 0.5),
+    -8px -8px 20px rgba(90, 90, 104, 0.12),
+    inset 1px 1px 1px rgba(255, 255, 255, 0.06),
+    inset -2px -3px 5px rgba(0, 0, 0, 0.35);
 }
 .proj__amount {
   font-family: var(--font-num);
   font-weight: 700;
-  font-size: 24px;
-  line-height: 32px;
-  letter-spacing: -0.48px;
+  font-size: 26px;
+  line-height: 34px;
+  letter-spacing: -0.52px;
   color: #fff;
 }
 .proj__desc {
@@ -246,7 +252,7 @@ const assetText = computed(() => {
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.62);
 }
 .proj__link {
   display: flex;
@@ -254,10 +260,10 @@ const assetText = computed(() => {
   gap: 4px;
   margin-top: 24px;
   padding-top: 17px;
-  border-top: 1px solid var(--c-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.85);
 }
 </style>
