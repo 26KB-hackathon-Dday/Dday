@@ -225,13 +225,21 @@ const assetText = computed(() => {
   letter-spacing: -0.2px;
   color: #171717;
 }
+/* 옅은 회색 빛이 도는 글래스모피즘 — 반투명 배경 + 배후 블러 + 위쪽에서 비치는 하이라이트. */
 .proj__card {
   display: flex;
   flex-direction: column;
   padding: 24px 25px;
-  border: 1px solid #848484;
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 16px;
-  background: #000;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.6), rgba(240, 241, 243, 0.28) 55%),
+    rgba(235, 236, 238, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow:
+    0 8px 24px rgba(17, 17, 17, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .proj__amount {
   font-family: var(--font-num);
@@ -239,14 +247,14 @@ const assetText = computed(() => {
   font-size: 24px;
   line-height: 32px;
   letter-spacing: -0.48px;
-  color: #fff;
+  color: var(--c-text);
 }
 .proj__desc {
   margin-top: 8px;
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
-  color: #fff;
+  color: var(--c-text-2);
 }
 .proj__link {
   display: flex;
@@ -254,10 +262,10 @@ const assetText = computed(() => {
   gap: 4px;
   margin-top: 24px;
   padding-top: 17px;
-  border-top: 1px solid var(--c-border);
+  border-top: 1px solid rgba(17, 17, 17, 0.1);
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
-  color: #fff;
+  color: var(--c-text-2);
 }
 </style>
