@@ -13,6 +13,7 @@
         </p>
       </section>
 
+      <!-- 총 예산 -->
       <section class="total-card">
         <span class="total-label"> 이번 달 총 예산 </span>
 
@@ -21,7 +22,9 @@
         </strong>
       </section>
 
+      <!-- 포켓 배분 -->
       <section class="pocket-list">
+        <!-- 필수 -->
         <div class="pocket-row pocket-row--essential">
           <span class="pocket-badge pocket-badge--essential"> 필수 포켓 </span>
 
@@ -36,6 +39,7 @@
           </div>
         </div>
 
+        <!-- 자유 -->
         <div class="pocket-row pocket-row--free">
           <span class="pocket-badge pocket-badge--free"> 자유 포켓 </span>
 
@@ -50,6 +54,7 @@
           </div>
         </div>
 
+        <!-- 미래자산 -->
         <div class="pocket-row pocket-row--future">
           <span class="pocket-badge pocket-badge--future"> 미래자산 포켓 </span>
 
@@ -64,6 +69,7 @@
           </div>
         </div>
 
+        <!-- 비상금 -->
         <div class="pocket-row pocket-row--emergency">
           <span class="pocket-badge pocket-badge--emergency"> 비상금 포켓 </span>
 
@@ -79,6 +85,7 @@
         </div>
       </section>
 
+      <!-- 예상 자산 -->
       <section class="forecast-card">
         <div class="forecast-icon">↗</div>
 
@@ -89,10 +96,12 @@
         </strong>
       </section>
 
+      <!-- 저장 에러 -->
       <p v-if="saveError" class="error-message">
         {{ saveError }}
       </p>
 
+      <!-- 저장 버튼 -->
       <section class="bottom-area">
         <div class="bottom-divider" />
 
@@ -126,7 +135,7 @@ const monthLabel = computed(() => {
 })
 
 const getQueryNumber = (value: unknown, fallback: number): number => {
-  let rawValue: unknown = value
+  let rawValue = value
 
   if (Array.isArray(rawValue)) {
     rawValue = rawValue[0]
@@ -181,14 +190,20 @@ const handleConfirm = async () => {
   }
 
   saveError.value = ''
-
   isSaving.value = true
 
   try {
+    /**
+     * 중요
+     *
+     * 백엔드 BudgetAdjustmentRequest가
+     * allocations 필드를 받으므로
+     * 반드시 allocations로 전송.
+     */
     const request: BudgetAdjustmentRequest = {
       totalBudgetAmount: totalBudget.value,
 
-      pockets: [
+      allocations: [
         {
           pocketType: 'ESSENTIAL',
 
@@ -248,6 +263,7 @@ const handleConfirm = async () => {
   min-height: calc(100vh - 56px);
 
   margin: 0 auto;
+
   padding: 28px 28px 36px;
 
   box-sizing: border-box;
@@ -436,6 +452,7 @@ const handleConfirm = async () => {
   align-items: center;
 
   margin-top: 34px;
+
   padding: 26px 16px;
 
   border-radius: 12px;
