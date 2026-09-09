@@ -6,11 +6,13 @@ import com.dday.domain.pocket.dto.request.PocketUpdateRequest;
 import com.dday.domain.pocket.dto.response.PocketInitializeResponse;
 import com.dday.domain.pocket.dto.response.PocketMonthlyResponse;
 import com.dday.domain.pocket.dto.response.PocketCategoryUsageResponse;
+import com.dday.domain.pocket.dto.response.MonthlyPocketSettlementResponse;
 import com.dday.domain.pocket.dto.response.TransactionListItemResponse;
 import com.dday.domain.mydata.entity.ClassificationStatus;
 import com.dday.domain.pocket.entity.PocketType;
 import com.dday.domain.pocket.service.PocketService;
 import com.dday.domain.pocket.service.PocketCategoryUsageService;
+import com.dday.domain.pocket.service.MonthlyPocketSettlementService;
 import com.dday.domain.pocket.service.TransactionQueryService;
 import com.dday.global.common.dto.ApiResponse;
 import com.dday.global.common.dto.PageResponse;
@@ -35,6 +37,7 @@ public class PocketController {
 
     private final PocketService pocketService;
     private final PocketCategoryUsageService pocketCategoryUsageService;
+    private final MonthlyPocketSettlementService monthlyPocketSettlementService;
     private final TransactionQueryService transactionQueryService;
 
     @Operation(summary = "기본 포켓 초기화", description = """
@@ -58,6 +61,19 @@ public class PocketController {
             @RequestParam String month) {
         return ApiResponse.of(PocketSuccessCode.MONTHLY_POCKETS_FOUND,
                 pocketService.findMonthly(userId, month));
+    }
+
+    @Operation(summary = "월말 포켓 정산", description = """
+            month는 yyyy-MM 형식이다.
+            필수·자유 포켓의 목표액과 정상 소비 거래를 집계해 잔액과 초과 사용액을 반환한다.
+            정산 결과를 저장하지 않는 멱등 API이며 비상금과 미래자산 포켓은 대상에서 제외한다.
+            """)
+    @PostMapping("/monthly-settlements")
+    public ResponseEntity<ApiResponse<MonthlyPocketSettlementResponse>> settleMonthly(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam String month) {
+        return ApiResponse.of(PocketSuccessCode.MONTHLY_POCKETS_SETTLED,
+                monthlyPocketSettlementService.settle(userId, month));
     }
 
     @Operation(summary = "포켓별 거래 목록 조회", description = """
