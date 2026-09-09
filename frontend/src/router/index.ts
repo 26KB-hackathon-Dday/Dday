@@ -477,6 +477,16 @@ const router = createRouter({
       },
     },
 
+    {
+      path: '/asset-forecast',
+      name: 'asset-forecast',
+      component: () => import('@/views/AssetForecastView.vue'),
+      meta: {
+        title: '지원 종료 시 예상 자산',
+        requiresAuth: true,
+      },
+    },
+
     /*
      * =========================
      * 포켓

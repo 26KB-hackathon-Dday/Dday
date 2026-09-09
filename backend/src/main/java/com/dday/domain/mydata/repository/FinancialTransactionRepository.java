@@ -269,6 +269,34 @@ public interface FinancialTransactionRepository extends JpaRepository<FinancialT
                                             @Param("from") LocalDateTime from,
                                             @Param("to") LocalDateTime to);
 
+    @Query("""
+            select coalesce(sum(t.amount), 0)
+            from FinancialTransaction t
+            left join t.account a
+            left join t.card c
+            where (a.user.userId = :userId or c.user.userId = :userId)
+              and t.transactionAt >= :from and t.transactionAt < :to
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.INCOME
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+            """)
+    Long sumIncomeByPeriod(@Param("userId") Long userId,
+                           @Param("from") LocalDateTime from,
+                           @Param("to") LocalDateTime to);
+
+    @Query("""
+            select coalesce(sum(t.amount), 0)
+            from FinancialTransaction t
+            left join t.account a
+            left join t.card c
+            where (a.user.userId = :userId or c.user.userId = :userId)
+              and t.transactionAt >= :from and t.transactionAt < :to
+              and t.transactionType = com.dday.domain.mydata.entity.TransactionType.EXPENSE
+              and t.transactionStatus = com.dday.domain.mydata.entity.TransactionStatus.NORMAL
+            """)
+    Long sumExpenseByPeriod(@Param("userId") Long userId,
+                            @Param("from") LocalDateTime from,
+                            @Param("to") LocalDateTime to);
+
     /** 적금·투자 계좌별 이번 달 납입액. 결과 행은 {@code [계좌 ID, 합계]}다. */
     @Query("""
             select targetAccount.accountId, coalesce(sum(t.amount), 0)

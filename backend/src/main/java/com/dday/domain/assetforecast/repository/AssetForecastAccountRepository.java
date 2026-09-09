@@ -31,4 +31,14 @@ public interface AssetForecastAccountRepository
             @Param("userId") Long userId,
             @Param("accountTypes") Collection<AccountType> accountTypes
     );
+
+    @Query("""
+            select coalesce(sum(account.balance), 0)
+            from UserAccount account
+            where account.user.userId = :userId
+              and account.active = true
+              and account.accountType = :accountType
+            """)
+    Long sumActiveBalanceByType(@Param("userId") Long userId,
+                                @Param("accountType") AccountType accountType);
 }
