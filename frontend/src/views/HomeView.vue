@@ -96,7 +96,10 @@ const assetText = computed(() => {
       <p class="hero__dday">{{ ddayText }}</p>
 
       <template v-if="plan">
-        <p class="hero__note">지원 종료까지 {{ plan.monthsLeft }}개월 남았어요</p>
+        <p class="hero__note">
+          지원 종료까지 <strong>{{ plan.monthsLeft }}</strong
+          >개월 남았어요
+        </p>
         <div class="hero__progress">
           <div class="bar">
             <div class="bar__fill" :style="{ width: `${plan.progress}%` }" />
@@ -158,6 +161,9 @@ const assetText = computed(() => {
   font-weight: 300;
   line-height: 20px;
   color: #000;
+}
+.hero__note strong {
+  font-weight: 700;
 }
 .hero__progress {
   margin-top: 16px;
