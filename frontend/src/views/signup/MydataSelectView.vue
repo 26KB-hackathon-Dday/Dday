@@ -1,18 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { mydataApi, type Institution } from '@/api/mydata'
 import { useSignupStore } from '@/stores/signup'
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
 import InstitutionItem from '@/components/signup/InstitutionItem.vue'
 
+const route = useRoute()
 const router = useRouter()
 const signup = useSignupStore()
+
+const fromMypage = computed(() => route.query.from === 'mypage')
 
 const institutions = ref<Institution[]>([])
 const loading = ref(true)
 
 onMounted(async () => {
+  // 마이페이지에서 다시 들어온 거면 지난 세션에 남은 선택값을 지운다
+  if (fromMypage.value) {
+    signup.selectedInstitutions = []
+    signup.connectResult = null
+  }
   institutions.value = await mydataApi.findInstitutions()
   loading.value = false
 })
@@ -36,12 +44,12 @@ const canSubmit = computed(() => signup.selectedInstitutions.length > 0)
 function skip() {
   if (!window.confirm('금융기관 연결을 건너뛸까요? 나중에 신용 관리에서 다시 연결할 수 있어요.')) return
   signup.selectedInstitutions = []
-  router.push('/signup/done')
+  router.push(fromMypage.value ? '/mypage' : '/signup/done')
 }
 
 function next() {
   if (!canSubmit.value) return
-  router.push('/mydata/consent')
+  router.push({ path: '/mydata/consent', query: route.query })
 }
 </script>
 

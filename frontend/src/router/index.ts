@@ -346,6 +346,18 @@ const router = createRouter({
       component: () => import('@/views/MyPageView.vue'),
       meta: { title: '마이페이지', requiresAuth: true },
     },
+    {
+      path: '/mypage/edit',
+      name: 'mypage-edit',
+      component: () => import('@/views/mypage/MyPageEditView.vue'),
+      meta: { title: '기본 정보 수정', requiresAuth: true },
+    },
+    {
+      path: '/mypage/password',
+      name: 'mypage-password',
+      component: () => import('@/views/mypage/PasswordChangeView.vue'),
+      meta: { title: '보안 및 비밀번호', requiresAuth: true },
+    },
 
     {
       path: '/pockets/unexpected-income/allocate',

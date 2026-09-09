@@ -26,12 +26,19 @@ function notReady() {
   showToast('준비 중이에요')
 }
 
-const sections = computed(() => [
+interface MenuItem {
+  text: string
+  badge?: string
+  badgeTone?: 'on' | 'off'
+  onClick: () => unknown
+}
+
+const sections = computed<{ label: string; items: MenuItem[] }[]>(() => [
   {
     label: '내 정보 관리',
     items: [
-      { text: '기본 정보 수정', onClick: notReady },
-      { text: '보안 및 비밀번호', onClick: notReady },
+      { text: '기본 정보 수정', onClick: () => router.push('/mypage/edit') },
+      { text: '보안 및 비밀번호', onClick: () => router.push('/mypage/password') },
     ],
   },
   {
@@ -41,10 +48,12 @@ const sections = computed(() => [
         text: '연결된 금융기관',
         badge: me.value?.mydataConnected ? '연결됨' : '미연결',
         badgeTone: me.value?.mydataConnected ? 'on' : 'off',
-        // MYPAGE-02(금융정보 연결 관리) 화면 미구현. /mydata는 온보딩 플로우 전용이라 안 보낸다.
-        onClick: notReady,
+        onClick: () => router.push({ path: '/mydata/select', query: { from: 'mypage' } }),
       },
-      { text: '정기 수입 작성', onClick: notReady },
+      {
+        text: '정기 수입 작성',
+        onClick: () => router.push({ path: '/onboarding/income', query: { from: 'mypage' } }),
+      },
     ],
   },
   {
@@ -82,7 +91,12 @@ async function logout() {
         <p class="profile__name">{{ me.name }}</p>
         <p class="profile__email">{{ me.email }}</p>
       </div>
-      <button type="button" class="profile__edit" aria-label="기본 정보 수정" @click="notReady">
+      <button
+        type="button"
+        class="profile__edit"
+        aria-label="기본 정보 수정"
+        @click="router.push('/mypage/edit')"
+      >
         <AppIcon name="pencil" :size="18" />
       </button>
     </section>
