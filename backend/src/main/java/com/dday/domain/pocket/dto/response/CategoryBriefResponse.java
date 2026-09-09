@@ -12,12 +12,14 @@ import lombok.Getter;
 public class CategoryBriefResponse {
 
     private Long categoryId;
+    private String categoryCode;
     private String categoryName;
 
     public static CategoryBriefResponse from(Category category) {
         // 미분류 거래도 같은 변환 메서드를 사용할 수 있도록 null을 그대로 전달한다.
         return category == null ? null : CategoryBriefResponse.builder()
                 .categoryId(category.getCategoryId())
+                .categoryCode(category.getCategoryCode())
                 .categoryName(category.getCategoryName())
                 .build();
     }

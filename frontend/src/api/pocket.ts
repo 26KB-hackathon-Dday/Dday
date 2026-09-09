@@ -54,9 +54,34 @@ export interface PocketTransaction {
   amount: number
   transactionType: TransactionType
   transactionStatus: TransactionStatus
-  category: { categoryId: number; categoryName: string } | null
+  category: { categoryId: number; categoryCode: string; categoryName: string } | null
   classificationStatus: string | null
   classificationSource: string | null
+}
+
+export interface PocketTransactionDetail extends PocketTransaction {
+  sourceType: 'ACCOUNT' | 'CARD'
+  sourceTransactionId: string
+  merchantRegno: string | null
+  pocket: Pocket | null
+}
+
+export interface PocketCategory {
+  categoryId: number
+  categoryCode: string
+  categoryName: string
+  defaultPocketType: PocketType
+  children: PocketCategory[]
+}
+
+export interface PocketCategoryListResponse {
+  categories: PocketCategory[]
+}
+
+export interface TransactionClassificationRequest {
+  pocketType: PocketType
+  categoryId: number
+  applyFutureRule: boolean
 }
 
 export interface PageResponse<T> {
@@ -97,4 +122,12 @@ export const pocketApi = {
     api.get<PocketCategoryUsageResponse>(
       `/api/pockets/${pocketType}/category-usage?month=${encodeURIComponent(month)}`,
     ),
+  findTransaction: (transactionId: number) =>
+    api.get<PocketTransactionDetail>(`/api/transactions/${transactionId}`),
+  findCategories: (pocketType: PocketType) =>
+    api.get<PocketCategoryListResponse>(
+      `/api/categories?pocketType=${encodeURIComponent(pocketType)}`,
+    ),
+  classifyTransaction: (transactionId: number, body: TransactionClassificationRequest) =>
+    api.patch<void>(`/api/transactions/${transactionId}/classification`, body),
 }

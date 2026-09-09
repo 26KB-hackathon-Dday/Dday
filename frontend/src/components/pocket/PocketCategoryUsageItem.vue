@@ -7,41 +7,63 @@ const props = defineProps<{
   name: string
   categoryCode: string
   usedAmount: number
+  selected?: boolean
 }>()
+const emit = defineEmits<{ select: [] }>()
 
 const icon = computed(() => {
-  if (props.categoryCode === 'HOUSING') return 'home'
-  if (props.categoryCode === 'TELECOM') return 'globe'
-  if (props.categoryCode === 'TRANSPORT') return 'arrow-right-long'
-  if (props.categoryCode === 'MEDICAL') return 'benefit'
-  return 'doc'
+  const icons: Record<string, string> = {
+    HOUSING: 'category-housing',
+    UTILITY: 'category-utility',
+    TELECOM: 'category-telecom',
+    INSURANCE: 'category-insurance',
+    TRANSPORT: 'category-transport',
+    MEDICAL: 'category-medical',
+    UNCLASSIFIED: 'category-etc',
+  }
+  return icons[props.categoryCode] ?? 'category-etc'
 })
 </script>
 
 <template>
   <li class="category-item">
-    <span class="category-item__icon" aria-hidden="true">
-      <AppIcon :name="icon" :size="19" />
-    </span>
-    <span class="category-item__copy">
-      <strong>{{ name }}</strong>
-    </span>
-    <span class="category-item__amount">
-      <strong>{{ formatWon(usedAmount) }}</strong>
-    </span>
+    <button type="button" :aria-pressed="selected" @click="emit('select')">
+      <span class="category-item__icon" aria-hidden="true">
+        <AppIcon :name="icon" :size="19" />
+      </span>
+      <span class="category-item__copy">
+        <strong>{{ name }}</strong>
+      </span>
+      <span class="category-item__amount">
+        <strong>{{ formatWon(usedAmount) }}</strong>
+      </span>
+      <AppIcon class="category-item__chevron" name="chevron-right" :size="14" aria-hidden="true" />
+    </button>
   </li>
 </template>
 
 <style scoped>
 .category-item {
+  min-width: 0;
+}
+.category-item + .category-item {
+  border-top: 1px solid var(--c-border);
+}
+.category-item button {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 11px;
   min-width: 0;
   padding: 15px 14px;
+  text-align: left;
 }
-.category-item + .category-item {
-  border-top: 1px solid var(--c-border);
+.category-item button[aria-pressed='true'] {
+  background: #f7faff;
+}
+.category-item button:focus-visible {
+  outline: 2px solid var(--c-blue);
+  outline-offset: -2px;
 }
 .category-item__icon {
   display: grid;
@@ -77,8 +99,12 @@ const icon = computed(() => {
 .category-item__amount strong {
   font-family: var(--font-num);
 }
+.category-item__chevron {
+  flex: none;
+  color: var(--c-text-3);
+}
 @media (max-width: 340px) {
-  .category-item {
+  .category-item button {
     gap: 8px;
     padding-inline: 10px;
   }

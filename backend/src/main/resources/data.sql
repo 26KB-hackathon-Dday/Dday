@@ -464,18 +464,19 @@ VALUES
     (2,  NULL, 'UTILITY',       '공과금',       'ESSENTIAL',    1),
     (3,  NULL, 'TELECOM',       '통신비',       'ESSENTIAL',    1),
     (4,  NULL, 'INSURANCE',     '보험료',       'ESSENTIAL',    1),
-    (5,  NULL, 'TRANSPORT',     '교통비',       'ESSENTIAL',    1),
+    (5,  NULL, 'TRANSPORT',     '교통',         'FREE',         1),
     (6,  NULL, 'FOOD',          '식비',         'FREE',         1),
-    (7,  NULL, 'CAFE',          '카페·간식',    'FREE',         1),
-    (8,  NULL, 'CONVENIENCE',   '편의점·마트',  'FREE',         1),
+    (7,  NULL, 'CAFE',          '카페·간식',    'FREE',         0),
+    (8,  NULL, 'CONVENIENCE',   '편의점·마트',  'FREE',         0),
     (9,  NULL, 'SHOPPING',      '쇼핑',         'FREE',         1),
-    (10, NULL, 'BEAUTY',        '뷰티·미용',    'FREE',         1),
-    (11, NULL, 'CULTURE',       '문화·여가',    'FREE',         1),
-    (12, NULL, 'SUBSCRIPTION',  '구독료',       'FREE',         1),
-    (13, NULL, 'MEDICAL',       '의료·건강',    'ESSENTIAL',    1),
-    (14, NULL, 'EDUCATION',     '교육·자기계발','FREE',         1),
+    (10, NULL, 'BEAUTY',        '미용',         'FREE',         1),
+    (11, NULL, 'CULTURE',       '취미',         'FREE',         1),
+    (12, NULL, 'SUBSCRIPTION',  '구독료',       'FREE',         0),
+    (13, NULL, 'MEDICAL',       '의료',         'FREE',         1),
+    (14, NULL, 'EDUCATION',     '교육·자기계발','FREE',         0),
     (15, NULL, 'SAVINGS',       '저축·투자',    'FUTURE_ASSET', 1),
-    (16, NULL, 'ETC',           '기타',         'FREE',         1)
+    (16, NULL, 'ETC',           '기타',         'FREE',         1),
+    (17, NULL, 'TRAVEL',        '여행',         'FREE',         1)
 ON DUPLICATE KEY UPDATE
     category_name = VALUES(category_name),
     default_pocket_type = VALUES(default_pocket_type),
@@ -505,14 +506,13 @@ JOIN (
     UNION ALL SELECT 'REGNO:1208147521', '1208147521', '배달의민족',          'FOOD'
     UNION ALL SELECT 'REGNO:2211112222', '2211112222', '본죽앤비빔밥 강남점',  'FOOD'
     UNION ALL SELECT 'REGNO:2222223333', '2222223333', '맘스터치 신논현점',    'FOOD'
-    -- 카페·간식
-    UNION ALL SELECT 'REGNO:1208800000', '1208800000', '스타벅스 역삼점',      'CAFE'
-    UNION ALL SELECT 'REGNO:1048164000', '1048164000', '투썸플레이스',        'CAFE'
-    UNION ALL SELECT 'REGNO:7733445566', '7733445566', '배스킨라빈스 강남역점', 'CAFE'
-    -- 편의점·마트
-    UNION ALL SELECT 'REGNO:3302345678', '3302345678', '이마트24 논현점',      'CONVENIENCE'
-    UNION ALL SELECT 'REGNO:3311224455', '3311224455', 'CU 강남대로점',        'CONVENIENCE'
-    UNION ALL SELECT 'REGNO:3322335566', '3322335566', 'GS25 역삼점',          'CONVENIENCE'
+    -- 카페·간식, 편의점·마트도 식비로 합친다.
+    UNION ALL SELECT 'REGNO:1208800000', '1208800000', '스타벅스 역삼점',      'FOOD'
+    UNION ALL SELECT 'REGNO:1048164000', '1048164000', '투썸플레이스',        'FOOD'
+    UNION ALL SELECT 'REGNO:7733445566', '7733445566', '배스킨라빈스 강남역점', 'FOOD'
+    UNION ALL SELECT 'REGNO:3302345678', '3302345678', '이마트24 논현점',      'FOOD'
+    UNION ALL SELECT 'REGNO:3311224455', '3311224455', 'CU 강남대로점',        'FOOD'
+    UNION ALL SELECT 'REGNO:3322335566', '3322335566', 'GS25 역삼점',          'FOOD'
     -- 교통비
     UNION ALL SELECT 'REGNO:1108600000', '1108600000', '서울교통공사',         'TRANSPORT'
     UNION ALL SELECT 'REGNO:1199887766', '1199887766', '카카오T',              'TRANSPORT'
@@ -524,15 +524,15 @@ JOIN (
     -- 문화·여가
     UNION ALL SELECT 'REGNO:1122334455', '1122334455', 'CGV 강남',            'CULTURE'
     UNION ALL SELECT 'REGNO:1133445566', '1133445566', '교보문고 강남점',      'CULTURE'
-    -- 구독료 (사업자번호가 없어 이름으로 매칭)
-    UNION ALL SELECT 'NAME:유튜브 프리미엄', NULL, '유튜브 프리미엄',          'SUBSCRIPTION'
-    UNION ALL SELECT 'NAME:넷플릭스',        NULL, '넷플릭스',                'SUBSCRIPTION'
+    -- 구독료도 취미로 합친다 (사업자번호가 없어 이름으로 매칭).
+    UNION ALL SELECT 'NAME:유튜브 프리미엄', NULL, '유튜브 프리미엄',          'CULTURE'
+    UNION ALL SELECT 'NAME:넷플릭스',        NULL, '넷플릭스',                'CULTURE'
     -- 의료·건강
     UNION ALL SELECT 'REGNO:4400556677', '4400556677', '강남서울병원',        'MEDICAL'
     UNION ALL SELECT 'REGNO:4411667788', '4411667788', '온누리약국',          'MEDICAL'
-    -- 교육·자기계발
-    UNION ALL SELECT 'REGNO:5500778899', '5500778899', '해커스어학원',        'EDUCATION'
-    UNION ALL SELECT 'NAME:클래스101',      NULL, '클래스101',               'EDUCATION'
+    -- 교육·자기계발도 취미로 합친다.
+    UNION ALL SELECT 'REGNO:5500778899', '5500778899', '해커스어학원',        'CULTURE'
+    UNION ALL SELECT 'NAME:클래스101',      NULL, '클래스101',               'CULTURE'
 ) r ON 1 = 1
 JOIN category c ON c.category_code = r.category_code
                 AND p.pocket_type = c.default_pocket_type
@@ -700,6 +700,25 @@ ON DUPLICATE KEY UPDATE
     merchant_name = VALUES(merchant_name),
     merchant_regno = VALUES(merchant_regno),
     updated_at = VALUES(updated_at);
+
+-- 카테고리 기준정보가 바뀌어도 기존 DB의 자동분류 거래는 INSERT 중 보존되므로,
+-- 데모 계정의 USER_RULE 결과만 최신 규칙으로 다시 맞춘다. 사용자가 직접 바꾼 MANUAL 분류는 건드리지 않는다.
+UPDATE financial_transaction ft
+JOIN users u ON u.email = 'user1@test.com'
+JOIN user_merchant_rule rule
+  ON rule.user_id = u.user_id
+ AND rule.merchant_key = CASE
+       WHEN ft.merchant_regno IS NOT NULL
+         THEN CONCAT('REGNO:', REGEXP_REPLACE(ft.merchant_regno, '[^0-9]', ''))
+       WHEN ft.merchant_name IS NOT NULL
+         THEN CONCAT('NAME:', UPPER(TRIM(ft.merchant_name)))
+       ELSE NULL
+     END
+SET ft.category_id = rule.category_id,
+    ft.pocket_id = rule.pocket_id
+WHERE ft.classification_source = 'USER_RULE'
+  AND (ft.account_id IN (SELECT account_id FROM user_account WHERE user_id = u.user_id)
+       OR ft.card_id IN (SELECT card_id FROM user_card WHERE user_id = u.user_id));
 
 -- 취소·환불 행의 원거래 FK는 양쪽 행이 모두 생긴 다음 외부 거래 ID로 연결한다.
 UPDATE financial_transaction canceled
