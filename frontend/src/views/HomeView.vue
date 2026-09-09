@@ -225,21 +225,22 @@ const assetText = computed(() => {
   letter-spacing: -0.2px;
   color: #171717;
 }
-/* 뿌연 회색 글래스모피즘 — 짙은 배후 블러 + 반투명 회색 레이어 + 옅은 상단 하이라이트. */
+/* 뿌연 회색 글래스모피즘 — 짙은 배후 블러 + 반투명 회색 레이어 + 옅은 상단 하이라이트.
+   흰 글씨가 읽히도록 회색 레이어를 중간 톤으로 잡는다. */
 .proj__card {
   display: flex;
   flex-direction: column;
   padding: 24px 25px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 16px;
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.06) 60%),
-    rgba(168, 168, 173, 0.5);
+    linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 60%),
+    rgba(70, 72, 80, 0.58);
   -webkit-backdrop-filter: blur(28px) saturate(115%);
   backdrop-filter: blur(28px) saturate(115%);
   box-shadow:
-    0 10px 30px rgba(17, 17, 17, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    0 10px 30px rgba(17, 17, 17, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .proj__amount {
   font-family: var(--font-num);
@@ -247,14 +248,14 @@ const assetText = computed(() => {
   font-size: 24px;
   line-height: 32px;
   letter-spacing: -0.48px;
-  color: var(--c-text);
+  color: #fff;
 }
 .proj__desc {
   margin-top: 8px;
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
-  color: var(--c-text-2);
+  color: rgba(255, 255, 255, 0.88);
 }
 .proj__link {
   display: flex;
@@ -262,10 +263,10 @@ const assetText = computed(() => {
   gap: 4px;
   margin-top: 24px;
   padding-top: 17px;
-  border-top: 1px solid rgba(17, 17, 17, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
-  color: var(--c-text-2);
+  color: rgba(255, 255, 255, 0.92);
 }
 </style>
