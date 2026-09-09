@@ -376,6 +376,12 @@ const router = createRouter({
       component: () => import('@/views/mypage/MydataManageView.vue'),
       meta: { title: '금융정보 연결 관리', requiresAuth: true },
     },
+    {
+      path: '/mypage/withdraw',
+      name: 'mypage-withdraw',
+      component: () => import('@/views/mypage/WithdrawView.vue'),
+      meta: { title: '회원탈퇴', requiresAuth: true },
+    },
 
     {
       path: '/pockets/unexpected-income/allocate',

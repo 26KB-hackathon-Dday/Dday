@@ -1,13 +1,9 @@
 <script setup lang="ts">
 /**
  * 마이페이지(MYPAGE-01). 계정·금융정보·서비스 가이드 메뉴와 로그아웃.
- *
- * 대부분의 하위 화면(기본 정보 수정·약관 등)은 아직 없어 탭하면 "준비 중" 토스트만 띄운다.
- * 실제로 도는 건 로그아웃과 '연결된 금융기관'(마이데이터 화면)뿐이다.
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
 import { userApi, type Me } from '@/api/user'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
@@ -23,10 +19,6 @@ const showLogoutConfirm = ref(false)
 onMounted(async () => {
   me.value = await userApi.fetchMe()
 })
-
-function notReady() {
-  showToast('준비 중이에요')
-}
 
 interface MenuItem {
   text: string
@@ -136,7 +128,7 @@ async function logout() {
       </ul>
     </section>
 
-    <button type="button" class="withdraw" @click="notReady">회원탈퇴</button>
+    <button type="button" class="withdraw" @click="router.push('/mypage/withdraw')">회원탈퇴</button>
 
     <ConfirmDialog
       v-model="showLogoutConfirm"
