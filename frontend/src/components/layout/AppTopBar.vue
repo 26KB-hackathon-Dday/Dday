@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 상단 앱바. 제목은 라우트 meta.title에서 온다 (router/index.ts).
- * 뒤로 갈 곳이 있을 때만 화살표를, 마이페이지 화면이 아닐 때 우측에 계정·알림 아이콘을 띄운다.
+ * 뒤로 갈 곳이 있을 때만 화살표를, 마이페이지 화면이 아닐 때 우측에 알림·계정 아이콘을 띄운다.
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -41,6 +41,9 @@ function goBack() {
     <div class="topbar__heading">
       <h1 class="topbar__title">{{ title }}</h1>
     </div>
+    <button v-if="showAccount" type="button" class="topbar__bell" aria-label="알림">
+      <AppIcon name="bell" :size="26" />
+    </button>
     <button
       v-if="showAccount"
       type="button"
@@ -49,9 +52,6 @@ function goBack() {
       @click="router.push('/mypage')"
     >
       <AppIcon name="profile" :size="22" />
-    </button>
-    <button v-if="showAccount" type="button" class="topbar__bell" aria-label="알림">
-      <AppIcon name="bell" :size="26" />
     </button>
   </header>
 </template>
@@ -104,7 +104,7 @@ function goBack() {
   white-space: nowrap;
 }
 
-.topbar__account {
+.topbar__bell {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,11 +113,11 @@ function goBack() {
   border-radius: 9999px;
   color: var(--c-text);
 }
-.topbar__account:hover {
+.topbar__bell:hover {
   background: var(--c-surface);
 }
 
-.topbar__bell {
+.topbar__account {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,7 +127,7 @@ function goBack() {
   border-radius: 9999px;
   color: var(--c-text);
 }
-.topbar__bell:hover {
+.topbar__account:hover {
   background: var(--c-surface);
 }
 </style>
