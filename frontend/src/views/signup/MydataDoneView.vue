@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { mydataApi, type Institution } from '@/api/mydata'
 import { useSignupStore } from '@/stores/signup'
 import PrimaryButton from '@/components/common/PrimaryButton.vue'
 
@@ -9,17 +8,9 @@ const route = useRoute()
 const router = useRouter()
 const signup = useSignupStore()
 
-const institutions = ref<Institution[]>([])
-
-onMounted(async () => {
-  institutions.value = await mydataApi.findInstitutions()
-})
-
-// 서버가 기관 이름을 내려주므로 코드→이름 매핑이 필요 없다.
-// 같은 은행 계좌가 여럿이면 이름이 중복되므로 한 번씩만 보여준다.
-const connectedNames = computed(() =>
-  [...new Set(signup.connectResult?.accounts.map((a) => a.institutionName) ?? [])],
-)
+// 서버가 계좌·카드를 통틀어 중복 제거한 기관 목록을 내려준다 — 몇 개를 골랐든
+// 실제로 연동된 기관 수(4개)와 이름이 여기 그대로 나온다.
+const connectedNames = computed(() => signup.connectResult?.institutions.map((i) => i.institutionName) ?? [])
 
 const connectedCount = computed(() => signup.connectResult?.connectedCount ?? 0)
 

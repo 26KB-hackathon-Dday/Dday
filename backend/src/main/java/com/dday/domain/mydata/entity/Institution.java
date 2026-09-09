@@ -32,7 +32,7 @@ public enum Institution {
 
     HYUNDAI_CARD("0302", "현대카드", FinancialSector.NON_BANK),
     SAMSUNG_CARD("0303", "삼성카드", FinancialSector.NON_BANK),
-    KB_CARD("0301", "KB국민카드", FinancialSector.NON_BANK),
+    KB_CARD("0301", "국민카드", FinancialSector.NON_BANK),
     SHINHAN_CARD("0306", "신한카드", FinancialSector.NON_BANK),
     WOORI_CARD("0313", "우리카드", FinancialSector.NON_BANK),
 
