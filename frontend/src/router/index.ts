@@ -358,6 +358,18 @@ const router = createRouter({
       component: () => import('@/views/mypage/PasswordChangeView.vue'),
       meta: { title: '보안 및 비밀번호', requiresAuth: true },
     },
+    {
+      path: '/mypage/terms',
+      name: 'mypage-terms',
+      component: () => import('@/views/mypage/TermsView.vue'),
+      meta: { title: '이용약관', requiresAuth: true },
+    },
+    {
+      path: '/mypage/privacy',
+      name: 'mypage-privacy',
+      component: () => import('@/views/mypage/PrivacyPolicyView.vue'),
+      meta: { title: '개인정보처리방침', requiresAuth: true },
+    },
 
     {
       path: '/pockets/unexpected-income/allocate',

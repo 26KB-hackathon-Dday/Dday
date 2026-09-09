@@ -59,8 +59,8 @@ const sections = computed<{ label: string; items: MenuItem[] }[]>(() => [
   {
     label: '서비스 가이드',
     items: [
-      { text: '이용약관', onClick: notReady },
-      { text: '개인정보처리방침', onClick: notReady },
+      { text: '이용약관', onClick: () => router.push('/mypage/terms') },
+      { text: '개인정보처리방침', onClick: () => router.push('/mypage/privacy') },
     ],
   },
 ])
